@@ -57,7 +57,7 @@ flowchart TD
         START(["Bắt đầu: Phát sinh nhu cầu"])
         B1["1. Ký cam kết tài chính (Hóa đơn)"]
         B9["9. Nhận vốn cấp tốc → Cải thiện CFO"]
-        END(["Kết thúc: Win-Win. Giảm rủi ro,\nổn định chuỗi cung ứng"])
+        END_NODE(["Kết thúc: Win-Win. Giảm rủi ro,\nổn định chuỗi cung ứng"])
     end
 
     subgraph LL3C ["👥 Lực lượng 3 Cùng"]
@@ -94,33 +94,33 @@ flowchart TD
     %% Luồng liên kết
     START --> B1
     B1 --> B2
-    B2 -->|Approve| B3
+    B2 -->|"Approve"| B3
     B3 --> B4
-    B3 -->|Link API| B4b
+    B3 -->|"Link API"| B4b
     
-    B4 -->|Data flow| B6
-    B6 -->|Chưa đạt| B4
-    B6 -->|Xác nhận thành công| B7
+    B4 -->|"Data flow"| B6
+    B6 -->|"Chưa đạt"| B4
+    B6 -->|"Xác nhận thành công"| B7
     
     B7 --> B8
-    B4 -.->|Cung cấp sự minh bạch| B8
+    B4 -.->|"Cung cấp sự minh bạch"| B8
     
-    B8 -->|Disburse| B8b
+    B8 -->|"Disburse"| B8b
     B8b --> B9
-    B9 --> END
+    B9 --> END_NODE
     
     %% Quy trình Risk Management
     B8b --> B10
-    B10 -->|Yes| END
-    B10 -->|No (Nợ xấu)| B11
+    B10 -->|"Yes"| END_NODE
+    B10 -->|"No (Nợ xấu)"| B11
     
-    B11 -->|Yes (Thiên tai)| B11b
-    B11b --> END
+    B11 -->|"Yes (Thiên tai)"| B11b
+    B11b --> END_NODE
     
-    B11 -->|No (Rủi ro kỹ thuật)| B11c
-    B11c --> END
+    B11 -->|"No (Rủi ro kỹ thuật)"| B11c
+    B11c --> END_NODE
     
-    B4 -.->|Tích lũy dữ liệu| B12
+    B4 -.->|"Tích lũy dữ liệu"| B12
 ```
 
 ---
