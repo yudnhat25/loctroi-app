@@ -125,16 +125,3 @@ flowchart TD
 
 ---
 
-## 🛠 Hướng dẫn chạy Ứng dụng
-
-1. Đảm bảo bạn đã cài đặt NodeJS.
-2. Clone repository này về máy.
-3. Chạy `npm install` để cài đặt dependencies (Tailwind, React Router, v.v.)
-4. Gõ lệnh khởi động máy chủ:
-   ```bash
-   npm run dev
-   ```
-5. Mở trình duyệt tại `http://localhost:5173`.
-6. Tại **Cổng Đăng Nhập Hệ Sinh Thái**:
-   - Chọn vai trò tuỳ ý (Admin Lộc Trời, Bank, Nông hộ).
-   - Mã **PIN chuẩn** để xác thực hành vi cho tất cả các role là `1234`.
