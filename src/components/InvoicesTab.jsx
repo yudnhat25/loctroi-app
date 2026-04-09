@@ -13,7 +13,7 @@ const RISK_CONFIG = {
   HIGH:   { label: "Cao",    cls: "bg-red-100 text-red-700" },
 };
 
-const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, formatVND, onVerifyField, onSubmitSCF }) => {
+const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, formatVND, onVerifyField, onSubmitSCF, onSettleInvoice }) => {
   const getAction = (inv) => {
     switch (inv.trangThai) {
       case "Chờ xác nhận":
@@ -23,7 +23,7 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
       case "Chào bán ngân hàng":
         return <span className="text-slate-400 text-xs italic font-medium whitespace-nowrap">(chờ ngân hàng duyệt)</span>;
       case "Đã giải ngân":
-        return <span className="bg-green-50 text-green-600 text-xs font-bold border border-green-200 px-3 py-1.5 rounded-lg whitespace-nowrap">✓ Hoàn tất</span>;
+        return <div onClick={() => onSettleInvoice(inv)} className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-sm select-none whitespace-nowrap">💵 Quét báo thu hoạch & Tất toán</div>;
       case "Nợ xấu":
         return (
           <div className="space-y-1">
@@ -34,7 +34,7 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
       case "Đã tất toán":
         return (
           <div className="text-center">
-            <span className="bg-slate-100 text-slate-500 text-xs font-bold border border-slate-200 px-3 py-1.5 rounded-lg whitespace-nowrap">⚪ Tất toán</span>
+            <span className="bg-slate-100 text-slate-500 text-xs font-bold border border-slate-200 px-3 py-1.5 rounded-lg whitespace-nowrap">⚪ Đóng sổ</span>
             {inv.insurancePayout && <div className="text-[10px] text-green-600 font-bold mt-0.5">BH: {(inv.insurancePayout/1e6).toFixed(1)}M</div>}
           </div>
         );

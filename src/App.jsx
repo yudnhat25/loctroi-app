@@ -47,7 +47,7 @@ export const GIA_LUA = 8500; // VNĐ/kg
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState("");
-  const [farmers] = useState(initialFarmers);
+  const [farmers, setFarmers] = useState(initialFarmers);
   const [supplies] = useState(initialSupplies);
   const [transactions, setTransactions] = useState([]);
   const [invoices, setInvoices] = useState([]);
@@ -153,6 +153,24 @@ const App = () => {
     setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Đã token hóa" } : inv));
     logBlockchain("SCF_REJECTED", `Từ chối HĐ ${invoice.id}`);
     showToast("❌ Đã từ chối hóa đơn này");
+  };
+
+  const handleSettleInvoice = (invoice) => {
+    // Thu hoạch & Tất toán chuẩn (Happy Path)
+    setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Đã tất toán" } : inv));
+    logBlockchain("LOAN_REPAID_ON_TIME", `HĐ ${invoice.id} được tất toán đúng hạn từ tiền lúa. Token ${invoice.tokenId} đã bị đốt (Burn). Lợi nhuận ghi nhận về Nông dân.`);
+    
+    // Nâng điểm tín nhiệm (KPI) và hạn mức tự động
+    setFarmers(prev => prev.map(f => {
+      if (f.id === invoice.nongHoId) {
+        const newKpi = Math.min(100, f.kpiScore + 3);
+        const newLimit = f.hanMucTinDung + 5000000;
+        logBlockchain("CREDIT_UPDATED", `Giao dịch uy tín. Hộ nông dân [${f.id}] nhận +3 KPI. Nâng hạn mức lên ${(newLimit/1000000).toFixed(0)}Tr VNĐ.`);
+        return { ...f, kpiScore: newKpi, hanMucTinDung: newLimit };
+      }
+      return f;
+    }));
+    showToast("💵 Đã tất toán & nâng điểm tín dụng hộ nông dân!");
   };
 
   const handleDeclareDefault = (invoice) => {
@@ -264,6 +282,7 @@ const App = () => {
               <InvoicesTab {...sharedProps}
                 onVerifyField={handleVerifyField}
                 onSubmitSCF={handleSubmitSCF}
+                onSettleInvoice={handleSettleInvoice}
               />
             )}
             {activeTab === "scf" && (
