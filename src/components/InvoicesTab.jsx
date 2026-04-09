@@ -19,7 +19,7 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
       case "Chờ xác nhận":
         return <div onClick={() => onVerifyField(inv)} className="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-sm select-none whitespace-nowrap">Xác nhận thực địa</div>;
       case "Đã token hóa":
-        return <span className="text-blue-500 text-xs font-bold italic whitespace-nowrap">✍️ Chờ nông hộ ký lệnh SCF...</span>;
+        return <span className="text-blue-500 text-xs font-bold italic whitespace-nowrap">✍️ Chờ hộ nông dân ký lệnh SCF...</span>;
       case "Chào bán ngân hàng":
         return <span className="text-slate-400 text-xs italic font-medium whitespace-nowrap">(chờ ngân hàng duyệt)</span>;
       case "Đã giải ngân":
@@ -52,7 +52,7 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
         {invoices.length === 0 ? (
           <div className="py-20 text-center text-slate-400">
             <div className="text-5xl mb-4">📭</div>
-            <p className="font-semibold">Chưa có hóa đơn. Hãy cấp vật tư ở tab <b>Nông hộ & Vật tư</b>.</p>
+            <p className="font-semibold">Chưa có hóa đơn. Hãy cấp vật tư ở tab <b>Hộ Nông dân & Vật tư</b>.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -60,7 +60,7 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
               <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-100">
                 <tr>
                   <th className="px-5 py-3 text-left whitespace-nowrap">Mã HĐ / Token</th>
-                  <th className="px-5 py-3 text-left whitespace-nowrap">Nông hộ</th>
+                  <th className="px-5 py-3 text-left whitespace-nowrap">Hộ Nông dân</th>
                   <th className="px-5 py-3 text-left whitespace-nowrap">Vụ mùa</th>
                   <th className="px-5 py-3 text-right whitespace-nowrap">Giá trị</th>
                   <th className="px-5 py-3 text-left whitespace-nowrap">Rủi ro</th>

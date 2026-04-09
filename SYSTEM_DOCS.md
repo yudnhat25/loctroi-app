@@ -8,10 +8,10 @@
 
 Thách thức lớn nhất trong mô hình nông nghiệp truyền thống là **sự sai lệch dữ liệu trong quá trình thu mua và cấp phát vật tư**. LocTroi AgriChain giải quyết bài toán này bằng việc chuyển đổi từ mô hình quản trị con người và giấy tờ truyền thống sang **mô hình dữ liệu và thuật toán được bảo mật, phân quyền an toàn**.
 
-1. **Digital ID & Sổ cái Nông hộ:** Mỗi thành viên trong Hợp tác xã được cấp một định danh số duy nhất. Mọi giao dịch (nhận giống, phân bón, chốt sản lượng) đều ghi trực tiếp vào "Sổ cái nông hộ" trên Blockchain và đối soát chéo với nhật ký thực địa của "Lực lượng 3 Cùng".
+1. **Digital ID & Sổ cái Hộ Nông dân:** Mỗi thành viên trong Hợp tác xã được cấp một định danh số duy nhất. Mọi giao dịch (nhận giống, phân bón, chốt sản lượng) đều ghi trực tiếp vào "Sổ cái hộ nông dân" trên Blockchain và đối soát chéo với nhật ký thực địa của "Lực lượng 3 Cùng".
 2. **Smart Contract Dựa Trên Động lực Kinh tế:** Blockchain cho phép triển khai chính sách khuyến khích chính xác qua các chỉ số KPI: *Tỉ lệ nảy mầm*, *Tuân thủ lịch phun thuốc UAV*, *Độ sạch của lúa*. Đạt chỉ tiêu → Hệ thống tự động cộng điểm thưởng hoặc nâng hạng tín dụng. Máy móc thay thế mệnh lệnh bằng cơ chế tự giác, minh bạch.
 3. **Công bằng & Tiêu chuẩn Quốc tế (SRP):** Người nông dân được trả công công bằng dựa trên sức lao động và sự chính xác của dữ liệu, từ đó thúc đẩy sự tự nguyện tuân thủ các tiêu chuẩn quốc tế.
-4. **Khoanh vùng rủi ro (Traceability):** Quản lý chuỗi cung ứng thời gian thực với chi phí tối thiểu. Nếu một lô hàng vi phạm tiêu chuẩn, hệ thống lập tức truy xuất ngược (Traceback) vị trí và nông hộ thực hiện để xử lý kịp thời, bảo vệ uy tín xuất khẩu của toàn tập đoàn. 
+4. **Khoanh vùng rủi ro (Traceability):** Quản lý chuỗi cung ứng thời gian thực với chi phí tối thiểu. Nếu một lô hàng vi phạm tiêu chuẩn, hệ thống lập tức truy xuất ngược (Traceback) vị trí và hộ nông dân thực hiện để xử lý kịp thời, bảo vệ uy tín xuất khẩu của toàn tập đoàn. 
 
 Đây chính là nền tảng để doanh nghiệp nâng cấp xếp hạng tín dụng trên thị trường quốc tế và phát triển bền vững trong kỷ nguyên nông nghiệp số.
 
@@ -23,8 +23,8 @@ LocTroi AgriChain là **Private DLT (Distributed Ledger Technology)** mô phỏn
 
 | Nghiệp vụ | Tab | Blockchain Action |
 |---|---|---|
-| Quản lý Nông hộ | Nông hộ & Vật tư | SUPPLY_ISSUED |
-| Cấp phát Vật tư | Nông hộ & Vật tư | SUPPLY_ISSUED |
+| Quản lý Hộ Nông dân | Hộ Nông dân & Vật tư | SUPPLY_ISSUED |
+| Cấp phát Vật tư | Hộ Nông dân & Vật tư | SUPPLY_ISSUED |
 | Token hoá Khoản phải thu | Khoản phải thu | INVOICE_TOKENIZED |
 | SCF — Giải ngân Ngân hàng | SCF Ngân hàng | LOAN_DISBURSED |
 
@@ -34,7 +34,7 @@ LocTroi AgriChain là **Private DLT (Distributed Ledger Technology)** mô phỏn
 
 ```mermaid
 flowchart TD
-    A(["👨‍🌾 Nông hộ"]) -->|"Yêu cầu cấp vật tư"| B["Ghi nhận Yêu cầu\n(SUPPLY_REQUESTED)"]
+    A(["👨‍🌾 Hộ Nông dân"]) -->|"Yêu cầu cấp vật tư"| B["Ghi nhận Yêu cầu\n(SUPPLY_REQUESTED)"]
     B -->|"Thẩm định"| C["Lộc Trời duyệt cấp theo KPI"]
     C --> D{KPI Score?}
     D -->|">= 80"| E["Hạn mức Cao — 5.5%/năm"]
@@ -46,12 +46,12 @@ flowchart TD
     J --> K{Oracle OK?}
     K -->|"OK"| L["Token hoá Invoice TKN-XXXXXX\nGhi: INVOICE_TOKENIZED"]
     K -->|"FAIL"| M["Cảnh báo và Điều tra"]
-    L -->|"Nông hộ ký lệnh"| N["Gửi lên SCF Pool\nGhi: SCF_SUBMITTED"]
+    L -->|"Hộ Nông dân ký lệnh"| N["Gửi lên SCF Pool\nGhi: SCF_SUBMITTED"]
     N --> O["Ngân hàng xem xét Smart Contract"]
     O --> P{Quyết định?}
     P -->|"Duyệt"| Q["Giải ngân — 2 giây\nGhi: LOAN_DISBURSED"]
     P -->|"Từ chối"| R["Trả về trạng thái Đã token hoá\nGhi: SCF_REJECTED"]
-    Q --> S(["🎉 Nông hộ nhận tiền"])
+    Q --> S(["🎉 Hộ Nông dân nhận tiền"])
     R --> N
     M --> I
 ```
@@ -62,7 +62,7 @@ flowchart TD
 
 ```mermaid
 stateDiagram-v2
-    [*] --> YeuCauVatTu : Nông hộ khởi tạo (SUPPLY_REQUESTED)
+    [*] --> YeuCauVatTu : Hộ Nông dân khởi tạo (SUPPLY_REQUESTED)
     YeuCauVatTu --> ChoXacNhan : Lộc Trời duyệt cấp vật tư (SUPPLY_ISSUED)
 
     ChoXacNhan : 🟡 Chờ xác nhận
@@ -73,7 +73,7 @@ stateDiagram-v2
     DaTatToan : ⚪ Đã tất toán
 
     ChoXacNhan --> DaTokenHoa : Oracle xác nhận INVOICE_TOKENIZED
-    DaTokenHoa --> ChaoBanNH : Nông hộ ký gửi lên SCF SCF_SUBMITTED
+    DaTokenHoa --> ChaoBanNH : Hộ Nông dân ký gửi lên SCF SCF_SUBMITTED
     ChaoBanNH --> DaGiaiNgan : Ngân hàng duyệt LOAN_DISBURSED
     ChaoBanNH --> DaTokenHoa : Ngân hàng từ chối SCF_REJECTED
     DaGiaiNgan --> [*] : Hoàn tất vụ mùa
@@ -91,7 +91,7 @@ sequenceDiagram
     actor LT as Lộc Trời
     participant BC as Blockchain
     participant UAV as Oracle UAV
-    actor NH as Nông hộ
+    actor NH as Hộ Nông dân
 
     LT->>BC: Ghi SUPPLY_ISSUED
     LT->>UAV: Yêu cầu xác minh thực địa
@@ -112,7 +112,7 @@ sequenceDiagram
     actor LT as Lộc Trời
     participant SC as Smart Contract
     participant Bank as Liên minh Ngân hàng
-    actor F as Nông hộ
+    actor F as Hộ Nông dân
 
     LT->>SC: Nộp Token TKN + KPI Score
     SC->>SC: Tính lãi suất tự động theo KPI
@@ -143,7 +143,7 @@ graph TD
 
     subgraph "View Tabs"
         T1[OverviewTab\nKPI + Chart + Log feed]
-        T2[FarmersTab\nBảng nông hộ]
+        T2[FarmersTab\nBảng hộ nông dân]
         T3[InvoicesTab\nStepper workflow]
         T4[SCFTab\nBank portal]
     end
@@ -175,14 +175,14 @@ graph TD
 | Action | Ghi khi nào | Màu badge |
 |---|---|---|
 | `GENESIS_BLOCK` | Khởi tạo hệ thống | ⬜ Xám |
-| `SUPPLY_REQUESTED`| Nông hộ tự yêu cầu vật tư | 🔵 Indigo |
+| `SUPPLY_REQUESTED`| Hộ Nông dân tự yêu cầu vật tư | 🔵 Indigo |
 | `SUPPLY_ISSUED` | Lộc Trời duyệt & cấp phát vật tư | 🟢 Xanh lá |
 | `INVOICE_TOKENIZED` | Oracle xác nhận thực địa thành công | 🔵 Xanh cyan |
-| `SCF_SUBMITTED` | Nông hộ ký lệnh yêu cầu thanh khoản SCF | 🟠 Cam |
+| `SCF_SUBMITTED` | Hộ Nông dân ký lệnh yêu cầu thanh khoản SCF | 🟠 Cam |
 | `LOAN_DISBURSED` | Ngân hàng giải ngân thành công | 🟢 Emerald |
 | `SCF_REJECTED` | Ngân hàng từ chối giải ngân | 🔴 Đỏ nhạt |
 | `BANK_SYNC` | Đồng bộ lịch sử block thủ công | 🔵 Xanh dương |
-| `LOAN_DEFAULT` | Nông hộ khai báo nợ xấu (thiên tai) | 🔴 Đỏ đậm |
+| `LOAN_DEFAULT` | Hộ Nông dân khai báo nợ xấu (thiên tai) | 🔴 Đỏ đậm |
 | `INSURANCE_TRIGGERED` | Smart contract bảo hiểm kích hoạt | 🟡 Amber |
 | `RECOURSE_SETTLED` | Thực hiện nghĩa vụ đền bù Recourse | 🟣 Tím |
 
@@ -203,7 +203,7 @@ graph TD
 
 ## 9. Dữ liệu mẫu (Mock Data)
 
-### Nông hộ
+### Hộ Nông dân
 | ID | Họ tên | Diện tích | KPI | Hạn mức TD |
 |---|---|---|---|---|
 | #LT-001 | Nguyễn Văn An | 12.5 ha | 85 | 120,000,000 VNĐ |

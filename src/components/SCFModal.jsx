@@ -12,7 +12,7 @@ const SCFModal = ({ modal, onClose, formatVND }) => (
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-900 mb-1">Đang xử lý Smart Contract...</h3>
-            <p className="text-sm text-slate-500">Mạng Blockchain đang thực thi lệnh chuyển tiền tự động đến tài khoản nông hộ.</p>
+            <p className="text-sm text-slate-500">Mạng Blockchain đang thực thi lệnh chuyển tiền tự động đến tài khoản hộ nông dân.</p>
           </div>
         </div>
       ) : (

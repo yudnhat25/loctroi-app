@@ -15,15 +15,15 @@ src/
 ├── main.jsx                 # Entry point React.
 │
 ├── components/              # Các UI Components chính:
-│   ├── GlobalLogin.jsx      # Quản lý phân quyền 3 cổng: Admin (Lộc Trời) - Bank - Nông Hộ.
+│   ├── GlobalLogin.jsx      # Quản lý phân quyền 3 cổng: Admin (Lộc Trời) - Bank - Hộ Nông dân.
 │   ├── Sidebar.jsx          # Thanh Menu điều hướng Render theo quyền quy định.
 │   ├── OverviewTab.jsx      # Dashboard Tổng quan hệ thống (Analytics, Thống kê giải ngân).
-│   ├── FarmersTab.jsx       # Ban Lộc Trời: Quản trị các Nông hộ & Xử lý yêu cầu cấp vật tư.
+│   ├── FarmersTab.jsx       # Ban Lộc Trời: Quản trị các Hộ Nông dân & Xử lý yêu cầu cấp vật tư.
 │   ├── InvoicesTab.jsx      # Ban Lộc Trời: Quản lý Khoản phải thu, token hóa lô hàng.
-│   ├── FarmerPortalTab.jsx  # Nông hộ: Sổ cái cá nhân, Định danh số, Xác thực rút vốn.
+│   ├── FarmerPortalTab.jsx  # Hộ Nông dân: Sổ cái cá nhân, Định danh số, Xác thực rút vốn.
 │   ├── SCFTab.jsx           # Ngân hàng: Dành cho Liên minh Ngân hàng định giá & Giải ngân.
 │   │
-│   ├── SupplyModal.jsx      # Chức năng: Đặt hàng Vật tư nông nghiệp (Nông hộ/Lộc Trời).
+│   ├── SupplyModal.jsx      # Chức năng: Đặt hàng Vật tư nông nghiệp (Hộ Nông dân/Lộc Trời).
 │   ├── OracleModal.jsx      # Chức năng: Mô phỏng UAV kiểm tra (Tỉ lệ nảy mầm, SRP chuẩn).
 │   ├── DisasterModal.jsx    # Chức năng: Khởi chạy Bảo hiểm & Recourse (Truy đòi khoản nợ).
 │   └── LedgerPanel.jsx      # Hiển thị lịch sử các Block (Single Source of Truth).
@@ -39,7 +39,7 @@ Mô hình thiết kế hệ thống giải quyết trọn vẹn điểm nghẽn 
 1. **Giai đoạn Khởi tạo (Origination):** Nông dân và Lộc Trời lập bảng Cam kết tài chính/Yêu cầu vật tư trên hệ thống. 
 2. **Giai đoạn Đối soát Thực địa (Verification):** Hệ thống không tin con người. Dữ liệu từ Lực lượng 3 Cùng sẽ gộp với dữ liệu từ Oracle (UAV bay kiểm định Tỉ lệ mầm, độ chuẩn SRP).
 3. **Giai đoạn Số hóa tài sản (Tokenization):** Khi Oracle trả về Pass, Smart Contract lập tức nội suy giá trị để đúc thành Token. Đồng thời đồng bộ dữ liệu song song về hệ thống SAP S/4HANA nội bộ.
-4. **Giai đoạn Huy động vốn (Financing):** Token được đưa lên SCF Pool. Ngân hàng dựa vào Sổ cái bất biến (lịch sử KPI, mức độ uy tín) để định giá và duyệt giải ngân trong vài Block (2s). Lộc Trời/Nông hộ nhận vốn sớm để xoay vòng CFO.
+4. **Giai đoạn Huy động vốn (Financing):** Token được đưa lên SCF Pool. Ngân hàng dựa vào Sổ cái bất biến (lịch sử KPI, mức độ uy tín) để định giá và duyệt giải ngân trong vài Block (2s). Lộc Trời/Hộ Nông dân nhận vốn sớm để xoay vòng CFO.
 5. **Giai đoạn Quản trị rủi ro (Risk & Settlement):** 
    - **Win-Win:** Nông dân gặt lúa trả nợ đúng hạn.
    - **Rủi ro:** Khi xảy ra sự cố (thiên tai/nợ xấu), hệ thống có khả năng khoanh vùng rủi ro (Traceback). Smart contract Oracle sẽ bồi thường bảo hiểm ngay lập tức hoặc kích hoạt truy đòi Recourse từ Lộc Trời.
@@ -72,7 +72,7 @@ flowchart TD
     end
 
     subgraph SAP ["💻 SAP S/4HANA"]
-        B4b["4b. Link Token vào mã\nNông hộ/Hợp đồng trên ERP"]
+        B4b["4b. Link Token vào mã\nHộ Nông dân/Hợp đồng trên ERP"]
     end
 
     subgraph ORACLE ["🛰️ Oracle (UAV / Cảm biến)"]
@@ -123,18 +123,4 @@ flowchart TD
     B4 -.->|"Tích lũy dữ liệu"| B12
 ```
 
----
 
-## 🛠 Hướng dẫn chạy Ứng dụng
-
-1. Đảm bảo bạn đã cài đặt NodeJS.
-2. Clone repository này về máy.
-3. Chạy `npm install` để cài đặt dependencies (Tailwind, React Router, v.v.)
-4. Gõ lệnh khởi động máy chủ:
-   ```bash
-   npm run dev
-   ```
-5. Mở trình duyệt tại `http://localhost:5173`.
-6. Tại **Cổng Đăng Nhập Hệ Sinh Thái**:
-   - Chọn vai trò tuỳ ý (Admin Lộc Trời, Bank, Nông hộ).
-   - Mã **PIN chuẩn** để xác thực hành vi cho tất cả các role là `1234`.

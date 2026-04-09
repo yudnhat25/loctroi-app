@@ -2,7 +2,7 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, disbursedAmount, pendin
   const totalReceivables = invoices.reduce((s, i) => s + i.amount, 0);
 
   const kpiCards = [
-    { label: "Tổng nông hộ", value: farmers.length, unit: "hộ", color: "text-green-600", bg: "bg-green-50", icon: "👨‍🌾" },
+    { label: "Tổng hộ nông dân", value: farmers.length, unit: "hộ", color: "text-green-600", bg: "bg-green-50", icon: "👨‍🌾" },
     { label: "Tổng diện tích", value: totalArea.toFixed(1), unit: "ha", color: "text-blue-600", bg: "bg-blue-50", icon: "🌾" },
     { label: "Tổng khoản phải thu", value: formatVND(totalReceivables), unit: "", color: "text-orange-600", bg: "bg-orange-50", icon: "📄", wide: true },
     { label: "Số block đã ghi", value: blockchainLog.length, unit: "blocks", color: "text-purple-600", bg: "bg-purple-50", icon: "⛓️" },

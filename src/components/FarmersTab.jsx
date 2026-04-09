@@ -10,7 +10,7 @@ const FarmersTab = ({ farmers, supplies, supplyRequests, blockchainLog, onApprov
       {/* Farmer Table */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
-          <h2 className="text-base font-bold text-gray-800">Danh sách Nông hộ liên kết</h2>
+          <h2 className="text-base font-bold text-gray-800">Danh sách Hộ Nông dân liên kết</h2>
           <span className="text-xs text-slate-500 font-semibold">{farmers.length} hộ đăng ký</span>
         </div>
         <div className="overflow-x-auto">
@@ -74,7 +74,7 @@ const FarmersTab = ({ farmers, supplies, supplyRequests, blockchainLog, onApprov
         </div>
         {supplyRequests?.length === 0 ? (
           <div className="py-8 text-center text-slate-400 text-sm">
-             Hoàn tất tất cả. Không có yêu cầu vật tư nào cần duyệt từ Nông hộ.
+             Hoàn tất tất cả. Không có yêu cầu vật tư nào cần duyệt từ Hộ Nông dân.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -82,7 +82,7 @@ const FarmersTab = ({ farmers, supplies, supplyRequests, blockchainLog, onApprov
               <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-100">
                 <tr>
                   <th className="px-5 py-3 text-left">Mã YC</th>
-                  <th className="px-5 py-3 text-left">Nông hộ</th>
+                  <th className="px-5 py-3 text-left">Hộ Nông dân</th>
                   <th className="px-5 py-3 text-left">Vật tư requested</th>
                   <th className="px-5 py-3 text-left">Vụ mùa</th>
                   <th className="px-5 py-3 text-right">Tổng giá trị</th>

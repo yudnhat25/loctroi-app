@@ -8,7 +8,7 @@ const GlobalLogin = ({ farmers, onLogin }) => {
 
   const handleLoginSubmit = () => {
     if (mode === "farmer" && !selectedFarmer) {
-      return setError("Vui lòng chọn tài khoản nông hộ.");
+      return setError("Vui lòng chọn tài khoản hộ nông dân.");
     }
     if (pin !== "1234") return setError("Sai mã PIN. (Gợi ý: 1234)");
     
@@ -41,10 +41,10 @@ const GlobalLogin = ({ farmers, onLogin }) => {
             <p className="text-sm text-slate-500">Cấp vốn ưu đãi, thẩm định hồ sơ điện tử và giải ngân tự động qua Smart Contract.</p>
           </div>
 
-          {/* Nông hộ */}
+          {/* Hộ Nông dân */}
           <div onClick={() => setMode("farmer")} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center cursor-pointer hover:-translate-y-2 hover:shadow-xl transition-all duration-300 group ring-2 ring-transparent hover:ring-green-100">
             <div className="w-20 h-20 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6 group-hover:scale-110 transition-transform shadow-inner">👨‍🌾</div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Cổng Nông Hộ</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Cổng Hộ Nông dân</h2>
             <p className="text-sm text-slate-500">Quản lý định danh số (Digital ID), sổ cái cá nhân và trực tiếp ký duyệt SCF.</p>
           </div>
         </div>
@@ -58,7 +58,7 @@ const GlobalLogin = ({ farmers, onLogin }) => {
 
   // PIN / User Select Mode
   const isFarmer = mode === "farmer";
-  const title = isFarmer ? "Đăng nhập Nông hộ" : mode === "loctroi" ? "Đăng nhập Lộc Trời" : "Đăng nhập Ngân Hàng";
+  const title = isFarmer ? "Đăng nhập Hộ Nông dân" : mode === "loctroi" ? "Đăng nhập Lộc Trời" : "Đăng nhập Ngân Hàng";
   const subtitle = isFarmer ? "Truy cập vào định danh số của bạn" : "Xác thực lớp truy cập tổ chức";
   const icon = isFarmer ? "👨‍🌾" : mode === "loctroi" ? "🏢" : "🏦";
   const iconBg = isFarmer ? "from-green-500 to-emerald-600" : mode === "loctroi" ? "from-blue-500 to-indigo-600" : "from-orange-500 to-red-600";

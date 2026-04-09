@@ -109,7 +109,7 @@ const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onR
                 <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-100">
                   <tr>
                     <th className="px-5 py-3 text-left">Mã Token</th>
-                    <th className="px-5 py-3 text-left">Nông hộ</th>
+                    <th className="px-5 py-3 text-left">Hộ Nông dân</th>
                     <th className="px-5 py-3 text-right">Số tiền</th>
                     <th className="px-5 py-3 text-left">Ngày xử lý</th>
                     <th className="px-5 py-3 text-center">Trạng thái</th>

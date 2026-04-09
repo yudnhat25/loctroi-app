@@ -1,7 +1,7 @@
 const Header = ({ activeTab }) => {
   const labels = {
     overview: "Tổng quan",
-    farmers: "Nông hộ & Vật tư",
+    farmers: "Hộ Nông dân & Vật tư",
     invoices: "Khoản phải thu",
     scf: "SCF Ngân hàng",
   };

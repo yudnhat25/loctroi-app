@@ -16,10 +16,10 @@ const SmartphoneIcon = ({ className = "" }) => (
 
 const navItems = [
   { id: "overview", label: "Tổng quan", icon: LayoutDashboardIcon },
-  { id: "farmers", label: "Nông hộ & Vật tư", icon: UsersIcon },
+  { id: "farmers", label: "Hộ Nông dân & Vật tư", icon: UsersIcon },
   { id: "invoices", label: "Khoản phải thu", icon: FileTextIcon },
   { id: "scf", label: "SCF Ngân hàng", icon: LandmarkIcon },
-  { id: "farmerPortal", label: "Cổng Nông hộ", icon: SmartphoneIcon },
+  { id: "farmerPortal", label: "Cổng Hộ Nông dân", icon: SmartphoneIcon },
 ];
 
 const Sidebar = ({ activeTab, setActiveTab, blockchainLog, invoices, role, onLogout }) => {
@@ -29,7 +29,7 @@ const Sidebar = ({ activeTab, setActiveTab, blockchainLog, invoices, role, onLog
   if (role === "loctroi") {
     availableTabs = [
       { id: "overview", label: "Tổng quan", icon: LayoutDashboardIcon },
-      { id: "farmers", label: "Nông hộ & Vật tư", icon: UsersIcon },
+      { id: "farmers", label: "Hộ Nông dân & Vật tư", icon: UsersIcon },
       { id: "invoices", label: "Khoản phải thu", icon: FileTextIcon },
     ];
   } else if (role === "bank") {

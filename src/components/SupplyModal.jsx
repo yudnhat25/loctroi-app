@@ -15,7 +15,7 @@ const SupplyModal = ({ modal, setModal, supplies, onConfirm, formatVND }) => {
         </div>
         <div className="p-5 space-y-4">
           <div className="bg-green-50 p-3 rounded-xl border border-green-100">
-            <p className="text-xs text-slate-500 font-bold mb-0.5">Nông hộ nhận:</p>
+            <p className="text-xs text-slate-500 font-bold mb-0.5">Hộ Nông dân nhận:</p>
             <p className="font-bold text-green-800">{farmer?.hoTen} <span className="font-mono text-green-600 font-normal">({farmer?.id})</span></p>
           </div>
 
