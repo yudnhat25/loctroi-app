@@ -130,7 +130,7 @@ const App = () => {
         showToast(`✅ Phát hành ${tokenId} thành công`);
         setOracleModal({ isOpen: false, status: "idle", invoiceId: null });
       }, 1500);
-    }, 1500);
+    }, 7000);
   };
 
   const handleSubmitSCF = (invoice) => {
