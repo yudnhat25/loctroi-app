@@ -255,6 +255,10 @@ const App = () => {
     return <GlobalLogin farmers={farmers} onLogin={handleLogin} />;
   }
 
+  const visibleBlockchainLog = currentUser.role === "farmer"
+    ? blockchainLog.filter(l => l.data?.includes(currentUser.profile.hoTen) || l.data?.includes(currentUser.profile.id))
+    : blockchainLog;
+
   return (
     <div className="flex w-screen h-screen overflow-hidden bg-slate-50" style={{ fontFamily: "'Inter', sans-serif" }}>
       <style dangerouslySetInnerHTML={{ __html: `
@@ -317,12 +321,12 @@ const App = () => {
 
       {/* Ledger FAB */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
-        {ledgerOpen && <LedgerPanel blockchainLog={blockchainLog} onClose={() => setLedgerOpen(false)} />}
+        {ledgerOpen && <LedgerPanel blockchainLog={visibleBlockchainLog} onClose={() => setLedgerOpen(false)} />}
         <button
           onClick={() => setLedgerOpen(v => !v)}
           className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-2.5 rounded-full shadow-xl text-sm font-bold transition-all border border-gray-700"
         >
-          ⛓️ {blockchainLog.length} blocks
+          ⛓️ {visibleBlockchainLog.length} blocks
         </button>
       </div>
 
