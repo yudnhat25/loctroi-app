@@ -4,7 +4,7 @@ const getKPIBadge = (score) => {
   return <span className="bg-green-100 text-green-700 text-xs px-2.5 py-1 rounded-full font-bold">{score}</span>;
 };
 
-const FarmersTab = ({ farmers, supplies, supplyRequests, blockchainLog, onApproveRequest, formatVND }) => {
+const FarmersTab = ({ farmers, supplies, supplyRequests, blockchainLog, onApproveRequest, onRejectRequest, formatVND }) => {
   return (
     <div className="space-y-6 fade-in pb-10">
       {/* Farmer Table */}
@@ -103,11 +103,19 @@ const FarmersTab = ({ farmers, supplies, supplyRequests, blockchainLog, onApprov
                       <td className="px-5 py-4 text-slate-500 text-xs">{req.season}</td>
                       <td className="px-5 py-4 text-right font-bold text-orange-600">{formatVND(total)}</td>
                       <td className="px-5 py-4 text-center">
-                        <div
-                          onClick={() => onApproveRequest(req)}
-                          className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-sm whitespace-nowrap select-none"
-                        >
-                          Duyệt cấp phát
+                        <div className="flex justify-center gap-2">
+                          <div
+                            onClick={() => onRejectRequest(req)}
+                            className="inline-flex items-center justify-center border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-sm whitespace-nowrap select-none"
+                          >
+                            Từ chối
+                          </div>
+                          <div
+                            onClick={() => onApproveRequest(req)}
+                            className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-sm whitespace-nowrap select-none"
+                          >
+                            Duyệt cấp phát
+                          </div>
                         </div>
                       </td>
                     </tr>

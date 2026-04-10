@@ -118,6 +118,17 @@ const App = () => {
     showToast(`✅ Đã duyệt lệnh cấp phát vật tư thành công`);
   };
 
+  const handleRejectSupplyRequest = (req) => {
+    const { farmer, supplyId, quantity, season } = req;
+    const supply = supplies.find(s => s.id === supplyId);
+    
+    // Remove from pending requests
+    setSupplyRequests(prev => prev.filter(r => r.id !== req.id));
+
+    logBlockchain("SUPPLY_REJECTED", `Lộc Trời TỪ CHỐI cấp yêu cầu ${quantity} ${supply.donVi} ${supply.ten} cho ${farmer.hoTen} (${season})`);
+    showToast(`❌ Đã từ chối lệnh yêu cầu vật tư của ${farmer.hoTen}`);
+  };
+
   const handleVerifyField = (invoice) => {
     setOracleModal({ isOpen: true, status: "loading", invoiceId: invoice.id });
     setTimeout(() => {
@@ -276,6 +287,7 @@ const App = () => {
             {activeTab === "farmers" && (
               <FarmersTab {...sharedProps}
                 onApproveRequest={handleApproveRequest}
+                onRejectRequest={handleRejectSupplyRequest}
               />
             )}
             {activeTab === "invoices" && (
