@@ -6,7 +6,7 @@ const RISK_CONFIG = {
 
 const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onReject, onDeclareDefault }) => {
   const pending   = invoices.filter(i => i.trangThai === "Chào bán ngân hàng");
-  const disbursed = invoices.filter(i => i.trangThai === "Đã giải ngân" || i.trangThai === "Nợ xấu" || i.trangThai === "Đã tất toán");
+  const disbursed = invoices.filter(i => i.trangThai === "Đã giải ngân" || i.trangThai === "Nợ xấu" || i.trangThai === "Đã tất toán" || i.trangThai === "Từ chối duyệt vay");
 
   const getRate = (kpi) => kpi > 80 ? "5.5%/năm" : kpi >= 60 ? "7%/năm" : "9%/năm";
   const getRateColor = (kpi) => kpi > 80 ? "text-green-600" : kpi >= 60 ? "text-orange-600" : "text-red-600";
@@ -123,6 +123,7 @@ const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onR
                       <tr key={inv.id} className={`border-b border-slate-50 last:border-0 transition-colors ${
                           inv.trangThai === "Nợ xấu" ? "bg-red-50/40 hover:bg-red-50/60" :
                           inv.trangThai === "Đã tất toán" ? "bg-slate-50/60 hover:bg-slate-100/60" :
+                          inv.trangThai === "Từ chối duyệt vay" ? "bg-gray-50 hover:bg-gray-100" :
                           "hover:bg-green-50/30"
                         }`}>
                         <td className="px-5 py-4 font-mono font-bold text-cyan-700 text-xs">{inv.tokenId}</td>
@@ -151,6 +152,9 @@ const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onR
                           )}
                           {inv.trangThai === "Đã tất toán" && (
                             <span className="bg-slate-100 text-slate-600 border border-slate-200 text-xs px-2.5 py-1 rounded-full font-bold">⚪ Tất toán</span>
+                          )}
+                          {inv.trangThai === "Từ chối duyệt vay" && (
+                            <span className="bg-gray-100 text-gray-600 border border-gray-200 text-xs px-2.5 py-1 rounded-full font-bold">⚫ Từ chối</span>
                           )}
                         </td>
                         <td className="px-5 py-4 text-center">

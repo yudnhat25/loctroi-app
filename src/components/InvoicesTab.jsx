@@ -5,6 +5,7 @@ const STATUS_CONFIG = {
   "Đã giải ngân":       { badge: "🟢 Đã giải ngân",       cls: "bg-green-50 text-green-700 border-green-200" },
   "Nợ xấu":            { badge: "🔴 Nợ xấu",             cls: "bg-red-50 text-red-700 border-red-200" },
   "Đã tất toán":        { badge: "⚪ Đã tất toán",        cls: "bg-slate-100 text-slate-500 border-slate-200" },
+  "Từ chối duyệt vay":  { badge: "⚫ Bị từ chối",        cls: "bg-gray-100 text-gray-600 border-gray-300" },
 };
 
 const RISK_CONFIG = {
@@ -38,6 +39,8 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
             {inv.insurancePayout && <div className="text-[10px] text-green-600 font-bold mt-0.5">BH: {(inv.insurancePayout/1e6).toFixed(1)}M</div>}
           </div>
         );
+      case "Từ chối duyệt vay":
+        return <span className="bg-gray-100 text-gray-500 text-xs font-bold border border-gray-200 px-3 py-1.5 rounded-lg whitespace-nowrap">🚫 Đã hủy lệnh</span>;
       default: return null;
     }
   };

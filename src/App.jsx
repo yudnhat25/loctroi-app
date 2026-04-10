@@ -130,7 +130,7 @@ const App = () => {
         showToast(`✅ Phát hành ${tokenId} thành công`);
         setOracleModal({ isOpen: false, status: "idle", invoiceId: null });
       }, 1500);
-    }, 7000);
+    }, 8500);
   };
 
   const handleSubmitSCF = (invoice) => {
@@ -150,9 +150,9 @@ const App = () => {
   };
 
   const handleRejectSCF = (invoice) => {
-    setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Đã token hóa" } : inv));
-    logBlockchain("SCF_REJECTED", `Từ chối HĐ ${invoice.id}`);
-    showToast("❌ Đã từ chối hóa đơn này");
+    setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Từ chối duyệt vay" } : inv));
+    logBlockchain("SCF_REJECTED", `Ngân hàng từ chối duyệt khoản vay cho HĐ ${invoice.id}`);
+    showToast("❌ Đã từ chối hồ sơ vay");
   };
 
   const handleSettleInvoice = (invoice) => {

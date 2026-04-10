@@ -7,6 +7,7 @@ const STATUS_STYLE = {
   "Đã giải ngân":       { badge: "🟢 Đã giải ngân",        cls: "bg-green-50 text-green-700 border-green-200" },
   "Nợ xấu":            { badge: "🔴 Nợ xấu",              cls: "bg-red-50 text-red-700 border-red-200" },
   "Đã tất toán":        { badge: "⚪ Đã tất toán",         cls: "bg-slate-100 text-slate-500 border-slate-200" },
+  "Từ chối duyệt vay":  { badge: "⚫ Bị từ chối",          cls: "bg-gray-100 text-gray-500 border-gray-200" },
 };
 
 const RISK_STYLE = {

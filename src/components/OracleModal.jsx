@@ -8,7 +8,7 @@ const OracleModal = ({ modal }) => {
       setStep(0);
       const interval = setInterval(() => {
         setStep(s => (s < 3 ? s + 1 : s));
-      }, 2000);
+      }, 2500);
       return () => clearInterval(interval);
     }
   }, [modal.status]);
