@@ -36,15 +36,38 @@ const OracleModal = ({ modal }) => {
               <p className="text-[11px] text-slate-500 font-medium">Lực lượng 3 Cùng & Cảm biến IoT IoT-04A</p>
             </div>
             <div className="text-left mt-4 text-[10px] font-mono space-y-2.5 bg-slate-50 p-4 rounded-xl border border-slate-100 w-full overflow-hidden">
-              {metrics.map((m, i) => (
-                <div key={i} className={`flex items-center gap-2.5 transition-all duration-300 ${step > i ? "text-green-700 opacity-100 translate-x-0" : "text-slate-400 opacity-40 -translate-x-2"}`}>
-                  <span className={`w-4 h-4 flex items-center justify-center rounded-full border ${step > i ? "bg-green-100 border-green-300" : "border-slate-300"}`}>
-                    {step > i ? "✓" : ""}
+              {metrics.map((m, i) => {
+                const isTarget = modal.nongHoId === "#LT-004";
+                const isFailStep = isTarget && i === 2 && step >= 2;
+                const isPast = step > i && !isFailStep;
+                
+                return (
+                <div key={i} className={`flex items-center gap-2.5 transition-all duration-300 ${
+                  isFailStep ? "text-red-600 opacity-100 translate-x-0" 
+                  : isPast ? "text-green-700 opacity-100 translate-x-0" 
+                  : "text-slate-400 opacity-40 -translate-x-2"
+                }`}>
+                  <span className={`w-4 h-4 flex items-center justify-center rounded-full border ${
+                    isFailStep ? "bg-red-100 border-red-300"
+                    : isPast ? "bg-green-100 border-green-300" 
+                    : "border-slate-300"
+                  }`}>
+                    {isFailStep ? "✗" : isPast ? "✓" : ""}
                   </span>
                   <span className="text-sm">{m.icon}</span>
                   <span className="font-bold tracking-tight">{m.label}</span>
                 </div>
-              ))}
+              )})}
+            </div>
+          </div>
+        ) : modal.status === "failed" ? (
+          <div className="space-y-5 fade-in">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto border-4 border-red-50">
+              <span className="text-4xl">❌</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-red-700 mb-1">Cảnh báo vi phạm!</h3>
+              <p className="text-[13px] text-slate-500">Phát hiện lúa không đạt tiêu chuẩn độ sạch SRP. Ngừng token hóa để xử lý.</p>
             </div>
           </div>
         ) : (

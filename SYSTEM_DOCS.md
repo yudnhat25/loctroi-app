@@ -51,7 +51,7 @@ flowchart TD
     O --> P{Quyết định?}
     P -->|"Duyệt"| Q["Giải ngân — 2 giây\nGhi: LOAN_DISBURSED"]
     P -->|"Từ chối"| R["Trả về trạng thái Đã token hoá\nGhi: SCF_REJECTED"]
-    Q --> S(["🎉 Hộ Nông dân nhận tiền"])
+    Q --> S(["🎉 Tiền chuyển vào ví Lộc Trời\n👉 Lộc Trời giao vật tư cho Nông hộ"])
     R --> N
     M --> I
 ```
@@ -120,8 +120,9 @@ sequenceDiagram
     SC->>Bank: Broadcast yêu cầu mua khoản phải thu
     alt Chấp thuận
         Bank->>SC: Ký hợp đồng số
-        SC->>F: Giải ngân trong 2 giây
+        SC->>LT: Giải ngân thẳng cho Lộc Trời (đảm bảo mục đích vay)
         SC-->>LT: LOAN_DISBURSED + TxHash
+        Note over LT,F: Lộc Trời khấu trừ công nợ & tiến hành giao vật tư
     else Từ chối
         Bank->>SC: Từ chối
         SC-->>LT: SCF_REJECTED

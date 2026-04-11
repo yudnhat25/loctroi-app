@@ -58,7 +58,7 @@ const App = () => {
 
   // Modal states
   const [supplyModal, setSupplyModal] = useState({ isOpen: false, farmer: null, supplyId: "S001", quantity: 1, season: "Vụ Hè Thu 2025" });
-  const [oracleModal, setOracleModal] = useState({ isOpen: false, status: "idle", invoiceId: null });
+  const [oracleModal, setOracleModal] = useState({ isOpen: false, status: "idle", invoiceId: null, nongHoId: null });
   const [scfModal, setScfModal] = useState({ isOpen: false, status: "idle", data: null, hash: null });
   const [disasterModal, setDisasterModal] = useState({ isOpen: false, step: 0, data: null, insuranceAmount: null, recourseAmount: null });
   const [ledgerOpen, setLedgerOpen] = useState(false);
@@ -97,7 +97,7 @@ const App = () => {
     const newTx = { id: generateId("TX-"), nongHoId: farmer.id, vatTu: supply.ten, soLuong: qty, vuMua: season, ngay: new Date().toISOString(), trangThai: "Đã giao", hash };
     logBlockchain("SUPPLY_ISSUED", `Lộc Trời CẤP DUYỆT ${qty} ${supply.donVi} ${supply.ten} cho ${farmer.hoTen} (${season})`, hash);
     setTransactions(prev => [newTx, ...prev]);
-    
+
     const amount = qty * supply.donGia;
     const riskLevel = farmer.kpiScore > 80 ? "LOW" : farmer.kpiScore >= 60 ? "MEDIUM" : "HIGH";
     const newInvoice = {
@@ -121,7 +121,7 @@ const App = () => {
   const handleRejectSupplyRequest = (req) => {
     const { farmer, supplyId, quantity, season } = req;
     const supply = supplies.find(s => s.id === supplyId);
-    
+
     // Remove from pending requests
     setSupplyRequests(prev => prev.filter(r => r.id !== req.id));
 
@@ -130,17 +130,28 @@ const App = () => {
   };
 
   const handleVerifyField = (invoice) => {
-    setOracleModal({ isOpen: true, status: "loading", invoiceId: invoice.id });
+    setOracleModal({ isOpen: true, status: "loading", invoiceId: invoice.id, nongHoId: invoice.nongHoId });
     setTimeout(() => {
-      setOracleModal(m => ({ ...m, status: "success" }));
-      setTimeout(() => {
-        const hash = generateHash();
-        const tokenId = `TKN-${hash.substring(0, 6).toUpperCase()}`;
-        setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Đã token hóa", tokenId } : inv));
-        logBlockchain("INVOICE_TOKENIZED", `Mã HĐ: ${invoice.id} → Token: ${tokenId}`, hash);
-        showToast(`✅ Phát hành ${tokenId} thành công`);
-        setOracleModal({ isOpen: false, status: "idle", invoiceId: null });
-      }, 1500);
+      if (invoice.nongHoId === "#LT-004") {
+        setOracleModal(m => ({ ...m, status: "failed" }));
+        setTimeout(() => {
+          const hash = generateHash();
+          setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Cảnh báo và Điều tra" } : inv));
+          logBlockchain("ORACLE_REJECTED", `Oracle: HĐ ${invoice.id} bị từ chối do vi phạm quy chuẩn Độ sạch lúa (SRP)`, hash);
+          showToast(`❌ Từ chối Token hóa: Vi phạm thực địa`);
+          setOracleModal({ isOpen: false, status: "idle", invoiceId: null, nongHoId: null });
+        }, 3000);
+      } else {
+        setOracleModal(m => ({ ...m, status: "success" }));
+        setTimeout(() => {
+          const hash = generateHash();
+          const tokenId = `TKN-${hash.substring(0, 6).toUpperCase()}`;
+          setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Đã token hóa", tokenId } : inv));
+          logBlockchain("INVOICE_TOKENIZED", `Mã HĐ: ${invoice.id} → Token: ${tokenId}`, hash);
+          showToast(`✅ Phát hành ${tokenId} thành công`);
+          setOracleModal({ isOpen: false, status: "idle", invoiceId: null, nongHoId: null });
+        }, 1500);
+      }
     }, 8500);
   };
 
@@ -170,13 +181,13 @@ const App = () => {
     // Thu hoạch & Tất toán chuẩn (Happy Path)
     setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Đã tất toán" } : inv));
     logBlockchain("LOAN_REPAID_ON_TIME", `HĐ ${invoice.id} được tất toán đúng hạn từ tiền lúa. Token ${invoice.tokenId} đã bị đốt (Burn). Lợi nhuận ghi nhận về Nông dân.`);
-    
+
     // Nâng điểm tín nhiệm (KPI) và hạn mức tự động
     setFarmers(prev => prev.map(f => {
       if (f.id === invoice.nongHoId) {
         const newKpi = Math.min(100, f.kpiScore + 3);
         const newLimit = f.hanMucTinDung + 5000000;
-        logBlockchain("CREDIT_UPDATED", `Giao dịch uy tín. Hộ nông dân [${f.id}] nhận +3 KPI. Nâng hạn mức lên ${(newLimit/1000000).toFixed(0)}Tr VNĐ.`);
+        logBlockchain("CREDIT_UPDATED", `Giao dịch uy tín. Hộ nông dân [${f.id}] nhận +3 KPI. Nâng hạn mức lên ${(newLimit / 1000000).toFixed(0)}Tr VNĐ.`);
         return { ...f, kpiScore: newKpi, hanMucTinDung: newLimit };
       }
       return f;
@@ -198,7 +209,7 @@ const App = () => {
     // Bước 2: Oracle xác nhận thiên tai → Bảo hiểm kích hoạt
     setTimeout(() => {
       const insuranceAmount = Math.round(invoice.amount * 0.8);
-      const recourseAmount  = Math.round(invoice.amount * 0.2);
+      const recourseAmount = Math.round(invoice.amount * 0.2);
       setInvoices(prev => prev.map(inv =>
         inv.id === invoice.id
           ? { ...inv, recourseStatus: "INSURANCE_CLAIMED", insurancePayout: insuranceAmount }
@@ -261,7 +272,8 @@ const App = () => {
 
   return (
     <div className="flex w-screen h-screen overflow-hidden bg-slate-50" style={{ fontFamily: "'Inter', sans-serif" }}>
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
         .fade-in { animation: fadeIn 0.35s ease-out forwards; }
         @keyframes spinAnim { to { transform: rotate(360deg); } }
@@ -274,11 +286,11 @@ const App = () => {
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
       `}} />
 
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        blockchainLog={blockchainLog} 
-        invoices={invoices} 
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        blockchainLog={blockchainLog}
+        invoices={invoices}
         role={currentUser.role}
         onLogout={handleLogout}
       />
@@ -312,7 +324,7 @@ const App = () => {
               <FarmerPortalTab {...sharedProps}
                 farmer={currentUser?.profile}
                 onSubmitSCF={handleSubmitSCF}
-                onRequestSupply={(farmer) => setSupplyModal(m => ({ ...m, isOpen: true, farmer }))} 
+                onRequestSupply={(farmer) => setSupplyModal(m => ({ ...m, isOpen: true, farmer }))}
               />
             )}
           </div>
