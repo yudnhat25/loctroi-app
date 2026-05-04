@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>Lộc Trời — 30 Năm Cùng Nông Dân Phát Triển Bền Vững</title>
+<style>
+  :root {
+    --lt-green-deep: #0c5a2c;
+    --lt-green: #1f8a3d;
+    --lt-green-bright: #34c759;
+    --lt-yellow: #f5c518;
+    --lt-sun: #f5a524;
+    --lt-cream: #fff7e0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    min-height: 100vh;
+    background: #0a3d1c;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    max-width: 1000px;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    overflow: hidden;
+    background: #0a3d1c;
+  }
+
+  /* base hero artwork */
+  .hero {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+  }
+
+  /* sky overlay where UAVs fly — top ~45% of the image */
+  .sky-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 45%;
+    z-index: 5;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  /* ============ UAV ============ */
+  .uav {
+    position: absolute;
+    width: 130px;
+    height: 60px;
+    transform-origin: center;
+    will-change: transform;
+    filter: drop-shadow(0 6px 8px rgba(0,0,0,0.25));
+  }
+  .uav.small { width: 70px; height: 32px; opacity: 0.85; }
+  .uav.tiny { width: 42px; height: 20px; opacity: 0.7; }
+
+  /* fly path 1 — left to right, mid-sky */
+  .uav-1 {
+    top: 22%;
+    left: -15%;
+    animation: fly1 18s linear infinite;
+  }
+  @keyframes fly1 {
+    0%   { transform: translate(0, 0) rotate(-2deg); }
+    25%  { transform: translate(35vw, -10px) rotate(1deg); }
+    50%  { transform: translate(70vw, 8px) rotate(-1deg); }
+    75%  { transform: translate(95vw, -6px) rotate(2deg); }
+    100% { transform: translate(130vw, 4px) rotate(-2deg); }
+  }
+
+  /* fly path 2 — right to left, higher */
+  .uav-2 {
+    top: 8%;
+    right: -15%;
+    animation: fly2 24s linear infinite;
+    animation-delay: -6s;
+  }
+  @keyframes fly2 {
+    0%   { transform: translate(0, 0) rotate(2deg) scaleX(-1); }
+    50%  { transform: translate(-65vw, 12px) rotate(-2deg) scaleX(-1); }
+    100% { transform: translate(-130vw, 0) rotate(2deg) scaleX(-1); }
+  }
+
+  /* tiny far-away one */
+  .uav-3 {
+    top: 14%;
+    left: -10%;
+    animation: fly3 30s linear infinite;
+    animation-delay: -10s;
+  }
+  @keyframes fly3 {
+    0%   { transform: translate(0, 0) rotate(-1deg); }
+    100% { transform: translate(120vw, -10px) rotate(1deg); }
+  }
+
+  /* gentle bob on top of fly path */
+  .uav .body-wrap {
+    width: 100%;
+    height: 100%;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+  .uav-2 .body-wrap { animation-duration: 2.8s; animation-delay: -0.6s; }
+  .uav-3 .body-wrap { animation-duration: 3.1s; animation-delay: -1.2s; }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-4px); }
+  }
+
+  /* rotor blur — fast spinning blades */
+  .rotor {
+    transform-origin: center;
+    animation: spin 0.06s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* navigation light blink */
+  .nav-light {
+    animation: blink 1s steps(2, end) infinite;
+  }
+  .nav-light.green { animation-delay: 0.5s; }
+  @keyframes blink {
+    0%, 49%   { opacity: 1; }
+    50%, 100% { opacity: 0.15; }
+  }
+
+  /* spray mist falling from the lead UAV */
+  .spray {
+    position: absolute;
+    left: 28%;
+    top: 70%;
+    width: 60%;
+    height: 40px;
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  .spray span {
+    position: absolute;
+    bottom: 0;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.95), rgba(200,230,255,0));
+    animation: fall 1.6s linear infinite;
+  }
+
+  @keyframes fall {
+    0%   { transform: translate(0, -8px) scale(0.6); opacity: 0; }
+    20%  { opacity: 0.9; }
+    100% { transform: translate(var(--dx, 0), 60px) scale(1); opacity: 0; }
+  }
+
+  /* sun rays / atmospheric glow on top */
+  .glow {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 50%;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,240,200,0.35), rgba(255,240,200,0) 60%);
+    pointer-events: none;
+    z-index: 4;
+    mix-blend-mode: screen;
+  }
+
+  /* clouds drift slowly */
+  .cloud {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.55), rgba(255,255,255,0));
+    filter: blur(8px);
+    pointer-events: none;
+  }
+  .cloud-1 { top: 6%;  left: -20%; width: 280px; height: 80px; animation: drift 60s linear infinite; }
+  .cloud-2 { top: 18%; left: -30%; width: 200px; height: 60px; animation: drift 90s linear infinite; animation-delay: -30s; opacity: 0.7; }
+  @keyframes drift {
+    from { transform: translateX(0); }
+    to   { transform: translateX(140vw); }
+  }
+
+  /* subtle vignette so UAVs read clearly against the bright sky */
+  .vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.18) 100%);
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  /* small floating banner badge to anchor brand */
+  .anniv-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: rgba(12, 90, 44, 0.92);
+    border: 1.5px solid rgba(245, 197, 24, 0.9);
+    border-radius: 999px;
+    color: #fff7e0;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 6px 22px rgba(0,0,0,0.25);
+  }
+  .anniv-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--lt-yellow);
+    box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.25);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.25); }
+    50%      { box-shadow: 0 0 0 8px rgba(245, 197, 24, 0); }
+  }
+</style>
+</head>
+<body>
+  <div class="stage" data-screen-label="Loc Troi 30 Years Hero">
+
+    <!-- base illustration -->
+    <img class="hero" src="assets/loctroi-30nam.png" alt="Lộc Trời 30 năm cùng nông dân phát triển bền vững" />
+
+    <!-- atmospheric extras -->
+    <div class="glow"></div>
+    <div class="vignette"></div>
+
+    <!-- floating UAV layer -->
+    <div class="sky-layer" aria-hidden="true">
+
+      <div class="cloud cloud-1"></div>
+      <div class="cloud cloud-2"></div>
+
+      <!-- UAV 1: lead drone, larger, with spray -->
+      <div class="uav uav-1">
+        <div class="body-wrap">
+          <svg viewBox="0 0 260 120" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <!-- arms -->
+            <g stroke="#1a1a1a" stroke-width="6" stroke-linecap="round">
+              <line x1="60"  y1="60" x2="20"  y2="30" />
+              <line x1="60"  y1="60" x2="20"  y2="90" />
+              <line x1="200" y1="60" x2="240" y2="30" />
+              <line x1="200" y1="60" x2="240" y2="90" />
+            </g>
+
+            <!-- main body -->
+            <ellipse cx="130" cy="62" rx="70" ry="22" fill="#d9342b" />
+            <ellipse cx="130" cy="58" rx="70" ry="20" fill="#ef4a3f" />
+            <!-- top fin / camera -->
+            <rect x="118" y="40" width="24" height="14" rx="3" fill="#1a1a1a" />
+            <circle cx="130" cy="68" r="6" fill="#222" />
+            <circle cx="130" cy="68" r="3" fill="#5ac8fa" />
+            <!-- side accent -->
+            <rect x="80" y="56" width="100" height="3" fill="#fff" opacity="0.7" />
+            <!-- tank below -->
+            <rect x="108" y="76" width="44" height="14" rx="4" fill="#fff" opacity="0.85" />
+            <rect x="112" y="78" width="36" height="3" fill="#1f8a3d" />
+
+            <!-- rotor hubs -->
+            <circle cx="20"  cy="30" r="6" fill="#1a1a1a" />
+            <circle cx="20"  cy="90" r="6" fill="#1a1a1a" />
+            <circle cx="240" cy="30" r="6" fill="#1a1a1a" />
+            <circle cx="240" cy="90" r="6" fill="#1a1a1a" />
+
+            <!-- spinning rotor disks (blurred) -->
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 20px 30px;">
+              <ellipse cx="20" cy="30" rx="22" ry="3" fill="rgba(40,40,40,0.45)" />
+              <ellipse cx="20" cy="30" rx="3" ry="22" fill="rgba(40,40,40,0.25)" />
+            </g>
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 20px 90px; animation-delay: -0.02s;">
+              <ellipse cx="20" cy="90" rx="22" ry="3" fill="rgba(40,40,40,0.45)" />
+              <ellipse cx="20" cy="90" rx="3" ry="22" fill="rgba(40,40,40,0.25)" />
+            </g>
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 240px 30px; animation-delay: -0.04s;">
+              <ellipse cx="240" cy="30" rx="22" ry="3" fill="rgba(40,40,40,0.45)" />
+              <ellipse cx="240" cy="30" rx="3" ry="22" fill="rgba(40,40,40,0.25)" />
+            </g>
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 240px 90px; animation-delay: -0.03s;">
+              <ellipse cx="240" cy="90" rx="22" ry="3" fill="rgba(40,40,40,0.45)" />
+              <ellipse cx="240" cy="90" rx="3" ry="22" fill="rgba(40,40,40,0.25)" />
+            </g>
+
+            <!-- nav lights -->
+            <circle class="nav-light" cx="60"  cy="60" r="3" fill="#ff3b30" />
+            <circle class="nav-light green" cx="200" cy="60" r="3" fill="#34c759" />
+
+            <!-- spray nozzle mist -->
+            <g opacity="0.55">
+              <path d="M 110 90 L 100 110 L 120 110 Z" fill="rgba(255,255,255,0.7)" />
+              <path d="M 150 90 L 140 110 L 160 110 Z" fill="rgba(255,255,255,0.7)" />
+            </g>
+          </svg>
+
+          <!-- spray particles -->
+          <div class="spray">
+            <span style="left:10%;  --dx:-2px; animation-delay: 0s;"></span>
+            <span style="left:18%;  --dx: 1px; animation-delay: 0.2s;"></span>
+            <span style="left:26%;  --dx:-1px; animation-delay: 0.4s;"></span>
+            <span style="left:34%;  --dx: 2px; animation-delay: 0.1s;"></span>
+            <span style="left:42%;  --dx: 0px; animation-delay: 0.5s;"></span>
+            <span style="left:50%;  --dx: 1px; animation-delay: 0.3s;"></span>
+            <span style="left:58%;  --dx:-2px; animation-delay: 0.7s;"></span>
+            <span style="left:66%;  --dx: 2px; animation-delay: 0.6s;"></span>
+            <span style="left:74%;  --dx:-1px; animation-delay: 0.9s;"></span>
+            <span style="left:82%;  --dx: 1px; animation-delay: 0.4s;"></span>
+            <span style="left:90%;  --dx: 0px; animation-delay: 0.8s;"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- UAV 2: smaller, mirrored, going right→left -->
+      <div class="uav small uav-2">
+        <div class="body-wrap">
+          <svg viewBox="0 0 260 120" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#1a1a1a" stroke-width="6" stroke-linecap="round">
+              <line x1="60"  y1="60" x2="20"  y2="30" />
+              <line x1="60"  y1="60" x2="20"  y2="90" />
+              <line x1="200" y1="60" x2="240" y2="30" />
+              <line x1="200" y1="60" x2="240" y2="90" />
+            </g>
+            <ellipse cx="130" cy="62" rx="70" ry="22" fill="#0c5a2c" />
+            <ellipse cx="130" cy="58" rx="70" ry="20" fill="#1f8a3d" />
+            <rect x="118" y="40" width="24" height="14" rx="3" fill="#1a1a1a" />
+            <circle cx="130" cy="68" r="6" fill="#222" />
+            <circle cx="130" cy="68" r="3" fill="#f5c518" />
+            <rect x="80" y="56" width="100" height="3" fill="#f5c518" opacity="0.85" />
+            <rect x="108" y="76" width="44" height="12" rx="4" fill="#fff" opacity="0.9" />
+
+            <circle cx="20"  cy="30" r="6" fill="#1a1a1a" />
+            <circle cx="20"  cy="90" r="6" fill="#1a1a1a" />
+            <circle cx="240" cy="30" r="6" fill="#1a1a1a" />
+            <circle cx="240" cy="90" r="6" fill="#1a1a1a" />
+
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 20px 30px;">
+              <ellipse cx="20" cy="30" rx="22" ry="3" fill="rgba(40,40,40,0.4)" />
+              <ellipse cx="20" cy="30" rx="3" ry="22" fill="rgba(40,40,40,0.2)" />
+            </g>
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 20px 90px; animation-delay: -0.02s;">
+              <ellipse cx="20" cy="90" rx="22" ry="3" fill="rgba(40,40,40,0.4)" />
+              <ellipse cx="20" cy="90" rx="3" ry="22" fill="rgba(40,40,40,0.2)" />
+            </g>
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 240px 30px; animation-delay: -0.04s;">
+              <ellipse cx="240" cy="30" rx="22" ry="3" fill="rgba(40,40,40,0.4)" />
+              <ellipse cx="240" cy="30" rx="3" ry="22" fill="rgba(40,40,40,0.2)" />
+            </g>
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 240px 90px; animation-delay: -0.03s;">
+              <ellipse cx="240" cy="90" rx="22" ry="3" fill="rgba(40,40,40,0.4)" />
+              <ellipse cx="240" cy="90" rx="3" ry="22" fill="rgba(40,40,40,0.2)" />
+            </g>
+
+            <circle class="nav-light" cx="60"  cy="60" r="3" fill="#ff3b30" />
+            <circle class="nav-light green" cx="200" cy="60" r="3" fill="#f5c518" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- UAV 3: tiny, far-away -->
+      <div class="uav tiny uav-3">
+        <div class="body-wrap">
+          <svg viewBox="0 0 260 120" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#1a1a1a" stroke-width="6" stroke-linecap="round">
+              <line x1="60"  y1="60" x2="20"  y2="30" />
+              <line x1="60"  y1="60" x2="20"  y2="90" />
+              <line x1="200" y1="60" x2="240" y2="30" />
+              <line x1="200" y1="60" x2="240" y2="90" />
+            </g>
+            <ellipse cx="130" cy="60" rx="65" ry="20" fill="#d9342b" />
+            <rect x="80" y="56" width="100" height="3" fill="#fff" opacity="0.7" />
+            <rect x="118" y="42" width="24" height="12" rx="3" fill="#1a1a1a" />
+
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 20px 30px;">
+              <ellipse cx="20" cy="30" rx="22" ry="3" fill="rgba(40,40,40,0.3)" />
+            </g>
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 20px 90px;">
+              <ellipse cx="20" cy="90" rx="22" ry="3" fill="rgba(40,40,40,0.3)" />
+            </g>
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 240px 30px;">
+              <ellipse cx="240" cy="30" rx="22" ry="3" fill="rgba(40,40,40,0.3)" />
+            </g>
+            <g class="rotor" style="transform-box: fill-box; transform-origin: 240px 90px;">
+              <ellipse cx="240" cy="90" rx="22" ry="3" fill="rgba(40,40,40,0.3)" />
+            </g>
+          </svg>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- floating brand badge -->
+    <div class="anniv-badge">
+      <span class="dot"></span>
+      <span>1993 — 2023 · 30 NĂM</span>
+    </div>
+
+  </div>
+</body>
+</html>
