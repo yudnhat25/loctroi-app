@@ -1,48 +1,95 @@
-const getKPIBadge = (score) => {
-  if (score < 60) return <span className="bg-red-100 text-red-700 text-xs px-2.5 py-1 rounded-full font-bold">{score}</span>;
-  if (score <= 80) return <span className="bg-orange-100 text-orange-700 text-xs px-2.5 py-1 rounded-full font-bold">{score}</span>;
-  return <span className="bg-green-100 text-green-700 text-xs px-2.5 py-1 rounded-full font-bold">{score}</span>;
-};
+import { getTier, getOverallScore, MAX_FARMING } from "../lib/scoring";
 
 const FarmersTab = ({ farmers, supplies, supplyRequests, blockchainLog, onApproveRequest, onRejectRequest, formatVND }) => {
+  // Phân bổ tier
+  const tierCounts = farmers.reduce((acc, f) => {
+    const t = getTier(f).code;
+    acc[t] = (acc[t] || 0) + 1;
+    return acc;
+  }, {});
   return (
     <div className="space-y-6 fade-in pb-10">
+      {/* Tier distribution summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {["A", "B", "C", "D"].map(code => {
+          const colors = {
+            A: "from-emerald-500 to-green-600",
+            B: "from-cyan-500 to-blue-500",
+            C: "from-amber-400 to-orange-500",
+            D: "from-rose-500 to-red-600",
+          };
+          const labels = { A: "VIP — Trả sau 100%", B: "Tin cậy — Trả sau 50%", C: "Phổ thông — Tiền mặt", D: "Cảnh báo — Cọc 30%" };
+          return (
+            <div key={code} className={`bg-gradient-to-br ${colors[code]} rounded-2xl p-4 text-white shadow-md`}>
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider opacity-90">Tier {code}</span>
+                <span className="text-3xl font-bold">{tierCounts[code] || 0}</span>
+              </div>
+              <p className="text-[11px] mt-1 opacity-90">{labels[code]}</p>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Farmer Table */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
           <h2 className="text-base font-bold text-gray-800">Danh sách Hộ Nông dân liên kết</h2>
-          <span className="text-xs text-slate-500 font-semibold">{farmers.length} hộ đăng ký</span>
+          <span className="text-xs text-slate-500 font-semibold">{farmers.length} hộ đăng ký · Hộ chiếu số trên blockchain</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-100">
               <tr>
-                <th className="px-5 py-3 text-left">Mã ID</th>
-                <th className="px-5 py-3 text-left">Họ tên</th>
-                <th className="px-5 py-3 text-left">Địa chỉ</th>
-                <th className="px-5 py-3 text-center">Diện tích</th>
-                <th className="px-5 py-3 text-center">KPI</th>
-                <th className="px-5 py-3 text-right">Hạn mức TD</th>
-                <th className="px-5 py-3 text-center">Trạng thái</th>
+                <th className="px-4 py-3 text-left">Digital ID</th>
+                <th className="px-4 py-3 text-left">Họ tên / HTX</th>
+                <th className="px-4 py-3 text-center">Diện tích</th>
+                <th className="px-4 py-3 text-center">Tier</th>
+                <th className="px-4 py-3 text-center">Credit / Farming</th>
+                <th className="px-4 py-3 text-center">Overall</th>
+                <th className="px-4 py-3 text-right">Hạn mức</th>
               </tr>
             </thead>
             <tbody>
-              {farmers.map(f => (
-                <tr key={f.id} className="border-b border-slate-50 last:border-0 hover:bg-green-50/40 transition-colors">
-                  <td className="px-5 py-4 font-mono font-bold text-slate-700 text-xs">{f.id}</td>
-                  <td className="px-5 py-4 font-bold text-gray-800 whitespace-nowrap">{f.hoTen}</td>
-                  <td className="px-5 py-4 text-slate-500 whitespace-nowrap text-xs">{f.diaChi}</td>
-                  <td className="px-5 py-4 text-center font-semibold">{f.dienTich} ha</td>
-                  <td className="px-5 py-4 text-center">{getKPIBadge(f.kpiScore)}</td>
-                  <td className="px-5 py-4 text-right font-bold text-green-700 whitespace-nowrap">{formatVND(f.hanMucTinDung)}</td>
-                  <td className="px-5 py-4 text-center">
-                    <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold ${f.trangThai === "Đang canh tác" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${f.trangThai === "Đang canh tác" ? "bg-green-500" : "bg-red-500"}`}></span>
-                      {f.trangThai}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {farmers.map(f => {
+                const tier = getTier(f);
+                const overall = getOverallScore(f);
+                const fsPct = Math.round(((f.farmingScore ?? 0) / MAX_FARMING) * 100);
+                return (
+                  <tr key={f.id} className="border-b border-slate-50 last:border-0 hover:bg-green-50/40 transition-colors">
+                    <td className="px-4 py-3 font-mono font-bold text-slate-700 text-[11px]">{f.digitalId ?? f.id}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-bold text-gray-800 whitespace-nowrap text-sm">{f.hoTen}</div>
+                      <div className="text-[10px] text-slate-400 whitespace-nowrap">{f.htx ?? f.diaChi}</div>
+                    </td>
+                    <td className="px-4 py-3 text-center font-semibold text-xs">{f.dienTich} ha</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border font-bold ${tier.badge}`}>Tier {tier.code}</span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="text-[10px]">
+                          <div className="text-cyan-700 font-bold">C: {f.creditScore ?? 0}/400</div>
+                          <div className="text-emerald-700 font-bold">F: {f.farmingScore ?? 0}/600</div>
+                        </div>
+                        <div className="w-16 space-y-1">
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-cyan-500" style={{ width: `${((f.creditScore ?? 0) / 400) * 100}%` }} />
+                          </div>
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500" style={{ width: `${fsPct}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="font-bold text-gray-900">{overall}</div>
+                      <div className="text-[10px] text-slate-400">/1000</div>
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-green-700 whitespace-nowrap text-xs">{formatVND(f.hanMucTinDung)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -77,52 +124,55 @@ const FarmersTab = ({ farmers, supplies, supplyRequests, blockchainLog, onApprov
              Hoàn tất tất cả. Không có yêu cầu vật tư nào cần duyệt từ Hộ Nông dân.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase border-b border-slate-100">
-                <tr>
-                  <th className="px-5 py-3 text-left">Mã YC</th>
-                  <th className="px-5 py-3 text-left">Hộ Nông dân</th>
-                  <th className="px-5 py-3 text-left">Vật tư requested</th>
-                  <th className="px-5 py-3 text-left">Vụ mùa</th>
-                  <th className="px-5 py-3 text-right">Tổng giá trị</th>
-                  <th className="px-5 py-3 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {supplyRequests.map(req => {
-                  const supply = supplies.find(s => s.id === req.supplyId);
-                  const total = req.quantity * (supply?.donGia || 0);
-                  return (
-                    <tr key={req.id} className="border-b border-slate-50 last:border-0 hover:bg-green-50/40">
-                      <td className="px-5 py-4 font-mono font-bold text-slate-500 text-xs">{req.id}</td>
-                      <td className="px-5 py-4 font-bold text-gray-900">{req.farmer.hoTen}</td>
-                      <td className="px-5 py-4 text-slate-700">
-                        <span className="font-bold">{req.quantity}</span> {supply?.donVi} {supply?.ten}
-                      </td>
-                      <td className="px-5 py-4 text-slate-500 text-xs">{req.season}</td>
-                      <td className="px-5 py-4 text-right font-bold text-orange-600">{formatVND(total)}</td>
-                      <td className="px-5 py-4 text-center">
-                        <div className="flex justify-center gap-2">
-                          <div
-                            onClick={() => onRejectRequest(req)}
-                            className="inline-flex items-center justify-center border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-sm whitespace-nowrap select-none"
-                          >
-                            Từ chối
-                          </div>
-                          <div
-                            onClick={() => onApproveRequest(req)}
-                            className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-sm whitespace-nowrap select-none"
-                          >
-                            Duyệt cấp phát
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+          <div className="divide-y divide-slate-100">
+            {supplyRequests.map(req => {
+              const items = req.items ?? [];
+              return (
+                <div key={req.id} className="p-4 hover:bg-green-50/40">
+                  <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-mono font-bold text-slate-700 text-xs">{req.id}</span>
+                        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-bold">Tier {req.chosenTier}</span>
+                        <span className="text-[10px] text-slate-400">{req.season}</span>
+                      </div>
+                      <div className="font-bold text-gray-900 text-sm">{req.farmer.hoTen}</div>
+                      <div className="text-[11px] text-slate-500">{req.farmer.htx ?? req.farmer.diaChi} · {req.farmer.dienTich} ha · {req.farmer.digitalId ?? req.farmer.id}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] text-slate-400 font-bold uppercase">Tổng giá trị</div>
+                      <div className="text-base font-bold text-orange-600">{formatVND(req.total ?? 0)}</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 rounded-lg p-2 border border-slate-200 mb-3">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">{items.length} loại vật tư:</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {items.map((it, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 bg-white border border-slate-200 rounded px-2 py-0.5 text-xs">
+                          <b>{it.quantity}</b> {it.donVi} {it.ten}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <div
+                      onClick={() => onRejectRequest(req)}
+                      className="inline-flex items-center justify-center border border-red-200 text-red-600 hover:bg-red-50 px-4 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-sm select-none"
+                    >
+                      Từ chối
+                    </div>
+                    <div
+                      onClick={() => onApproveRequest(req)}
+                      className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-sm select-none"
+                    >
+                      Duyệt cấp phát → Tài xế giao
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
