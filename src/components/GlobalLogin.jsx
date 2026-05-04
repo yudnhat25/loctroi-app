@@ -1,262 +1,380 @@
-import { useState } from "react";
-import { LT_SUBROLES, SUBROLE_ORDER } from "../lib/staff";
+import { useMemo, useState } from "react";
+import { LT_SUBROLES } from "../lib/staff";
+import { getTier } from "../lib/scoring";
 
-// 3 cổng chính: Lộc Trời / Bank / Farmer
-// Lộc Trời chia 5 sub-role × nhiều nhân sự, mỗi nhân sự có account riêng + KPI cá nhân.
+// Login redesign theo mockup: split-screen, hero trái + form phải, 3 tabs trên đầu.
+// Vẫn giữ đủ 3 vai (Nông dân / Lộc Trời / Ngân hàng) + 5 sub-role nội bộ Lộc Trời.
+
+const TABS = [
+  { id: "farmer",  vi: "Nông dân",  en: "FARMER",       color: "green"  },
+  { id: "loctroi", vi: "Lộc Trời",  en: "STAFF",        color: "emerald"},
+  { id: "bank",    vi: "Ngân hàng", en: "BANK SCF",     color: "orange" },
+];
+
+const DEMO_PASSWORD = "123456";
+
 const GlobalLogin = ({ farmers, staff, onLogin }) => {
-  const [mode, setMode] = useState("portal"); // portal | bank | farmer | loctroi-subrole | loctroi-staff
-  const [subrole, setSubrole] = useState(null); // for loctroi
-  const [selectedStaff, setSelectedStaff] = useState(null);
-  const [selectedFarmer, setSelectedFarmer] = useState(null);
-  const [pin, setPin] = useState("");
+  const [tab, setTab] = useState("farmer");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedFarmer, setSelectedFarmer] = useState(farmers[0] ?? null);
+  const [selectedStaff, setSelectedStaff] = useState(staff[0] ?? null);
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState("");
 
-  const reset = () => { setMode("portal"); setSubrole(null); setSelectedStaff(null); setSelectedFarmer(null); setPin(""); setError(""); };
+  const accentMap = {
+    green:   { btn: "bg-emerald-700 hover:bg-emerald-800", ring: "focus:ring-emerald-200 focus:border-emerald-500", under: "bg-emerald-700", text: "text-emerald-700", check: "accent-emerald-700" },
+    emerald: { btn: "bg-emerald-700 hover:bg-emerald-800", ring: "focus:ring-emerald-200 focus:border-emerald-500", under: "bg-emerald-700", text: "text-emerald-700", check: "accent-emerald-700" },
+    orange:  { btn: "bg-orange-600 hover:bg-orange-700",   ring: "focus:ring-orange-200 focus:border-orange-500",   under: "bg-orange-600",  text: "text-orange-700",  check: "accent-orange-600" },
+  };
+  const accent = accentMap[TABS.find(t => t.id === tab).color];
+
+  // ─── Stats ─────────────────────────────────────────────
+  const stats = useMemo(() => ({
+    hoThamGia: farmers.length * 124 + 5,            // mock số đẹp gần 1,245
+    haDBSCL:  farmers.reduce((s,f)=>s+f.dienTich,0) * 110 + 12,
+    blocks:   48000 + Math.floor(Math.random()*600),
+  }), [farmers]);
 
   const handleSubmit = () => {
-    if (mode === "farmer" && !selectedFarmer) return setError("Vui lòng chọn tài khoản hộ nông dân.");
-    if (mode === "loctroi-staff" && !selectedStaff) return setError("Vui lòng chọn nhân sự.");
-    if (pin !== "1234") return setError("Sai mã PIN. (Demo: 1234)");
+    if (password !== DEMO_PASSWORD) return setError("Sai mật khẩu. Demo: 123456");
     setError("");
-
-    if (mode === "loctroi-staff") {
-      onLogin({ role: "loctroi", subrole: selectedStaff.subrole, profile: selectedStaff });
-    } else if (mode === "farmer") {
+    if (tab === "farmer") {
+      if (!selectedFarmer) return setError("Chọn 1 hộ nông dân.");
       onLogin({ role: "farmer", profile: selectedFarmer });
-    } else if (mode === "bank") {
+    } else if (tab === "loctroi") {
+      if (!selectedStaff) return setError("Chọn nhân sự Lộc Trời.");
+      onLogin({ role: "loctroi", subrole: selectedStaff.subrole, profile: selectedStaff });
+    } else {
       onLogin({ role: "bank", profile: { id: "BANK-001", hoTen: "Liên minh Ngân hàng", chucDanh: "SCF Underwriter" } });
     }
   };
 
-  // ─── Portal (3 cổng chính) ─────────────────────────────────────────────────
-  if (mode === "portal") {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 fade-in" style={{ fontFamily: "'Inter', sans-serif" }}>
-        <div className="text-center mb-12">
-          <div className="text-6xl mb-6">🌾</div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">LocTroi AgriChain</h1>
-          <p className="text-slate-500 mt-3 text-lg">Hệ sinh thái Blockchain Tài trợ Nông nghiệp</p>
-          <p className="text-xs text-slate-400 mt-2">Chọn vai trò để truy cập hệ thống</p>
-        </div>
+  return (
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* ─── LEFT: Hero illustration + stats ─────────────────────────────── */}
+      <div className="relative lg:w-1/2 min-h-[40vh] lg:min-h-screen overflow-hidden bg-gradient-to-br from-amber-100 via-yellow-50 to-emerald-100">
+        <HeroSvg />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
-          <div onClick={() => setMode("loctroi-subrole")} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center cursor-pointer hover:-translate-y-2 hover:shadow-xl transition-all duration-300 group ring-2 ring-transparent hover:ring-blue-100 select-none">
-            <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6 group-hover:scale-110 transition-transform shadow-inner">🏢</div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Tập đoàn Lộc Trời</h2>
-            <p className="text-sm text-slate-500">5 vai trò: Quản lý · 3 Cùng · Drone · Tài xế · Thu mua</p>
-            <div className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-              {staff?.length ?? 6} nhân sự
-            </div>
+        {/* Bottom info overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-10 z-10">
+          <div className="text-[10px] font-mono font-bold tracking-[0.25em] text-emerald-800/70 uppercase mb-3">
+            ⛓ Hyperledger · LocTroi-AgriChain-v2
           </div>
+          <h1 className="text-3xl lg:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight">
+            Lúa gạo Việt Nam<br/>
+            trên Blockchain.
+          </h1>
+          <p className="text-sm text-slate-700 mt-3 max-w-md leading-relaxed">
+            Hệ thống quản lý hộ nông dân, vật tư, tín dụng và bao tiêu —
+            từ ruộng đến gạo xuất khẩu — với mọi giao dịch ghi bất biến lên sổ cái phân tán.
+          </p>
 
-          <div onClick={() => setMode("bank")} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center cursor-pointer hover:-translate-y-2 hover:shadow-xl transition-all duration-300 group ring-2 ring-transparent hover:ring-orange-100 select-none">
-            <div className="w-20 h-20 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6 group-hover:scale-110 transition-transform shadow-inner">🏦</div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Liên Minh Ngân Hàng</h2>
-            <p className="text-sm text-slate-500">Cấp vốn ưu đãi, thẩm định hồ sơ điện tử và giải ngân tự động qua Smart Contract.</p>
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mt-6 max-w-md">
+            <Stat value={stats.hoThamGia.toLocaleString("vi-VN")} label="hộ tham gia" />
+            <Stat value={stats.haDBSCL.toLocaleString("vi-VN")} label="ha · ĐBSCL" />
+            <Stat value={stats.blocks.toLocaleString("vi-VN")} label="blocks ghi" />
           </div>
-
-          <div onClick={() => setMode("farmer")} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center cursor-pointer hover:-translate-y-2 hover:shadow-xl transition-all duration-300 group ring-2 ring-transparent hover:ring-green-100 select-none">
-            <div className="w-20 h-20 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6 group-hover:scale-110 transition-transform shadow-inner">👨‍🌾</div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Cổng Hộ Nông dân</h2>
-            <p className="text-sm text-slate-500">Hộ chiếu Số (Digital ID), đặt vật tư, ký SCF & báo thu hoạch.</p>
-            <div className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-              {farmers?.length ?? 0} hộ liên kết
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-16 text-center text-xs text-slate-400 font-mono tracking-widest uppercase">
-          Powered by Hyperledger Fabric · Chainlink Oracles · Computer Vision AI
         </div>
       </div>
-    );
-  }
 
-  // ─── Lộc Trời: chọn sub-role (5 vai trò nội bộ) ───────────────────────────
-  if (mode === "loctroi-subrole") {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 fade-in" style={{ fontFamily: "'Inter', sans-serif" }}>
-        <BackButton onClick={reset} />
-        <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-4xl">🏢</span>
+      {/* ─── RIGHT: Form ─────────────────────────────────────────────────── */}
+      <div className="lg:w-1/2 flex flex-col p-6 lg:p-12 xl:p-16 relative">
+        {/* Logo */}
+        <div className="flex items-center gap-3 mb-8 lg:mb-12">
+          <div className="w-12 h-12 bg-emerald-700 text-white rounded-xl flex items-center justify-center font-extrabold text-lg shadow-md">LT</div>
+          <div>
+            <div className="text-xl font-extrabold text-slate-900 tracking-wide leading-none">LỘC TRỜI</div>
+            <div className="text-[10px] font-bold text-emerald-700 tracking-[0.2em]">AGRICHAIN GROUP</div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Tập đoàn Lộc Trời</h1>
-          <p className="text-slate-500 mt-2">Chọn vai trò nghiệp vụ của bạn — mỗi vai trò có dashboard & KPI riêng</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-5xl">
-          {SUBROLE_ORDER.map(code => {
-            const sr = LT_SUBROLES[code];
-            const count = staff.filter(s => s.subrole === code).length;
+        {/* Headline */}
+        <div className="mb-6 max-w-md">
+          <h2 className="text-2xl lg:text-3xl font-extrabold text-slate-900 leading-tight">
+            Xác minh tài khoản Lộc Trời<br/>
+            để truy cập hệ thống AgriChain
+          </h2>
+          <p className="text-[10px] font-bold text-slate-500 tracking-[0.2em] mt-3">DÀNH CHO ĐỐI TÁC HỆ THỐNG</p>
+          <p className="text-xs text-slate-400 italic">Verify your LocTroi account to access the AgriChain platform</p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-slate-200 mb-6 max-w-md">
+          {TABS.map(t => {
+            const active = tab === t.id;
+            const a = accentMap[t.color];
             return (
-              <div
-                key={code}
-                onClick={() => { setSubrole(code); setMode("loctroi-staff"); }}
-                className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-all group select-none"
+              <button
+                key={t.id}
+                onClick={() => { setTab(t.id); setError(""); setPickerOpen(false); }}
+                className={`flex-1 pb-3 text-center transition-all relative ${active ? a.text : "text-slate-400 hover:text-slate-700"}`}
               >
-                <div className={`w-14 h-14 bg-gradient-to-br ${sr.color} rounded-xl flex items-center justify-center text-2xl mb-3 shadow-md`}>
-                  {sr.icon}
-                </div>
-                <h3 className="text-base font-bold text-gray-900">{sr.label}</h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed min-h-[3em]">{sr.desc}</p>
-                <div className={`mt-3 inline-flex items-center gap-1 text-[10px] font-bold ${sr.text} ${sr.bg} px-2 py-1 rounded-full`}>
-                  {count} nhân sự
-                </div>
-              </div>
+                <div className={`text-base font-bold ${active ? "" : "font-semibold"}`}>{t.vi}</div>
+                <div className="text-[10px] font-bold tracking-[0.15em] mt-0.5">{t.en}</div>
+                {active && <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${a.under} rounded-full`}></div>}
+              </button>
             );
           })}
         </div>
-      </div>
-    );
-  }
 
-  // ─── Lộc Trời: chọn nhân sự cụ thể trong sub-role + nhập PIN ──────────────
-  if (mode === "loctroi-staff") {
-    const sr = LT_SUBROLES[subrole];
-    const list = staff.filter(s => s.subrole === subrole);
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 fade-in" style={{ fontFamily: "'Inter', sans-serif" }}>
-        <div className="w-full max-w-md">
-          <div className="text-center mb-6 relative">
-            <div onClick={() => { setMode("loctroi-subrole"); setError(""); setPin(""); setSelectedStaff(null); }} className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white shadow-sm border border-slate-200 hover:bg-slate-50 rounded-full cursor-pointer">
-              <span className="text-slate-600 font-bold">←</span>
+        {/* Form */}
+        <div className="max-w-md w-full space-y-5">
+          {/* Account picker — chỉ hiện cho farmer & loctroi */}
+          {tab !== "bank" && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-2">
+                Tài khoản <span className="text-slate-400 italic font-normal">/ Account</span>
+              </label>
+              <AccountPicker
+                tab={tab}
+                farmers={farmers}
+                staff={staff}
+                selectedFarmer={selectedFarmer}
+                selectedStaff={selectedStaff}
+                onPickFarmer={(f) => { setSelectedFarmer(f); setPickerOpen(false); setError(""); }}
+                onPickStaff={(s) => { setSelectedStaff(s); setPickerOpen(false); setError(""); }}
+                open={pickerOpen}
+                setOpen={setPickerOpen}
+              />
             </div>
-            <div className={`w-20 h-20 bg-gradient-to-br ${sr.color} rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-              <span className="text-4xl">{sr.icon}</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">{sr.label}</h1>
-            <p className="text-sm text-slate-500 mt-1">Chọn tài khoản nhân sự</p>
-          </div>
+          )}
 
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-lg overflow-hidden">
-            <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">1. Chọn nhân sự</p>
-              <div className="space-y-2 max-h-[35vh] overflow-y-auto pr-1">
-                {list.map(s => (
-                  <div
-                    key={s.id}
-                    onClick={() => { setSelectedStaff(s); setError(""); }}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all select-none ${
-                      selectedStaff?.id === s.id ? "border-blue-400 bg-blue-50 shadow-sm ring-1 ring-blue-300" : "border-slate-100 hover:border-slate-300 bg-white"
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 bg-gradient-to-br ${sr.color} text-white shadow`}>
-                      {s.hoTen.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-gray-900 text-sm truncate">{s.hoTen}</div>
-                      <div className="text-[10px] text-slate-500 truncate">{s.chucDanh}</div>
-                      <div className="text-[10px] text-slate-400 truncate font-mono">{s.id}</div>
-                    </div>
-                    {selectedStaff?.id === s.id && <span className="text-blue-600 text-lg mr-2">✓</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="p-5">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">2. Nhập Mã PIN</p>
-              <PinInput pin={pin} setPin={setPin} setError={setError} onEnter={handleSubmit} accent="blue" />
-              {error && <p className="text-red-500 text-xs font-bold mb-3 text-center">{error}</p>}
-              <div onClick={handleSubmit} className={`w-full bg-gradient-to-r ${sr.color} text-white font-bold py-4 rounded-xl text-sm text-center cursor-pointer shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all select-none`}>
-                🔑 Xác thực &amp; Đăng nhập
-              </div>
-              <p className="text-center text-xs text-slate-400 mt-4 font-mono">Demo PIN: 1234</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── Farmer / Bank ─────────────────────────────────────────────────────────
-  const isFarmer = mode === "farmer";
-  const title = isFarmer ? "Đăng nhập Hộ Nông dân" : "Đăng nhập Liên Minh Ngân Hàng";
-  const subtitle = isFarmer ? "Truy cập Hộ chiếu Số của bạn" : "Xác thực lớp truy cập tổ chức";
-  const icon = isFarmer ? "👨‍🌾" : "🏦";
-  const grad = isFarmer ? "from-green-500 to-emerald-600" : "from-orange-500 to-red-600";
-  const accent = isFarmer ? "green" : "orange";
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 fade-in" style={{ fontFamily: "'Inter', sans-serif" }}>
-      <div className="w-full max-w-md">
-        <div className="text-center mb-6 relative">
-          <div onClick={reset} className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white shadow-sm border border-slate-200 hover:bg-slate-50 rounded-full cursor-pointer">
-            <span className="text-slate-600 font-bold">←</span>
-          </div>
-          <div className={`w-20 h-20 bg-gradient-to-br ${grad} rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-            <span className="text-4xl">{icon}</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-          <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
-        </div>
-
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-lg overflow-hidden">
-          {isFarmer && (
-            <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">1. Chọn hộ nông dân</p>
-              <div className="space-y-2 max-h-[30vh] overflow-y-auto pr-1">
-                {farmers.map(f => (
-                  <div
-                    key={f.id}
-                    onClick={() => { setSelectedFarmer(f); setError(""); }}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all select-none ${
-                      selectedFarmer?.id === f.id ? "border-green-400 bg-green-50 ring-1 ring-green-400" : "border-slate-100 hover:border-slate-300 bg-white"
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border ${selectedFarmer?.id === f.id ? "bg-green-600 text-white border-green-700" : "bg-slate-100 text-slate-600 border-slate-200"}`}>
-                      {f.hoTen.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-gray-900 text-sm truncate">{f.hoTen}</div>
-                      <div className="text-xs text-slate-400 truncate font-mono">{f.digitalId ?? f.id} · {f.dienTich} ha</div>
-                    </div>
-                    {selectedFarmer?.id === f.id && <span className="text-green-600 text-lg mr-2">✓</span>}
-                  </div>
-                ))}
+          {tab === "bank" && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 text-white rounded-xl flex items-center justify-center text-2xl shadow-md">🏦</div>
+              <div>
+                <div className="text-sm font-bold text-orange-900">Liên minh Ngân hàng</div>
+                <div className="text-[11px] text-orange-700">SCF Underwriter · Giải ngân Token hoá AR</div>
               </div>
             </div>
           )}
 
-          <div className="p-5">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{isFarmer ? "2. Nhập Mã PIN" : "Nhập Mã PIN truy cập"}</p>
-            <PinInput pin={pin} setPin={setPin} setError={setError} onEnter={handleSubmit} accent={accent} />
-            {error && <p className="text-red-500 text-xs font-bold mb-3 text-center">{error}</p>}
-            <div onClick={handleSubmit} className={`w-full bg-gradient-to-r ${grad} text-white font-bold py-4 rounded-xl text-sm text-center cursor-pointer shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all select-none`}>
-              🔑 Xác thực &amp; Đăng nhập
-            </div>
-            <p className="text-center text-xs text-slate-400 mt-4 font-mono">Demo PIN: 1234</p>
+          {/* Password */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-2">
+              Mật khẩu <span className="text-slate-400 italic font-normal">/ Password</span>
+            </label>
+            <input
+              type="password"
+              value={password}
+              autoFocus
+              maxLength={20}
+              placeholder="••••••"
+              onChange={e => { setPassword(e.target.value); setError(""); }}
+              onKeyDown={e => { if (e.key === "Enter") handleSubmit(); }}
+              className={`w-full border-2 border-slate-200 rounded-xl px-4 py-3.5 text-lg font-bold tracking-[0.4em] focus:outline-none focus:ring-4 transition-all bg-white ${accent.ring}`}
+            />
+            {error && <p className="text-red-500 text-xs font-bold mt-2">⚠ {error}</p>}
           </div>
+
+          {/* Remember + forgot */}
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} className={`w-4 h-4 rounded ${accent.check}`} />
+              <span className="text-sm text-slate-700">Nhớ đăng nhập</span>
+            </label>
+            <a href="#" onClick={e => e.preventDefault()} className={`text-sm font-semibold ${accent.text} hover:underline`}>
+              Quên mật khẩu?
+            </a>
+          </div>
+
+          {/* Sign in */}
+          <button
+            onClick={handleSubmit}
+            className={`w-full ${accent.btn} text-white font-bold py-4 rounded-xl text-base shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all`}
+          >
+            Đăng nhập <span className="opacity-70 italic font-normal text-sm">/ Sign in</span>
+          </button>
+
+          {/* Demo hint */}
+          <p className="text-center text-xs text-slate-500">
+            Demo · mọi tài khoản có mật khẩu <span className="font-mono font-bold text-slate-900">{DEMO_PASSWORD}</span>
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-auto pt-8 max-w-md">
+          <a href="#" onClick={e => e.preventDefault()} className="text-[10px] font-bold text-slate-500 tracking-[0.2em] hover:text-emerald-700">
+            QUẢN LÝ TÀI KHOẢN LỘC TRỜI <span className="text-slate-300">/</span> ACCOUNT MANAGEMENT
+          </a>
         </div>
       </div>
     </div>
   );
 };
 
-const PinInput = ({ pin, setPin, setError, onEnter, accent }) => {
-  const ringMap = {
-    blue: "focus:ring-blue-100 focus:border-blue-500",
-    green: "focus:ring-green-100 focus:border-green-500",
-    orange: "focus:ring-orange-100 focus:border-orange-500",
-  };
+// ─── Account picker dropdown ───────────────────────────────────────────────
+const AccountPicker = ({ tab, farmers, staff, selectedFarmer, selectedStaff, onPickFarmer, onPickStaff, open, setOpen }) => {
+  const isFarmer = tab === "farmer";
+  const sel = isFarmer ? selectedFarmer : selectedStaff;
+  const sub = !isFarmer && selectedStaff ? LT_SUBROLES[selectedStaff.subrole] : null;
+
   return (
-    <input
-      type="password"
-      maxLength={4}
-      placeholder="••••"
-      value={pin}
-      autoFocus
-      onChange={e => { setPin(e.target.value); setError(""); }}
-      onKeyDown={e => { if (e.key === "Enter") onEnter(); }}
-      className={`w-full border-2 border-slate-200 rounded-xl px-4 py-4 text-center text-3xl tracking-[0.5em] font-bold focus:outline-none focus:ring-4 transition-all mb-3 bg-slate-50 ${ringMap[accent] ?? ringMap.blue}`}
-    />
+    <div className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center gap-3 p-3 border-2 rounded-xl bg-white transition-all hover:border-emerald-300 ${open ? "border-emerald-500 ring-4 ring-emerald-100" : "border-emerald-300"}`}
+      >
+        {isFarmer ? (
+          <FarmerRow f={sel} />
+        ) : (
+          <StaffRow s={sel} sr={sub} />
+        )}
+        <svg className={`w-4 h-4 text-slate-400 ml-2 transition-transform shrink-0 ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl z-30 max-h-80 overflow-y-auto fade-in">
+          {isFarmer ? (
+            <div className="py-1">
+              {farmers.map(f => (
+                <div key={f.id} onClick={() => onPickFarmer(f)} className={`px-3 py-2.5 cursor-pointer hover:bg-emerald-50 transition-colors flex items-center ${selectedFarmer?.id === f.id ? "bg-emerald-50/70" : ""}`}>
+                  <FarmerRow f={f} small />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-1">
+              {Object.keys(LT_SUBROLES).map(srKey => {
+                const list = staff.filter(s => s.subrole === srKey);
+                if (list.length === 0) return null;
+                const sr = LT_SUBROLES[srKey];
+                return (
+                  <div key={srKey}>
+                    <div className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase bg-slate-50 sticky top-0">
+                      {sr.icon} {sr.label}
+                    </div>
+                    {list.map(s => (
+                      <div key={s.id} onClick={() => onPickStaff(s)} className={`px-3 py-2.5 cursor-pointer hover:bg-emerald-50 transition-colors flex items-center ${selectedStaff?.id === s.id ? "bg-emerald-50/70" : ""}`}>
+                        <StaffRow s={s} sr={sr} small />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
-const BackButton = ({ onClick }) => (
-  <div onClick={onClick} className="absolute top-6 left-6 w-10 h-10 flex items-center justify-center bg-white shadow-sm border border-slate-200 hover:bg-slate-50 rounded-full cursor-pointer">
-    <span className="text-slate-600 font-bold">←</span>
+const FarmerRow = ({ f, small }) => {
+  if (!f) return <div className="text-slate-400 text-sm flex-1 text-left">— Chưa chọn —</div>;
+  const tier = getTier(f);
+  return (
+    <>
+      <div className={`${small ? "w-9 h-9" : "w-10 h-10"} bg-emerald-700 text-white rounded-full flex items-center justify-center font-bold shrink-0`}>
+        {f.hoTen.charAt(0)}
+      </div>
+      <div className="flex-1 min-w-0 text-left">
+        <div className={`font-bold text-slate-900 ${small ? "text-sm" : "text-base"} truncate`}>{f.hoTen}</div>
+        <div className="text-[11px] text-slate-500 truncate">{f.digitalId ?? f.id} · {f.htx ?? f.diaChi} · {f.dienTich}ha</div>
+      </div>
+      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${tier.badge} shrink-0`}>Tier {tier.code}</span>
+    </>
+  );
+};
+
+const StaffRow = ({ s, sr, small }) => {
+  if (!s) return <div className="text-slate-400 text-sm flex-1 text-left">— Chưa chọn —</div>;
+  const grad = sr?.color ?? "from-slate-400 to-slate-500";
+  return (
+    <>
+      <div className={`${small ? "w-9 h-9" : "w-10 h-10"} bg-gradient-to-br ${grad} text-white rounded-full flex items-center justify-center font-bold shrink-0 shadow`}>
+        {sr?.icon ?? s.hoTen.charAt(0)}
+      </div>
+      <div className="flex-1 min-w-0 text-left">
+        <div className={`font-bold text-slate-900 ${small ? "text-sm" : "text-base"} truncate`}>{s.hoTen}</div>
+        <div className="text-[11px] text-slate-500 truncate">{s.id} · {s.chucDanh}</div>
+      </div>
+      {sr && <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${sr.bg} ${sr.text} shrink-0`}>{sr.label}</span>}
+    </>
+  );
+};
+
+const Stat = ({ value, label }) => (
+  <div>
+    <div className="text-2xl lg:text-3xl font-extrabold text-emerald-900 leading-none">{value}</div>
+    <div className="text-[11px] text-slate-700 mt-1 font-semibold">{label}</div>
   </div>
+);
+
+// ─── Hero illustration (SVG) ──────────────────────────────────────────────
+const HeroSvg = () => (
+  <svg viewBox="0 0 800 800" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#fff7d6" />
+        <stop offset="100%" stopColor="#fef3c7" />
+      </linearGradient>
+      <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#fde68a" />
+        <stop offset="100%" stopColor="#fbbf24" />
+      </linearGradient>
+      <linearGradient id="m1" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#86efac" />
+        <stop offset="100%" stopColor="#4ade80" />
+      </linearGradient>
+      <linearGradient id="m2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#4ade80" />
+        <stop offset="100%" stopColor="#22c55e" />
+      </linearGradient>
+      <linearGradient id="m3" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#22c55e" />
+        <stop offset="100%" stopColor="#15803d" />
+      </linearGradient>
+      <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#86efac" stopOpacity="0.7" />
+        <stop offset="100%" stopColor="#22c55e" stopOpacity="0.85" />
+      </linearGradient>
+    </defs>
+
+    {/* Sky */}
+    <rect width="800" height="800" fill="url(#sky)" />
+
+    {/* Sun */}
+    <circle cx="500" cy="240" r="95" fill="url(#sun)" opacity="0.95" />
+    <circle cx="500" cy="240" r="70" fill="#fbbf24" opacity="0.7" />
+
+    {/* Drone */}
+    <g transform="translate(350,280)">
+      <line x1="-18" y1="0" x2="18" y2="0" stroke="#1e293b" strokeWidth="2"/>
+      <line x1="0" y1="-18" x2="0" y2="18" stroke="#1e293b" strokeWidth="2"/>
+      <circle cx="-22" cy="0" r="10" fill="#94a3b8" opacity="0.85"/>
+      <circle cx="22" cy="0" r="10" fill="#94a3b8" opacity="0.85"/>
+      <circle cx="0" cy="-22" r="10" fill="#94a3b8" opacity="0.85"/>
+      <circle cx="0" cy="22" r="10" fill="#94a3b8" opacity="0.85"/>
+      <circle cx="0" cy="0" r="11" fill="#1e293b"/>
+      <text x="40" y="-6" fontSize="13" fontWeight="bold" fill="#1e293b" fontFamily="monospace">DR-0142</text>
+    </g>
+
+    {/* Mountains */}
+    <path d="M0,520 L130,400 L240,470 L350,360 L470,440 L600,360 L720,420 L800,380 L800,800 L0,800 Z" fill="url(#m1)" opacity="0.85"/>
+    <path d="M0,580 L100,500 L200,540 L300,460 L400,520 L520,470 L640,510 L800,470 L800,800 L0,800 Z" fill="url(#m2)" opacity="0.9"/>
+    <path d="M0,650 L120,610 L260,640 L420,600 L580,640 L720,610 L800,630 L800,800 L0,800 Z" fill="url(#m3)"/>
+
+    {/* Field grid */}
+    <g opacity="0.55">
+      {Array.from({length: 4}).map((_, r) =>
+        Array.from({length: 6}).map((_, c) => (
+          <rect key={`${r}-${c}`} x={c * 140 - 20} y={680 + r * 30} width="120" height="22" fill="url(#field)" stroke="#16a34a" strokeWidth="0.5" rx="2"/>
+        ))
+      )}
+    </g>
+
+    {/* Connection dots overlay */}
+    <g opacity="0.4">
+      <circle cx="180" cy="700" r="4" fill="#15803d"/>
+      <circle cx="380" cy="730" r="4" fill="#15803d"/>
+      <circle cx="580" cy="690" r="4" fill="#15803d"/>
+      <line x1="180" y1="700" x2="380" y2="730" stroke="#15803d" strokeWidth="1" strokeDasharray="4 4"/>
+      <line x1="380" y1="730" x2="580" y2="690" stroke="#15803d" strokeWidth="1" strokeDasharray="4 4"/>
+    </g>
+  </svg>
 );
 
 export default GlobalLogin;
