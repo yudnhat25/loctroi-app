@@ -1,15 +1,13 @@
-import { useState } from "react";
-import { LT_SUBROLES } from "../lib/staff";
-import { getTier, getOverallScore, MAX_FARMING, calcHarvestRevenue, getPremiumPerKg } from "../lib/scoring";
+﻿import { useState } from "react";
+import { getTier, MAX_FARMING, calcHarvestRevenue, getPremiumPerKg } from "../lib/scoring";
 
-// Bước B5: Cán bộ thu mua lúa cuối vụ.
+// Cán bộ thu mua lúa cuối vụ.
 // Điều kiện UNLOCK harvest cho 1 nông dân:
 //   1. Nông dân đã nhận ít nhất 1 lô vật tư (transactions có "Đã giao")
-//   2. Đã có ít nhất 1 lần FIELD_INSPECTION trên blockchain
+//   2. Đã có ít nhất 1 lần kiểm tra SRP trên blockchain
 // Khi cả 2 điều kiện thoả → cho phép thu hoạch.
 // Tính: Sản lượng (kg) = diện tích × YIELD_PER_HA. Tiền lúa = SL × (giá + premium SRP). Trừ công nợ vật tư → ròng.
 const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onSettleHarvest, formatVND, basePrice }) => {
-  const sr = LT_SUBROLES.procurement;
   const [selectedFarmer, setSelectedFarmer] = useState(null);
   const [moisture, setMoisture] = useState(14); // %
   const [impurity, setImpurity] = useState(2);  // %
@@ -61,32 +59,36 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
   return (
     <div className="space-y-6 fade-in pb-10">
       {/* Hero */}
-      <div className={`bg-gradient-to-r ${sr.color} rounded-2xl p-6 text-white shadow-lg`}>
-        <div className="flex items-center gap-3 mb-2">
-          <span className="text-3xl">🌾</span>
-          <h2 className="text-xl font-bold">Thu hoạch & Tất toán bao tiêu (Bước B5)</h2>
+      <section className="relative overflow-hidden rounded-2xl bg-slate-900 text-white">
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-rose-700" />
+        <div className="px-7 pt-7 pb-6">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Cán bộ thu mua</div>
+          <h2 className="text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">
+            Thu hoạch và tất toán bao tiêu
+          </h2>
+          <p className="text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
+            Cuối vụ: cân lúa, tính tiền theo công thức <b className="text-white">Sản lượng × (Giá bao tiêu + Premium SRP)</b>,
+            trừ công nợ vật tư đầu vụ, chuyển khoản qua ngân hàng/đại lý, cập nhật
+            <b className="text-white"> +200/+100 Credit Score</b> để nông dân có thể lên Tier.
+          </p>
+          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 rounded-xl overflow-hidden">
+            <Stat label="Hộ đủ điều kiện" value={eligibleCount} />
+            <Stat label="Tổng hộ liên kết" value={farmers.length} />
+            <Stat label="Hộ đã tất toán" value={myHarvests} />
+            <Stat label="Giá bao tiêu" value={`${basePrice.toLocaleString("vi-VN")}`} sub="đ/kg" />
+          </div>
         </div>
-        <p className="text-rose-50 text-sm">
-          Cuối vụ: cân lúa → tính tiền theo công thức <b>Sản lượng × (Giá bao tiêu + Premium SRP)</b> → trừ công nợ vật tư đầu vụ →
-          chuyển khoản qua ngân hàng/đại lý → cập nhật <b>+200/+100 Credit Score</b> → có thể lên Tier.
-        </p>
-        <div className="grid grid-cols-4 gap-3 mt-4">
-          <Stat label="Hộ đủ điều kiện thu hoạch" value={eligibleCount} />
-          <Stat label="Tổng hộ liên kết" value={farmers.length} />
-          <Stat label="Hộ tôi đã tất toán" value={myHarvests} />
-          <Stat label="Giá bao tiêu cơ sở" value={`${basePrice.toLocaleString("vi-VN")}đ/kg`} />
-        </div>
-      </div>
+      </section>
 
       {/* Eligibility legend */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-        <p className="text-xs font-bold text-slate-700 mb-2">🔒 Điều kiện mở khoá thu hoạch:</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px]">
-          <CondTag ok={true} label="① Vật tư đã giao (B3 đã ký số)" />
-          <CondTag ok={true} label="② Ít nhất 1 lần kiểm tra SRP (B4 — drone + 3 Cùng)" />
-          <CondTag ok={true} label="③ Chưa tất toán vụ này" />
+      <section className="bg-white rounded-2xl border border-surface-200 px-6 py-4">
+        <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500 mb-3">Điều kiện mở khoá thu hoạch</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[14px]">
+          <CondTag ok={true} label="Vật tư đã giao (B3 ký số)" />
+          <CondTag ok={true} label="Ít nhất 1 lần kiểm tra SRP" />
+          <CondTag ok={true} label="Chưa tất toán vụ này" />
         </div>
-      </div>
+      </section>
 
       {/* Farmer list with eligibility */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -105,11 +107,11 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="font-bold text-sm text-gray-900">{f.hoTen}</p>
-                    <p className="text-[10px] font-mono text-slate-500">{f.digitalId ?? f.id}</p>
+                    <p className="text-[11px] font-mono text-slate-500">{f.digitalId ?? f.id}</p>
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${tier.badge}`}>Tier {tier.code}</span>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${tier.badge}`}>Tier {tier.code}</span>
                 </div>
-                <div className="text-[11px] text-slate-600 mb-2">{f.htx} · {f.dienTich} ha</div>
+                <div className="text-[12px] text-slate-600 mb-2">{f.htx} · {f.dienTich} ha</div>
 
                 {/* Conditions */}
                 <div className="space-y-1 mb-3">
@@ -119,7 +121,7 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
                 </div>
 
                 {/* Yield estimate */}
-                <div className="bg-white rounded-lg p-2 border border-slate-200 mb-3 text-[11px]">
+                <div className="bg-white rounded-lg p-2 border border-slate-200 mb-3 text-[12px]">
                   <div className="flex justify-between">
                     <span className="text-slate-500">Ước SL ({f.dienTich}ha × 6t):</span>
                     <span className="font-bold text-gray-900">{(yieldKg/1000).toFixed(1)}t</span>
@@ -136,11 +138,11 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
 
                 <div
                   onClick={() => eligible && step === "idle" && startHarvest(f)}
-                  className={`text-[11px] font-bold rounded-lg py-2 text-center transition-colors select-none ${
-                    eligible && step === "idle" ? `bg-gradient-to-r ${sr.color} hover:shadow-lg text-white cursor-pointer shadow-sm` : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                  className={`text-[14px] font-semibold rounded-lg py-2 text-center transition-colors select-none ${
+                    eligible && step === "idle" ? "bg-rose-700 hover:bg-rose-800 text-white cursor-pointer" : "bg-surface-100 text-slate-400 cursor-not-allowed"
                   }`}
                 >
-                  {alreadyHarvested ? "✅ Đã tất toán" : eligible ? "🌾 Thu hoạch & Tất toán" : "🔒 Chưa đủ điều kiện"}
+                  {alreadyHarvested ? "Đã tất toán" : eligible ? "Thu hoạch và tất toán" : "Chưa đủ điều kiện"}
                 </div>
               </div>
             );
@@ -179,20 +181,20 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
                     {/* Weight readout */}
                     <div className="bg-slate-900 text-white rounded-xl p-4 grid grid-cols-3 gap-3 text-center">
                       <div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase">Sản lượng cân được</div>
+                        <div className="text-[11px] text-slate-400 font-bold uppercase">Sản lượng cân được</div>
                         <div className="text-2xl font-bold text-emerald-400">{(rev.yieldKg/1000).toFixed(2)}<span className="text-xs"> t</span></div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase">Độ ẩm</div>
+                        <div className="text-[11px] text-slate-400 font-bold uppercase">Độ ẩm</div>
                         <input type="number" min="10" max="20" step="0.5" value={moisture} onChange={e => setMoisture(parseFloat(e.target.value))}
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-center text-amber-400 font-bold focus:outline-none" />
-                        <div className="text-[10px] text-slate-500 mt-0.5">%</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">%</div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase">Tạp chất</div>
+                        <div className="text-[11px] text-slate-400 font-bold uppercase">Tạp chất</div>
                         <input type="number" min="0" max="10" step="0.1" value={impurity} onChange={e => setImpurity(parseFloat(e.target.value))}
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-center text-cyan-400 font-bold focus:outline-none" />
-                        <div className="text-[10px] text-slate-500 mt-0.5">%</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">%</div>
                       </div>
                     </div>
 
@@ -221,8 +223,8 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
                       <div onClick={() => { setStep("idle"); setSelectedFarmer(null); }} className="flex-1 text-center py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm cursor-pointer hover:bg-slate-50 select-none">
                         Hủy
                       </div>
-                      <div onClick={finalize} className={`flex-1 text-center py-3 rounded-xl text-white font-bold text-sm cursor-pointer shadow-md select-none bg-gradient-to-r ${sr.color} hover:shadow-lg transition-all`}>
-                        ⛓️ Ký số &amp; Tất toán Smart Contract
+                      <div onClick={finalize} className="flex-1 text-center py-3 rounded-lg text-white font-semibold text-[14px] cursor-pointer select-none bg-rose-700 hover:bg-rose-800 transition-colors">
+                        Ký số và tất toán Smart Contract
                       </div>
                     </div>
                   </>
@@ -252,23 +254,26 @@ const Row = ({ label, value, bold, green, red, hi }) => (
 );
 
 const CondLine = ({ ok, label, warn }) => (
-  <div className="flex items-center gap-1.5 text-[10px]">
+  <div className="flex items-center gap-1.5 text-[11px]">
     <span className={ok ? "text-emerald-600" : warn ? "text-amber-600" : "text-slate-400"}>{ok ? "✅" : warn ? "⚠️" : "⏳"}</span>
     <span className={ok ? "text-emerald-700 font-bold" : warn ? "text-amber-700" : "text-slate-500"}>{label}</span>
   </div>
 );
 
 const CondTag = ({ ok, label }) => (
-  <div className={`px-2 py-1.5 rounded-lg ${ok ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-50 text-slate-500 border border-slate-200"}`}>
-    {ok ? "✓" : "○"} {label}
+  <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-[14px] ${ok ? "bg-brand-50 text-brand-800 ring-1 ring-brand-200" : "bg-surface-50 text-slate-500 ring-1 ring-surface-200"}`}>
+    {ok ? (
+      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+    ) : <span className="w-3.5 h-3.5 rounded-full border border-current"></span>}
+    <span className="font-medium">{label}</span>
   </div>
 );
 
 const Stat = ({ label, value, sub }) => (
-  <div className="bg-white/15 rounded-xl p-3">
-    <div className="text-[10px] text-white/80 font-bold uppercase">{label}</div>
-    <div className="text-2xl font-bold">{value}</div>
-    {sub && <div className="text-[10px] text-white/70">{sub}</div>}
+  <div className="bg-slate-900 px-4 py-3.5">
+    <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</div>
+    <div className="font-display text-[26px] font-semibold tabular leading-none mt-2.5 text-white">{value}</div>
+    {sub && <div className="text-[12px] text-slate-500 mt-1.5">{sub}</div>}
   </div>
 );
 

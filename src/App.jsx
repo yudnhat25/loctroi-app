@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import OverviewTab from "./components/OverviewTab";
@@ -27,16 +27,16 @@ export const generateId = (prefix) => prefix + Math.random().toString(36).substr
 export const formatVND = (n) => (n || 0).toLocaleString("vi-VN") + " VNĐ";
 
 export const initialFarmers = [
-  { id: "#LT-001", digitalId: "LT-ND000001", htx: "HTX Thoại Sơn",  hoTen: "Nguyễn Văn An",  diaChi: "Thoại Sơn, An Giang",   dienTich: 12.5, creditScore: 280, farmingScore: 480, hanMucTinDung: 120000000, trangThai: "Đang canh tác" },
-  { id: "#LT-002", digitalId: "LT-ND000002", htx: "HTX Châu Phú",   hoTen: "Trần Thị Bích",  diaChi: "Châu Phú, An Giang",    dienTich:  6.2, creditScore: 320, farmingScore: 520, hanMucTinDung:  80000000, trangThai: "Đang canh tác" },
-  { id: "#LT-003", digitalId: "LT-ND000003", htx: "HTX Tri Tôn",    hoTen: "Lê Văn Cường",   diaChi: "Tri Tôn, An Giang",     dienTich: 15.0, creditScore: 200, farmingScore: 280, hanMucTinDung: 150000000, trangThai: "Đang canh tác" },
-  { id: "#LT-004", digitalId: "LT-ND000004", htx: "HTX Vĩnh Thạnh", hoTen: "Phạm Văn Dũng",  diaChi: "Vĩnh Thạnh, Cần Thơ",   dienTich:  2.5, creditScore:  80, farmingScore: 160, hanMucTinDung:  40000000, trangThai: "Cảnh báo" },
-  { id: "#LT-005", digitalId: "LT-ND000005", htx: "HTX Cờ Đỏ",      hoTen: "Hoàng Thị Em",   diaChi: "Cờ Đỏ, Cần Thơ",        dienTich:  8.8, creditScore: 300, farmingScore: 460, hanMucTinDung:  95000000, trangThai: "Đang canh tác" },
-  { id: "#LT-006", digitalId: "LT-ND000006", htx: "HTX Tân Hiệp",   hoTen: "Đinh Văn Phúc",  diaChi: "Tân Hiệp, Kiên Giang",  dienTich: 10.5, creditScore: 180, farmingScore: 320, hanMucTinDung: 110000000, trangThai: "Đang canh tác" },
-  { id: "#LT-007", digitalId: "LT-ND000007", htx: "HTX Châu Thành", hoTen: "Vũ Thị Giang",   diaChi: "Châu Thành, Đồng Tháp", dienTich:  4.2, creditScore: 350, farmingScore: 500, hanMucTinDung:  65000000, trangThai: "Đang canh tác" },
-  { id: "#LT-008", digitalId: "LT-ND000008", htx: "HTX Thanh Bình", hoTen: "Bùi Văn Hải",    diaChi: "Thanh Bình, Đồng Tháp", dienTich:  1.8, creditScore:  60, farmingScore: 140, hanMucTinDung:  20000000, trangThai: "Cảnh báo" },
-  { id: "#LT-009", digitalId: "LT-ND000009", htx: "HTX Thoại Sơn",  hoTen: "Ngô Thị Thu",    diaChi: "Thoại Sơn, An Giang",   dienTich:  7.5, creditScore: 240, farmingScore: 380, hanMucTinDung:  85000000, trangThai: "Đang canh tác" },
-  { id: "#LT-010", digitalId: "LT-ND000010", htx: "HTX Hòn Đất",    hoTen: "Lý Văn Tám",     diaChi: "Hòn Đất, Kiên Giang",   dienTich: 20.0, creditScore: 200, farmingScore: 280, hanMucTinDung: 220000000, trangThai: "Đang canh tác" },
+  { id: "LT001", digitalId: "LT001", htx: "HTX Thoại Sơn",  hoTen: "Nguyễn Văn An",  diaChi: "Thoại Sơn, An Giang",   dienTich: 12.5, creditScore: 280, farmingScore: 480, hanMucTinDung: 120000000, trangThai: "Đang canh tác" },
+  { id: "LT002", digitalId: "LT002", htx: "HTX Châu Phú",   hoTen: "Trần Thị Bích",  diaChi: "Châu Phú, An Giang",    dienTich:  6.2, creditScore: 320, farmingScore: 520, hanMucTinDung:  80000000, trangThai: "Đang canh tác" },
+  { id: "LT003", digitalId: "LT003", htx: "HTX Tri Tôn",    hoTen: "Lê Văn Cường",   diaChi: "Tri Tôn, An Giang",     dienTich: 15.0, creditScore: 200, farmingScore: 280, hanMucTinDung: 150000000, trangThai: "Đang canh tác" },
+  { id: "LT004", digitalId: "LT004", htx: "HTX Vĩnh Thạnh", hoTen: "Phạm Văn Dũng",  diaChi: "Vĩnh Thạnh, Cần Thơ",   dienTich:  2.5, creditScore:  80, farmingScore: 160, hanMucTinDung:  40000000, trangThai: "Cảnh báo" },
+  { id: "LT005", digitalId: "LT005", htx: "HTX Cờ Đỏ",      hoTen: "Hoàng Thị Em",   diaChi: "Cờ Đỏ, Cần Thơ",        dienTich:  8.8, creditScore: 300, farmingScore: 460, hanMucTinDung:  95000000, trangThai: "Đang canh tác" },
+  { id: "LT006", digitalId: "LT006", htx: "HTX Tân Hiệp",   hoTen: "Đinh Văn Phúc",  diaChi: "Tân Hiệp, Kiên Giang",  dienTich: 10.5, creditScore: 180, farmingScore: 320, hanMucTinDung: 110000000, trangThai: "Đang canh tác" },
+  { id: "LT007", digitalId: "LT007", htx: "HTX Châu Thành", hoTen: "Vũ Thị Giang",   diaChi: "Châu Thành, Đồng Tháp", dienTich:  4.2, creditScore: 350, farmingScore: 500, hanMucTinDung:  65000000, trangThai: "Đang canh tác" },
+  { id: "LT008", digitalId: "LT008", htx: "HTX Thanh Bình", hoTen: "Bùi Văn Hải",    diaChi: "Thanh Bình, Đồng Tháp", dienTich:  1.8, creditScore:  60, farmingScore: 140, hanMucTinDung:  20000000, trangThai: "Cảnh báo" },
+  { id: "LT009", digitalId: "LT009", htx: "HTX Thoại Sơn",  hoTen: "Ngô Thị Thu",    diaChi: "Thoại Sơn, An Giang",   dienTich:  7.5, creditScore: 240, farmingScore: 380, hanMucTinDung:  85000000, trangThai: "Đang canh tác" },
+  { id: "LT010", digitalId: "LT010", htx: "HTX Hòn Đất",    hoTen: "Lý Văn Tám",     diaChi: "Hòn Đất, Kiên Giang",   dienTich: 20.0, creditScore: 200, farmingScore: 280, hanMucTinDung: 220000000, trangThai: "Đang canh tác" },
 ];
 
 export const initialSupplies = [
@@ -82,12 +82,12 @@ const App = () => {
     return h;
   };
 
-  // ─── A1-A2: Onboard nông dân mới ─────────────────────────────────────────
+  // ─── Onboard nông dân mới ────────────────────────────────────────────────
   const handleCreateFarmer = ({ hoTen, cccd, sdt, diaChi, htx, dienTich, giong, onboardedBy }) => {
     const idx = farmers.length + 1;
-    const digitalId = `LT-ND${String(idx).padStart(6, "0")}`;
+    const digitalId = `LT${String(idx).padStart(3, "0")}`;
     const newFarmer = {
-      id: `#LT-${String(idx).padStart(3, "0")}`,
+      id: digitalId,
       digitalId,
       htx,
       hoTen,
@@ -104,7 +104,7 @@ const App = () => {
     setFarmers(prev => [...prev, newFarmer]);
     logBlockchain(
       "PASSPORT_CREATED",
-      `[A1-A2] Hộ chiếu Số ${digitalId} tạo cho ${hoTen} (${dienTich}ha · ${htx}) — onboard bởi ${onboardedBy}. Tier D · Score 0/0.`
+      `Hộ chiếu Số ${digitalId} tạo cho ${hoTen} (${dienTich}ha · ${htx}) — onboard bởi ${onboardedBy}. Tier D · Score 0/0.`
     );
     showToast(`🪪 Đã tạo Hộ chiếu Số ${digitalId} cho ${hoTen}`);
     return newFarmer;
@@ -232,19 +232,19 @@ const App = () => {
     }
   };
 
-  // ─── B4.1-B4.2: Phi công drone upload ảnh ────────────────────────────────
+  // ─── Phi công drone upload ảnh ───────────────────────────────────────────
   const handleSubmitDroneReport = (report) => {
     const id = generateId("DRN-");
     const fullReport = { ...report, id };
     setDroneReports(prev => [fullReport, ...prev]);
     logBlockchain(
       "DRONE_REPORT",
-      `[B4.1-B4.2] Phi công ${report.operatorId} (${report.operatorName}) bay drone ${report.farmerName} (${report.farmerArea}ha): xanh ${report.greenPct}% · NDVI ${report.ndvi} · ${report.qualityNote}. IPFS ${report.fileHash}.`
+      `Phi công ${report.operatorId} (${report.operatorName}) bay drone ${report.farmerName} (${report.farmerArea}ha): xanh ${report.greenPct}% · NDVI ${report.ndvi} · ${report.qualityNote}. IPFS ${report.fileHash}.`
     );
     showToast(`🚁 Đã ghi DRONE_REPORT — AI chấm phủ xanh ${report.greenPct}%`);
   };
 
-  // ─── B4.3-B4.5: 3 Cùng tick checklist + AI phân tích ảnh thực địa ────────
+  // ─── 3 Cùng tick checklist + AI phân tích ảnh thực địa ───────────────────
   const handleFieldInspection = ({ farmer, checked, newFarmingScore, droneReportHash, fieldImageHash, operator, analysis }) => {
     const hash = generateHash();
     setFarmers(prev => prev.map(f => f.id === farmer.id ? { ...f, farmingScore: newFarmingScore } : f));
@@ -258,7 +258,7 @@ const App = () => {
     ].filter(Boolean).join(" · ");
     logBlockchain(
       "FIELD_INSPECTION",
-      `[B4.3-B4.5 Oracle 3 Cùng] ${operator.id} (${operator.hoTen}) kiểm tra ${farmer.hoTen}: ${passed}/${total} SRP → Farming Score ${newFarmingScore}/${MAX_FARMING}. Bằng chứng: ${evid}`,
+      `[Oracle 3 Cùng] ${operator.id} (${operator.hoTen}) kiểm tra ${farmer.hoTen}: ${passed}/${total} SRP → Farming Score ${newFarmingScore}/${MAX_FARMING}. Bằng chứng: ${evid}`,
       hash
     );
     showToast(`🧑‍🌾 SRP đã ghi chain: ${passed}/${total} đạt · FS ${newFarmingScore}`);
@@ -297,7 +297,7 @@ const App = () => {
 
   // ─── Farmer self-report harvest (notify procurement) ─────────────────────
   const handleReportHarvest = (farmer) => {
-    logBlockchain("HARVEST_REPORTED", `[B5.1] ${farmer.hoTen} báo sắp thu hoạch — notification gửi cán bộ thu mua chuẩn bị xe.`);
+    logBlockchain("HARVEST_REPORTED", `${farmer.hoTen} báo sắp thu hoạch — notification gửi cán bộ thu mua chuẩn bị xe.`);
     showToast(`📞 Đã báo Lộc Trời. Cán bộ thu mua sẽ liên hệ xếp lịch cân lúa.`);
   };
 
@@ -305,7 +305,7 @@ const App = () => {
   const handleVerifyField = (invoice) => {
     setOracleModal({ isOpen: true, status: "loading", invoiceId: invoice.id, nongHoId: invoice.nongHoId });
     setTimeout(() => {
-      if (invoice.nongHoId === "#LT-004") {
+      if (invoice.nongHoId === "LT004") {
         setOracleModal(m => ({ ...m, status: "failed" }));
         setTimeout(() => {
           const hash = generateHash();
@@ -422,7 +422,7 @@ const App = () => {
   const handleLogout = () => { setCurrentUser(null); setActiveTab(""); };
 
   if (!currentUser) {
-    return <GlobalLogin farmers={farmers} staff={staff} onLogin={handleLogin} />;
+    return <GlobalLogin farmers={farmers} staff={staff} blockchainLog={blockchainLog} onLogin={handleLogin} />;
   }
 
   // Filter blockchain log for farmer (private view)
@@ -431,19 +431,22 @@ const App = () => {
     : blockchainLog;
 
   return (
-    <div className="flex w-screen h-screen overflow-hidden bg-slate-50" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex w-screen h-screen overflow-hidden bg-[#f6f8f5]">
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-        .fade-in { animation: fadeIn 0.35s ease-out forwards; }
+        .fade-in { animation: fadeIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
         @keyframes spinAnim { to { transform: rotate(360deg); } }
         .spin { animation: spinAnim 1s linear infinite; }
         @keyframes ping { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.5)} }
-        .ping { animation: ping 1.2s ease-in-out infinite; }
+        .ping { animation: ping 1.4s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
         * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cdd6c8; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+        ::-webkit-scrollbar-thumb:hover { background: #aab5a3; border: 2px solid transparent; background-clip: padding-box; }
+        .tabular { font-variant-numeric: tabular-nums; }
+        .hairline { box-shadow: inset 0 0 0 1px rgb(15 23 42 / 0.06); }
       `}} />
 
       <Sidebar
@@ -464,7 +467,7 @@ const App = () => {
 
             {/* Manager subrole tabs */}
             {currentUser.role === "loctroi" && currentUser.subrole === "manager" && activeTab === "managerHome" && (
-              <StaffHome staff={currentUser.profile} {...sharedProps} />
+              <StaffHome {...sharedProps} staff={currentUser.profile} />
             )}
             {currentUser.role === "loctroi" && activeTab === "overview" && <OverviewTab {...sharedProps} />}
             {currentUser.role === "loctroi" && activeTab === "farmers" && (
@@ -476,7 +479,7 @@ const App = () => {
 
             {/* Field Officer subrole tabs */}
             {currentUser.role === "loctroi" && currentUser.subrole === "fieldOfficer" && activeTab === "officerHome" && (
-              <StaffHome staff={currentUser.profile} {...sharedProps} />
+              <StaffHome {...sharedProps} staff={currentUser.profile} />
             )}
             {currentUser.role === "loctroi" && currentUser.subrole === "fieldOfficer" && activeTab === "onboarding" && (
               <OnboardingTab staff={currentUser.profile} farmers={farmers} blockchainLog={blockchainLog} onCreateFarmer={handleCreateFarmer} />
@@ -487,7 +490,7 @@ const App = () => {
 
             {/* Drone Operator tabs */}
             {currentUser.role === "loctroi" && currentUser.subrole === "droneOperator" && activeTab === "droneHome" && (
-              <StaffHome staff={currentUser.profile} {...sharedProps} />
+              <StaffHome {...sharedProps} staff={currentUser.profile} />
             )}
             {currentUser.role === "loctroi" && currentUser.subrole === "droneOperator" && activeTab === "droneUpload" && (
               <DroneOperatorTab staff={currentUser.profile} farmers={farmers} droneReports={droneReports} blockchainLog={blockchainLog} onSubmitDroneReport={handleSubmitDroneReport} />
@@ -495,7 +498,7 @@ const App = () => {
 
             {/* Driver tabs */}
             {currentUser.role === "loctroi" && currentUser.subrole === "driver" && activeTab === "driverHome" && (
-              <StaffHome staff={currentUser.profile} {...sharedProps} />
+              <StaffHome {...sharedProps} staff={currentUser.profile} />
             )}
             {currentUser.role === "loctroi" && currentUser.subrole === "driver" && activeTab === "delivery" && (
               <DeliveryTab staff={currentUser.profile} deliveryQueue={deliveryQueue} farmers={farmers} supplies={supplies} blockchainLog={blockchainLog} onConfirmDelivery={handleConfirmDelivery} formatVND={formatVND} />
@@ -503,7 +506,7 @@ const App = () => {
 
             {/* Procurement tabs */}
             {currentUser.role === "loctroi" && currentUser.subrole === "procurement" && activeTab === "procurementHome" && (
-              <StaffHome staff={currentUser.profile} {...sharedProps} />
+              <StaffHome {...sharedProps} staff={currentUser.profile} />
             )}
             {currentUser.role === "loctroi" && currentUser.subrole === "procurement" && activeTab === "harvest" && (
               <HarvestTab staff={currentUser.profile} farmers={farmers} transactions={transactions} invoices={invoices} blockchainLog={blockchainLog} onSettleHarvest={handleSettleHarvest} formatVND={formatVND} basePrice={GIA_LUA} />
@@ -533,9 +536,14 @@ const App = () => {
         {ledgerOpen && <LedgerPanel blockchainLog={visibleBlockchainLog} onClose={() => setLedgerOpen(false)} />}
         <button
           onClick={() => setLedgerOpen(v => !v)}
-          className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-2.5 rounded-full shadow-xl text-sm font-bold transition-all border border-gray-700"
+          className="group inline-flex items-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white pl-3 pr-4 py-2.5 rounded-full text-[14px] font-semibold tracking-tight transition-colors ring-1 ring-white/10 shadow-[0_8px_24px_-12px_rgba(15,23,42,0.45)]"
         >
-          ⛓️ {visibleBlockchainLog.length} blocks
+          <span className="relative flex items-center justify-center w-5 h-5">
+            <span className="absolute inset-0 rounded-full bg-emerald-400/30 ping"></span>
+            <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-300"></span>
+          </span>
+          <span className="tabular">{visibleBlockchainLog.length}</span>
+          <span className="text-white/70 font-normal">blocks</span>
         </button>
       </div>
 

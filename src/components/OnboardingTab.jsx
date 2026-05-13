@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { LT_SUBROLES } from "../lib/staff";
+﻿import { useState } from "react";
 
-// Bước A1-A2: Cán bộ 3 Cùng đến HTX, đăng ký Hộ chiếu Số cho nông dân mới.
+// Cán bộ 3 Cùng đến HTX đăng ký Hộ chiếu Số cho nông dân mới.
 // Smart contract createPassport() chạy tự động → sinh DigitalID, ghi Genesis Record lên chain.
 const HTX_OPTIONS = [
   "HTX Thoại Sơn", "HTX Châu Phú", "HTX Tri Tôn", "HTX Vĩnh Thạnh",
@@ -23,8 +22,6 @@ const OnboardingTab = ({ staff, blockchainLog, farmers, onCreateFarmer }) => {
   const [errors, setErrors] = useState({});
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState(null);
-
-  const sr = LT_SUBROLES.fieldOfficer;
 
   const validate = () => {
     const e = {};
@@ -64,31 +61,31 @@ const OnboardingTab = ({ staff, blockchainLog, farmers, onCreateFarmer }) => {
   const myOnboardCount = blockchainLog.filter(l => l.action === "PASSPORT_CREATED" && l.data.includes(staff.id)).length;
 
   return (
-    <div className="space-y-6 fade-in pb-10">
-      {/* Hero */}
-      <div className={`bg-gradient-to-r ${sr.color} rounded-2xl p-6 text-white shadow-lg`}>
-        <div className="flex items-center gap-3 mb-2">
-          <span className="text-3xl">🪪</span>
-          <h2 className="text-xl font-bold">Onboard Hộ Nông dân (Bước A1 → A2)</h2>
+    <div className="space-y-8 fade-in pb-10">
+      {/* Hero — slate-900, brand accent line */}
+      <section className="relative overflow-hidden rounded-2xl bg-slate-900 text-white">
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-brand-700" />
+        <div className="px-7 pt-7 pb-6">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Cán bộ 3 Cùng</div>
+          <h2 className="text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">Onboard hộ nông dân</h2>
+          <p className="text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
+            Đến từng HTX, đăng ký Hộ chiếu Số (Digital ID) cho nông dân. Smart contract <code className="font-mono text-brand-300">createPassport()</code> chạy tự động: sinh DID, ghi Genesis Record bất biến lên blockchain.
+          </p>
+          <div className="mt-6 grid grid-cols-3 gap-px bg-white/10 rounded-xl overflow-hidden">
+            <Stat label="Tổng hộ trong hệ thống" value={farmers.length} />
+            <Stat label="Hộ tôi đã onboard" value={myOnboardCount} />
+            <Stat label="Tier khởi tạo" value="D" sub="Mới · Score 0/0" />
+          </div>
         </div>
-        <p className="text-emerald-100 text-sm">
-          Cán bộ 3 Cùng đến từng HTX, đăng ký Hộ chiếu Số (Digital ID) cho nông dân.
-          <b> Smart contract <code>createPassport()</code></b> chạy tự động → sinh DID + ghi Genesis Record bất biến trên blockchain.
-        </p>
-        <div className="grid grid-cols-3 gap-3 mt-4">
-          <Stat label="Tổng hộ trong hệ thống" value={farmers.length} />
-          <Stat label="Hộ tôi đã onboard" value={myOnboardCount} />
-          <Stat label="Tier khởi tạo" value="D" sub="Mới · Score 0/0" />
-        </div>
-      </div>
+      </section>
 
       {/* Form */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-sm font-bold text-gray-800">📝 Form đăng ký nông dân mới</h3>
-          <p className="text-[11px] text-slate-500 mt-1">CCCD sẽ được hash SHA-256 trước khi đưa lên chain (không lưu raw để bảo mật).</p>
+      <section className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-surface-200">
+          <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Form đăng ký nông dân mới</h3>
+          <p className="text-[12px] text-slate-500 mt-1">CCCD sẽ được hash SHA-256 trước khi đưa lên chain (không lưu raw để bảo mật).</p>
         </div>
-        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Họ và tên" error={errors.hoTen}>
             <input value={form.hoTen} onChange={e => setForm({ ...form, hoTen: e.target.value })} placeholder="VD: Nguyễn Văn An" className="input" />
           </Field>
@@ -115,97 +112,109 @@ const OnboardingTab = ({ staff, blockchainLog, farmers, onCreateFarmer }) => {
             </select>
           </Field>
 
-          <div className="md:col-span-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-            <b>⚠️ Tự động khi nộp đơn:</b> Smart contract <code>createPassport()</code> sẽ:
+          <div className="md:col-span-2 rounded-lg bg-amber-50 ring-1 ring-amber-200 px-3.5 py-3 text-[14px] text-amber-900 leading-relaxed">
+            <b>Tự động khi nộp đơn:</b> Smart contract <code className="font-mono text-amber-800">createPassport()</code> sẽ
             sinh Digital ID (LT-NDxxxxxx), hash CCCD, tạo block Genesis Record, set Tier D, Score 0/0.
             Trả về QR code để in ra giấy đưa nông dân giữ.
           </div>
 
           <div className="md:col-span-2 flex gap-3">
-            <div onClick={() => setForm({ hoTen: "", cccd: "", sdt: "", diaChi: "", htx: HTX_OPTIONS[0], dienTich: "5", giong: GIONG_OPTIONS[0] })} className="flex-1 text-center py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm cursor-pointer hover:bg-slate-50 select-none">
+            <button
+              type="button"
+              onClick={() => setForm({ hoTen: "", cccd: "", sdt: "", diaChi: "", htx: HTX_OPTIONS[0], dienTich: "5", giong: GIONG_OPTIONS[0] })}
+              className="flex-1 text-center py-3 rounded-lg border border-surface-200 text-slate-600 font-semibold text-[14px] hover:bg-surface-50 transition-colors"
+            >
               Xóa form
-            </div>
-            <div onClick={creating ? undefined : submit} className={`flex-1 text-center py-3 rounded-xl text-white font-bold text-sm cursor-pointer shadow-sm select-none transition-all ${creating ? "bg-slate-400 cursor-wait" : `bg-gradient-to-r ${sr.color} hover:shadow-lg`}`}>
-              {creating ? "⛓️ Đang ký Genesis Block..." : "⛓️ Tạo Hộ chiếu Số & Ghi Blockchain"}
-            </div>
+            </button>
+            <button
+              type="button"
+              onClick={creating ? undefined : submit}
+              disabled={creating}
+              className={`flex-[2] text-center py-3 rounded-lg text-white font-semibold text-[14px] transition-colors ${creating ? "bg-slate-400 cursor-wait" : "bg-brand-700 hover:bg-brand-800"}`}
+            >
+              {creating ? "Đang ký Genesis Block…" : "Tạo Hộ chiếu Số và ghi blockchain"}
+            </button>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Created success */}
       {created && (
-        <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-6 fade-in">
+        <section className="bg-white rounded-2xl border border-brand-200 ring-1 ring-brand-100 px-6 py-5 fade-in">
           <div className="flex items-start gap-4">
-            <div className="text-5xl">✅</div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-emerald-900">Hộ chiếu Số đã được tạo trên blockchain</h3>
-              <p className="text-sm text-emerald-700 mt-1">
-                <b>{created.hoTen}</b> · {created.htx} · {created.dienTich} ha
+            <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center shrink-0">
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Hộ chiếu Số đã được tạo trên blockchain</h3>
+              <p className="text-[14px] text-slate-500 mt-1">
+                <b className="text-slate-700">{created.hoTen}</b> · {created.htx} · {created.dienTich} ha
               </p>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-white rounded-lg p-2 border border-emerald-200">
-                  <div className="text-[10px] text-slate-500 font-bold uppercase">Digital ID</div>
-                  <div className="font-mono font-bold text-emerald-700">{created.digitalId}</div>
+              <div className="mt-4 grid grid-cols-2 gap-px bg-surface-200 rounded-lg overflow-hidden">
+                <div className="bg-white px-3.5 py-2.5">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Digital ID</div>
+                  <div className="font-mono font-semibold text-brand-800 text-[15px] mt-1">{created.digitalId}</div>
                 </div>
-                <div className="bg-white rounded-lg p-2 border border-emerald-200">
-                  <div className="text-[10px] text-slate-500 font-bold uppercase">Tier khởi tạo</div>
-                  <div className="font-bold text-rose-600">Tier D · Score 0/0</div>
+                <div className="bg-white px-3.5 py-2.5">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Tier khởi tạo</div>
+                  <div className="font-semibold text-rose-700 text-[15px] mt-1">Tier D · Score 0/0</div>
                 </div>
               </div>
-              {/* Mock QR code */}
-              <div className="mt-3 inline-flex items-center gap-3 bg-white rounded-xl border-2 border-dashed border-emerald-300 p-3">
-                <div className="w-20 h-20 bg-slate-900 rounded-lg flex items-center justify-center text-white font-mono text-[8px] leading-tight p-1 text-center">
+              <div className="mt-4 inline-flex items-center gap-3 bg-surface-50 rounded-lg border border-dashed border-surface-300 p-3">
+                <div className="w-16 h-16 bg-slate-900 rounded-md flex items-center justify-center text-white font-mono text-[7px] leading-tight p-1 text-center">
                   {created.digitalId}<br/>QR<br/>v2.0
                 </div>
-                <div className="text-xs text-slate-700">
-                  <b>QR Hộ chiếu Số</b><br/>
-                  <span className="text-[10px] text-slate-500">In ra giấy đưa nông dân giữ.<br/>Quét để mở app.</span>
+                <div className="text-[14px] text-slate-700">
+                  <b>QR Hộ chiếu Số</b>
+                  <p className="text-[12px] text-slate-500 mt-0.5">In ra giấy đưa nông dân giữ.<br/>Quét để mở app.</p>
                 </div>
               </div>
             </div>
-            <div onClick={() => setCreated(null)} className="text-slate-400 hover:text-slate-700 cursor-pointer">✕</div>
+            <button onClick={() => setCreated(null)} className="text-slate-400 hover:text-slate-700">
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
           </div>
-        </div>
+        </section>
       )}
 
       {/* My recent onboards */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-        <h3 className="text-sm font-bold text-gray-800 mb-4">📜 Lịch sử onboard của tôi (mới nhất)</h3>
+      <section className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-surface-200 flex items-baseline justify-between">
+          <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Lịch sử onboard của tôi</h3>
+          <span className="text-[12px] font-mono text-slate-400">{myOnboardLogs.length} hộ</span>
+        </div>
         {myOnboardLogs.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6">Chưa có hộ nào do bạn onboard. Đăng ký hộ đầu tiên ở form trên.</p>
+          <p className="text-[14px] text-slate-500 text-center py-10">Chưa có hộ nào do bạn onboard.</p>
         ) : (
-          <div className="space-y-2">
+          <ul className="divide-y divide-surface-200">
             {myOnboardLogs.map((log, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="text-lg">🪪</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-700 font-semibold">{log.data}</p>
-                  <p className="text-[10px] text-slate-400 mt-1 font-mono">#{log.hash} · {new Date(log.timestamp).toLocaleString("vi-VN")}</p>
-                </div>
-              </div>
+              <li key={i} className="px-6 py-3.5">
+                <p className="text-[14px] text-slate-700 leading-snug">{log.data}</p>
+                <p className="text-[12px] text-slate-400 mt-1.5 font-mono">#{log.hash} · {new Date(log.timestamp).toLocaleString("vi-VN")}</p>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
 
-      <style dangerouslySetInnerHTML={{__html: `.input{width:100%;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;font-size:14px;outline:none;transition:all .2s;background:#f8fafc}.input:focus{border-color:#10b981;box-shadow:0 0 0 3px #10b9811a;background:#fff}`}} />
+      <style dangerouslySetInnerHTML={{__html: `.input{width:100%;border:1px solid #dde3d9;border-radius:8px;padding:10px 12px;font-size:13px;outline:none;transition:border-color .15s, box-shadow .15s;background:#fdfefc;color:#1a1f1c}.input:focus{border-color:#2e7048;box-shadow:0 0 0 3px rgba(46,112,72,0.12);background:#fff}.input::placeholder{color:#94a194}`}} />
     </div>
   );
 };
 
 const Field = ({ label, error, full, children }) => (
   <div className={full ? "md:col-span-2" : ""}>
-    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
+    <label className="block text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1.5">{label}</label>
     {children}
-    {error && <p className="text-[10px] text-red-500 font-bold mt-1">⚠ {error}</p>}
+    {error && <p className="text-[12px] text-rose-600 font-semibold mt-1">{error}</p>}
   </div>
 );
 
 const Stat = ({ label, value, sub }) => (
-  <div className="bg-white/10 rounded-xl p-3">
-    <div className="text-[10px] text-white/80 font-bold uppercase">{label}</div>
-    <div className="text-2xl font-bold">{value}</div>
-    {sub && <div className="text-[10px] text-white/70">{sub}</div>}
+  <div className="bg-slate-900 px-4 py-3.5">
+    <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</div>
+    <div className="font-display text-[28px] font-semibold tabular leading-none mt-2.5 text-white">{value}</div>
+    {sub && <div className="text-[12px] text-slate-500 mt-1.5">{sub}</div>}
   </div>
 );
 

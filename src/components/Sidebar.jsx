@@ -1,4 +1,4 @@
-import { LT_SUBROLES } from "../lib/staff";
+﻿import { LT_SUBROLES } from "../lib/staff";
 
 const Icon = ({ d, className = "" }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -24,14 +24,14 @@ export const TAB_DEF = {
   farmers:         { label: "Hộ Nông dân & Vật tư",     icon: UsersIcon },
   invoices:        { label: "Khoản phải thu",           icon: FileTextIcon },
   officerHome:     { label: "Trang chủ 3 Cùng",         icon: LayoutDashboardIcon },
-  onboarding:      { label: "Onboard nông dân (A1)",    icon: UserPlusIcon },
-  inspection:      { label: "Kiểm tra SRP (B4)",        icon: ClipboardIcon },
+  onboarding:      { label: "Onboard nông dân",         icon: UserPlusIcon },
+  inspection:      { label: "Kiểm tra SRP",             icon: ClipboardIcon },
   droneHome:       { label: "Trang chủ Drone",          icon: LayoutDashboardIcon },
   droneUpload:     { label: "Bay drone & AI scan",      icon: DroneIcon },
   driverHome:      { label: "Trang chủ Tài xế",         icon: LayoutDashboardIcon },
-  delivery:        { label: "Giao vật tư (B3)",         icon: TruckIcon },
+  delivery:        { label: "Giao vật tư",              icon: TruckIcon },
   procurementHome: { label: "Trang chủ Thu mua",        icon: LayoutDashboardIcon },
-  harvest:         { label: "Thu hoạch & Tất toán (B5)", icon: HarvestIcon },
+  harvest:         { label: "Thu hoạch & Tất toán",     icon: HarvestIcon },
   scf:             { label: "Liên minh Ngân hàng",      icon: LandmarkIcon },
   farmerPortal:    { label: "Hồ sơ cá nhân",            icon: SmartphoneIcon },
 };
@@ -52,68 +52,86 @@ const Sidebar = ({ activeTab, setActiveTab, blockchainLog, invoices, role, subro
     role === "loctroi" ? `Lộc Trời · ${LT_SUBROLES[subrole]?.label ?? "Quản lý"}` :
     role === "bank" ? "Liên Minh Ngân Hàng" : "Hộ Nông dân";
 
+  // Initial cho avatar - tránh ký tự rỗng
+  const initial = (profile?.hoTen ?? "?").trim().charAt(0).toUpperCase();
+
   return (
-    <aside className="w-60 xl:w-64 bg-white border-r border-slate-200 flex flex-col z-20 shrink-0 h-full shadow-sm">
-      <div className="h-16 flex items-center px-5 border-b border-slate-100">
-        <span className="text-2xl mr-2">🌾</span>
-        <h1 className="text-base font-bold tracking-tight text-gray-900">LocTroi <span className="text-green-600">AgriChain</span></h1>
+    <aside className="w-60 xl:w-64 bg-white border-r border-surface-200 flex flex-col z-20 shrink-0 h-full">
+      {/* Brand mark */}
+      <div className="h-16 flex items-center gap-2.5 px-5 border-b border-surface-200">
+        <div className="w-8 h-8 rounded-lg bg-brand-700 text-white flex items-center justify-center font-display font-bold text-[17px] tracking-tight">LT</div>
+        <div className="leading-none">
+          <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-brand-700">Lộc Trời</div>
+          <div className="text-[16px] font-display font-bold tracking-tight text-slate-900 mt-1">AgriChain</div>
+        </div>
       </div>
 
-      {/* Profile mini-card */}
+      {/* Profile block — flat, no gradient */}
       {profile && (
-        <div className="px-4 pt-3">
-          <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-3 border border-slate-200">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow">
-                {profile.hoTen?.charAt(0) ?? "?"}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-bold text-gray-900 truncate">{profile.hoTen}</div>
-                <div className="text-[10px] text-slate-500 truncate font-mono">{profile.id}</div>
-              </div>
+        <div className="px-4 pt-4 pb-3 border-b border-surface-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-slate-900 text-white font-display font-bold flex items-center justify-center text-[17px]">
+              {initial}
             </div>
-            <div className="text-[10px] text-slate-500 mt-1.5 leading-tight">{profile.chucDanh ?? profile.htx ?? profile.diaChi ?? "—"}</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[14px] font-semibold text-slate-900 truncate">{profile.hoTen}</div>
+              <div className="text-[12px] text-slate-500 truncate font-mono mt-0.5">{profile.id}</div>
+            </div>
           </div>
+          {(profile.chucDanh ?? profile.htx ?? profile.diaChi) && (
+            <p className="text-[12px] text-slate-500 mt-2 leading-snug line-clamp-2">
+              {profile.chucDanh ?? profile.htx ?? profile.diaChi}
+            </p>
+          )}
         </div>
       )}
 
-      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-        <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 mt-2">{sectionLabel}</p>
+      <nav className="flex-1 px-3 pt-4 pb-2 space-y-0.5 overflow-y-auto">
+        <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 mb-2.5">{sectionLabel}</p>
         {availableTabs.map(id => {
           const def = TAB_DEF[id];
           if (!def) return null;
           const Ico = def.icon;
+          const isActive = activeTab === id;
           return (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === id ? "bg-green-50 text-green-700" : "text-gray-600 hover:bg-slate-50 hover:text-gray-900"}`}
+              className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-[14px] font-medium ${
+                isActive
+                  ? "bg-brand-50 text-brand-800 font-semibold"
+                  : "text-slate-600 hover:bg-surface-50 hover:text-slate-900"
+              }`}
             >
-              <Ico className={`w-5 h-5 shrink-0 ${activeTab === id ? "text-green-600" : "text-gray-400"}`} />
-              <span className="truncate">{def.label}</span>
+              <Ico className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-brand-700" : "text-slate-400 group-hover:text-slate-600"}`} />
+              <span className="truncate text-left flex-1">{def.label}</span>
               {id === "scf" && pendingScf > 0 && (
-                <span className="ml-auto bg-orange-100 text-orange-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold shrink-0">{pendingScf}</span>
+                <span className="bg-amber-500 text-white text-[11px] px-1.5 py-0.5 rounded-md font-semibold shrink-0 tabular">{pendingScf}</span>
               )}
             </button>
           );
         })}
       </nav>
 
-      <div className="p-3 border-t border-slate-100 bg-slate-50 shrink-0 space-y-3">
-        <div onClick={onLogout} className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer transition-colors text-sm font-bold shadow-sm select-none">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+      <div className="px-3 pt-3 pb-4 border-t border-surface-200 space-y-2">
+        {/* Network status — single line, no card-in-card */}
+        <div className="px-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="relative flex w-2 h-2 shrink-0">
+              <span className="absolute inset-0 rounded-full bg-emerald-400/40 ping"></span>
+              <span className="relative w-2 h-2 rounded-full bg-emerald-500"></span>
+            </span>
+            <span className="text-[12px] font-medium text-slate-600">DLT Node</span>
+          </div>
+          <span className="text-[11px] font-mono text-slate-400 truncate">{(blockchainLog[0]?.hash ?? "—").substring(0, 6)}</span>
+        </div>
+        <button
+          onClick={onLogout}
+          className="flex items-center justify-center gap-2 w-full py-2 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-700 transition-colors text-[14px] font-medium select-none"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
           Đăng xuất
-        </div>
-        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-1.5 mb-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full" style={{ animation: "ping 1.2s ease-in-out infinite" }}></div>
-            <span className="text-xs font-bold text-gray-700">Blockchain Node</span>
-          </div>
-          <p className="text-[10px] text-gray-400 font-mono truncate">{blockchainLog[0]?.hash ?? "—"}...live</p>
-          <div className="mt-2 bg-green-100 text-green-800 text-[10px] uppercase font-bold text-center py-1 rounded-lg tracking-wider">
-            Private DLT Network
-          </div>
-        </div>
+        </button>
       </div>
     </aside>
   );

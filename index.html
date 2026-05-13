@@ -12,22 +12,71 @@
             theme: {
                 extend: {
                     colors: {
+                        // Brand emerald, calmer than default. Used for Lộc Trời chrome & farmer CTA.
+                        brand: {
+                            50:  '#f1f8f3',
+                            100: '#dcecdf',
+                            200: '#bcdcc4',
+                            300: '#8fc59f',
+                            400: '#5fa777',
+                            500: '#3f8a5b',
+                            600: '#2e7048',
+                            700: '#255b3b',
+                            800: '#1f4830',
+                            900: '#173324',
+                        },
+                        // Warm sage neutral. Replaces clinical slate.
+                        surface: {
+                            50:  '#f7f9f5',
+                            100: '#eef2eb',
+                            200: '#dde3d9',
+                            300: '#bfc7b9',
+                            900: '#1a1f1c',
+                        },
+                        // Reuse-friendly aliases for legacy green-* classes already in code.
                         green: {
-                            50: '#f0fdf4',
-                            100: '#dcfce7',
-                            500: '#22c55e',
-                            600: '#16a34a',
-                            700: '#15803d',
-                            800: '#166534',
-                        }
-                    }
+                            50:  '#f1f8f3',
+                            100: '#dcecdf',
+                            500: '#3f8a5b',
+                            600: '#2e7048',
+                            700: '#255b3b',
+                            800: '#1f4830',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        display: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+                    },
+                    letterSpacing: {
+                        eyebrow: '0.14em',
+                    },
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-      body { font-family: 'Inter', sans-serif; }
+      html, body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+      body {
+        background: #f6f8f5;
+        color: #1a1f1c;
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.55;  /* comfortable cho tiếng Việt có dấu */
+        font-size: 14px;    /* base bump tu 12-13 -> 14 */
+      }
+      /* Tieu de display giu leading chac hon de tranh ron rang */
+      h1, h2, h3, h4 { line-height: 1.25; }
+      .font-display { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; letter-spacing: -0.01em; }
+      .font-mono    { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+      .tabular { font-variant-numeric: tabular-nums; }
+      .eyebrow {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #6b766a;
+      }
     </style>
   </head>
   <body>

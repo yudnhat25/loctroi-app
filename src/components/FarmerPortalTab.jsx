@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   getTier,
   getOverallScore,
@@ -8,31 +8,103 @@ import {
   MAX_CREDIT,
 } from "../lib/scoring";
 
-const STATUS_STYLE = {
-  "Chờ xác nhận":       { badge: "🟡 Chờ xác nhận",       cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-  "Đã token hóa":       { badge: "🔵 Đã token hóa",        cls: "bg-cyan-50 text-cyan-700 border-cyan-200" },
-  "Chào bán ngân hàng": { badge: "🟠 Chào bán ngân hàng",  cls: "bg-orange-50 text-orange-700 border-orange-200" },
-  "Đã giải ngân":       { badge: "🟢 Đã giải ngân",        cls: "bg-green-50 text-green-700 border-green-200" },
-  "Nợ xấu":            { badge: "🔴 Nợ xấu",              cls: "bg-red-50 text-red-700 border-red-200" },
-  "Đã tất toán":        { badge: "⚪ Đã tất toán",         cls: "bg-slate-100 text-slate-500 border-slate-200" },
-  "Từ chối duyệt vay":  { badge: "⚫ Bị từ chối",          cls: "bg-gray-100 text-gray-500 border-gray-200" },
+// ─── Tokens cho mỗi Tier (hero solid + chip) ──────────────────────────────────
+const TIER_TOKENS = {
+  A: { bg: "bg-brand-700",  hi: "bg-brand-600",  ringSoft: "ring-brand-200",  text: "text-brand-800",  shadow: "shadow-[0_24px_48px_-24px_rgba(37,91,59,0.45)]" },
+  B: { bg: "bg-sky-800",    hi: "bg-sky-600",    ringSoft: "ring-sky-200",    text: "text-sky-800",    shadow: "shadow-[0_24px_48px_-24px_rgba(7,89,133,0.45)]" },
+  C: { bg: "bg-amber-700",  hi: "bg-amber-500",  ringSoft: "ring-amber-200",  text: "text-amber-800",  shadow: "shadow-[0_24px_48px_-24px_rgba(180,83,9,0.45)]" },
+  D: { bg: "bg-rose-800",   hi: "bg-rose-600",   ringSoft: "ring-rose-200",   text: "text-rose-800",   shadow: "shadow-[0_24px_48px_-24px_rgba(159,18,57,0.4)]" },
 };
 
-// ─── Farmer Dashboard ─────────────────────────────────────────────────────────
-const FarmerDashboard = ({ farmer, invoices, transactions, blockchainLog, droneReports, formatVND, onLogout, onSubmitSCF, onRequestSupply, onReportHarvest }) => {
+const STATUS_STYLE = {
+  "Chờ xác nhận":       { dot: "bg-amber-500",  label: "Chờ xác nhận",       cls: "text-amber-800 bg-amber-50 ring-amber-200" },
+  "Đã token hóa":       { dot: "bg-sky-500",    label: "Đã token hóa",        cls: "text-sky-800 bg-sky-50 ring-sky-200" },
+  "Chào bán ngân hàng": { dot: "bg-amber-600",  label: "Chào bán ngân hàng",  cls: "text-amber-900 bg-amber-50 ring-amber-200" },
+  "Đã giải ngân":       { dot: "bg-brand-600",  label: "Đã giải ngân",        cls: "text-brand-800 bg-brand-50 ring-brand-200" },
+  "Nợ xấu":             { dot: "bg-rose-600",   label: "Nợ xấu",              cls: "text-rose-800 bg-rose-50 ring-rose-200" },
+  "Đã tất toán":        { dot: "bg-slate-400",  label: "Đã tất toán",         cls: "text-slate-600 bg-surface-100 ring-surface-200" },
+  "Từ chối duyệt vay":  { dot: "bg-slate-500",  label: "Bị từ chối",          cls: "text-slate-700 bg-surface-100 ring-surface-200" },
+};
+
+// ─── Tính 5 bước tiến độ vụ mùa từ on-chain events ──────────────────────────
+function computeProgress(farmer, blockchainLog, supplyRequests, transactions, invoices) {
+  const isMine = (l) => l?.data?.includes(farmer.hoTen) || l?.data?.includes(farmer.id);
+  const firstLog = (action) => blockchainLog.slice().reverse().find(l => l.action === action && isMine(l));
+
+  const pendingReq = supplyRequests.find(r => r.farmer.id === farmer.id);
+  const supplyRequestedLog = firstLog("SUPPLY_REQUESTED");
+  const supplyApprovedLog  = firstLog("SUPPLY_APPROVED");
+  const deliveryLog        = firstLog("DELIVERY_CONFIRMED");
+  const inspectionLog      = firstLog("FIELD_INSPECTION");
+  const harvestLog         = firstLog("HARVEST_SETTLED");
+
+  const step1Date = pendingReq?.date ?? supplyRequestedLog?.timestamp;
+  const step2Date = supplyApprovedLog?.timestamp;
+  const step3Date = deliveryLog?.timestamp ?? transactions.find(t => t.nongHoId === farmer.id)?.ngay;
+  const step4Date = inspectionLog?.timestamp;
+  const step5Date = harvestLog?.timestamp;
+
+  return [
+    { key: "supply",     label: "Đăng ký vật tư",            done: !!step1Date, date: step1Date },
+    { key: "contract",   label: "HĐ smart contract duyệt",   done: !!step2Date, date: step2Date },
+    { key: "delivery",   label: "Giao vật tư và ký số",      done: !!step3Date, date: step3Date },
+    { key: "inspection", label: "Kiểm tra SRP thực địa",     done: !!step4Date, date: step4Date },
+    { key: "harvest",    label: "Thu hoạch và tất toán",     done: !!step5Date, date: step5Date },
+  ];
+}
+
+// Xác định vụ mùa hiện tại + giống lúa + ngày thứ X/110 từ activity
+function deriveCurrentSeason(farmer, supplyRequests, invoices, blockchainLog) {
+  const mySupplyReq = supplyRequests.find(r => r.farmer.id === farmer.id);
+  const myInvoice   = invoices.find(i => i.nongHoId === farmer.id && i.trangThai !== "Đã tất toán");
+  const season = mySupplyReq?.season ?? myInvoice?.vuMua ?? "Vụ Đông Xuân 2026-2027";
+
+  // Giống: ưu tiên field giong, nếu không có thì parse từ supplyRequest items
+  let giong = farmer.giong;
+  if (!giong && mySupplyReq?.items) {
+    const giongItem = mySupplyReq.items.find(it => it.ten?.toLowerCase().includes("giống"));
+    giong = giongItem?.ten?.replace(/Giống lúa\s+/i, "").trim();
+  }
+  giong = giong ?? "OM 5451";
+
+  // Ngày thứ X/110: tính từ ngày Đăng ký vật tư (step 1)
+  const startLog = blockchainLog.slice().reverse().find(l =>
+    l.action === "SUPPLY_REQUESTED" && (l.data?.includes(farmer.hoTen) || l.data?.includes(farmer.id))
+  );
+  const startISO = mySupplyReq?.date ?? startLog?.timestamp;
+  const day = startISO
+    ? Math.min(110, Math.max(0, Math.floor((Date.now() - new Date(startISO).getTime()) / 86_400_000)))
+    : 0;
+
+  return { season: season.replace(/^Vụ\s+/i, ""), giong, day, totalDays: 110 };
+}
+
+// Status badge cho vụ hiện tại (theo trạng thái farmer + tiến độ)
+function deriveSeasonStatus(farmer, progress) {
+  const harvested = progress.find(p => p.key === "harvest")?.done;
+  const inspected = progress.find(p => p.key === "inspection")?.done;
+  const delivered = progress.find(p => p.key === "delivery")?.done;
+  const requested = progress.find(p => p.key === "supply")?.done;
+
+  if (farmer.trangThai === "Cảnh báo")    return { label: "Cảnh báo",         dot: "bg-rose-500",   cls: "text-rose-800 bg-rose-50 ring-rose-200" };
+  if (harvested)                          return { label: "Đã tất toán vụ này", dot: "bg-slate-500", cls: "text-slate-700 bg-surface-100 ring-surface-200" };
+  if (delivered && inspected)             return { label: "Sẵn sàng thu hoạch", dot: "bg-brand-500", cls: "text-brand-800 bg-brand-50 ring-brand-200" };
+  if (delivered)                          return { label: "Đang canh tác",      dot: "bg-brand-500", cls: "text-brand-800 bg-brand-50 ring-brand-200" };
+  if (requested)                          return { label: "Chờ giao vật tư",    dot: "bg-amber-500", cls: "text-amber-800 bg-amber-50 ring-amber-200" };
+  return { label: "Chưa khởi động vụ", dot: "bg-slate-400", cls: "text-slate-600 bg-surface-100 ring-surface-200" };
+}
+
+const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }) : null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, droneReports, blockchainLog, formatVND, onSubmitSCF, onRequestSupply, onReportHarvest }) => {
+  const [showPassport, setShowPassport] = useState(false);
+
   const myInvoices = invoices.filter(i => i.nongHoId === farmer.id);
   const myLogs     = blockchainLog.filter(l => l.data?.includes(farmer.hoTen) || l.data?.includes(farmer.id));
-  const totalReceived = myInvoices.filter(i => i.trangThai === "Đã giải ngân").reduce((s, i) => s + i.amount, 0);
-  const totalPending  = myInvoices.filter(i => !["Đã giải ngân","Đã tất toán"].includes(i.trangThai)).reduce((s, i) => s + i.amount, 0);
-
-  // Thu hoạch — điều kiện 3-trong-1 (đối chiếu với HarvestTab)
-  const hasDelivery   = (transactions ?? []).some(t => t.nongHoId === farmer.id && t.trangThai === "Đã giao");
-  const hasInspection = blockchainLog.some(l => l.action === "FIELD_INSPECTION" && l.data?.includes(farmer.hoTen));
-  const hasDroneReport = (droneReports ?? []).some(r => r.farmerId === farmer.id);
-  const alreadyHarvested = blockchainLog.some(l => l.action === "HARVEST_SETTLED" && l.data?.includes(farmer.hoTen));
-  const harvestEligible = hasDelivery && hasInspection && !alreadyHarvested;
 
   const tier = getTier(farmer);
+  const tok = TIER_TOKENS[tier.code] ?? TIER_TOKENS.D;
   const overall = getOverallScore(farmer);
   const nextGap = getNextTierGap(farmer);
   const credit = farmer.creditScore ?? 0;
@@ -41,324 +113,458 @@ const FarmerDashboard = ({ farmer, invoices, transactions, blockchainLog, droneR
   const farmingPct = (farming / MAX_FARMING) * 100;
   const premium = getPremiumPerKg(farming);
 
+  const progress = useMemo(
+    () => computeProgress(farmer, blockchainLog, supplyRequests, transactions ?? [], invoices),
+    [farmer, blockchainLog, supplyRequests, transactions, invoices]
+  );
+  const doneCount = progress.filter(s => s.done).length;
+  const harvestEligible = progress[2].done && progress[3].done && !progress[4].done;
+
+  const season = useMemo(
+    () => deriveCurrentSeason(farmer, supplyRequests, invoices, blockchainLog),
+    [farmer, supplyRequests, invoices, blockchainLog]
+  );
+  const seasonStatus = useMemo(() => deriveSeasonStatus(farmer, progress), [farmer, progress]);
+
+  const tierLabel = (tier.label.split("—")[1] ?? tier.label).trim();
+
   return (
     <div className="space-y-6 fade-in pb-10">
-      {/* Profile header — Tier theme */}
-      <div className={`bg-gradient-to-r ${tier.color} rounded-2xl p-6 text-white shadow-lg`}>
+
+      {/* ─── HERO TIER (solid theo Tier, dáng cards mobile) ─────────────────── */}
+      <section className={`relative rounded-3xl ${tok.bg} ${tok.shadow} text-white overflow-hidden`}>
+        {/* texture: chỉ 2 vòng nhẹ trên góc, không ảnh hưởng readability */}
+        <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-white/[0.06]"></div>
+        <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-white/[0.04]"></div>
+
+        <div className="relative px-7 py-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/75">
+                Hộ chiếu Số · Lộc Trời
+              </div>
+              <div className="flex items-end gap-3 mt-3">
+                <span className="font-display font-bold text-[88px] leading-[0.85] tabular">{tier.code}</span>
+                <span className="text-[16px] font-semibold tracking-wide text-white/85 pb-3">{tierLabel}</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">Overall Score</div>
+              <div className="font-display text-[44px] font-bold tabular leading-none mt-1.5">
+                {overall}<span className="text-[15px] text-white/65 font-normal ml-1">/1000</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress strip: FARMING + CREDIT */}
+          <div className="grid grid-cols-2 gap-3 mt-5">
+            <ScorePill icon="leaf"   label="FARMING" value={farming} max={MAX_FARMING} pct={farmingPct} />
+            <ScorePill icon="bank"   label="CREDIT"  value={credit}  max={MAX_CREDIT}  pct={creditPct} />
+          </div>
+
+          {/* Perks message: VIP hoặc nextGap */}
+          <div className="mt-4 bg-white/[0.13] ring-1 ring-white/15 rounded-xl px-4 py-3 flex items-center gap-2.5">
+            {tier.code === "A" ? (
+              <>
+                <span className="text-[18px]">👑</span>
+                <span className="text-[14px] font-semibold text-white/95">
+                  Đã đạt tier cao nhất, nhận đầy đủ quyền lợi VIP
+                </span>
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" className="w-4 h-4 text-white/80" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                <span className="text-[13px] text-white/90">
+                  Còn <b className="tabular text-white">{nextGap.gap}</b> điểm để lên Tier {nextGap.next?.code}
+                </span>
+                {premium > 0 && (
+                  <span className="ml-auto text-[11px] text-white/70">Premium SRP +{premium}đ/kg</span>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── QUICK ACTIONS (3 ô, không gồm Drone) ───────────────────────────── */}
+      <section className="grid grid-cols-3 gap-3">
+        <QuickAction
+          icon="cart"
+          label="Đặt vật tư"
+          sub="Đầu vụ mới"
+          onClick={() => onRequestSupply(farmer)}
+          accent="bg-brand-50 text-brand-700 ring-brand-200"
+        />
+        <QuickAction
+          icon="wheat"
+          label="Thu hoạch"
+          sub={harvestEligible ? "Sẵn sàng báo" : progress[4].done ? "Đã tất toán" : "Cần đủ điều kiện"}
+          onClick={harvestEligible ? () => onReportHarvest(farmer) : undefined}
+          disabled={!harvestEligible}
+          accent="bg-amber-50 text-amber-700 ring-amber-200"
+        />
+        <QuickAction
+          icon="id"
+          label="Hộ chiếu"
+          sub={showPassport ? "Đang hiện" : "Xem QR + DID"}
+          onClick={() => setShowPassport(v => !v)}
+          accent="bg-sky-50 text-sky-700 ring-sky-200"
+          active={showPassport}
+        />
+      </section>
+
+      {/* ─── CURRENT SEASON ─────────────────────────────────────────────────── */}
+      <section className="bg-white rounded-2xl border border-surface-200 px-6 py-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl font-bold shadow-inner">
-              {farmer.hoTen.charAt(0)}
+          <div className="flex items-center gap-4 min-w-0">
+            <div className={`w-12 h-12 rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-200 flex items-center justify-center shrink-0`}>
+              <SeedlingIcon className="w-6 h-6" />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold">{farmer.hoTen}</h2>
-              <p className="text-white/80 text-sm">{farmer.htx ?? farmer.diaChi}</p>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className="font-mono text-white/90 text-xs bg-white/15 px-2 py-0.5 rounded">{farmer.digitalId ?? farmer.id}</span>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${tier.badge}`}>🌟 {tier.label}</span>
-              </div>
+            <div className="min-w-0">
+              <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">Vụ hiện tại</div>
+              <div className="font-display text-[20px] font-semibold tracking-tight text-slate-900 mt-0.5">{season.season}</div>
             </div>
           </div>
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold ring-1 ${seasonStatus.cls} shrink-0`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${seasonStatus.dot}`}></span>
+            {seasonStatus.label}
+          </span>
         </div>
 
-        {/* Tier KPIs */}
-        <div className="grid grid-cols-3 gap-4 mt-5">
-          <div className="bg-white/10 rounded-xl p-3 text-center">
-            <div className="text-white/80 text-[10px] font-bold uppercase tracking-wider mb-1">Overall Score</div>
-            <div className="text-2xl font-bold">{overall}<span className="text-sm font-normal">/1000</span></div>
-            {nextGap.next && <div className="text-[10px] text-white/80">còn {nextGap.gap}đ → Tier {nextGap.next.code}</div>}
-          </div>
-          <div className="bg-white/10 rounded-xl p-3 text-center">
-            <div className="text-white/80 text-[10px] font-bold uppercase tracking-wider mb-1">Hạn mức</div>
-            <div className="text-lg font-bold">{(farmer.hanMucTinDung/1e6).toFixed(0)}M VNĐ</div>
-            <div className="text-[10px] text-white/80">{farmer.dienTich} ha</div>
-          </div>
-          <div className="bg-white/10 rounded-xl p-3 text-center">
-            <div className="text-white/80 text-[10px] font-bold uppercase tracking-wider mb-1">Quyền lợi</div>
-            <div className="text-sm font-bold leading-tight">{tier.payment}</div>
-            <div className="text-[10px] text-white/80">Lãi {tier.rateLabel}</div>
-          </div>
+        <div className="grid grid-cols-3 gap-px bg-surface-200 rounded-xl overflow-hidden mt-5">
+          <SeasonStat label="Diện tích" value={`${farmer.dienTich} ha`} />
+          <SeasonStat label="Giống"      value={season.giong} small />
+          <SeasonStat label="Ngày thứ"   value={`${season.day}/${season.totalDays}`} />
         </div>
-      </div>
+      </section>
 
-      {/* 2-score breakdown card */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-        <h3 className="text-sm font-bold text-gray-800 mb-4">📊 Hai lớp điểm tín dụng</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Credit Score */}
-          <div className="border border-cyan-100 rounded-xl p-4 bg-cyan-50/30">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <div className="text-xs font-bold text-cyan-700">🔗 Credit Score (40% trọng số)</div>
-                <div className="text-[10px] text-slate-500">100% on-chain · trustless · không giả mạo được</div>
-              </div>
-              <div className="text-2xl font-bold text-cyan-700">{credit}<span className="text-xs">/{MAX_CREDIT}</span></div>
-            </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-cyan-500 rounded-full transition-all duration-500" style={{ width: `${creditPct}%` }} />
-            </div>
-            <p className="text-[10px] text-slate-500 mt-2">Tự động: ký nhận vật tư (+10), trả nợ đúng hạn (+100), bao tiêu đủ sản lượng (+200)</p>
-          </div>
-
-          {/* Farming Score */}
-          <div className="border border-emerald-100 rounded-xl p-4 bg-emerald-50/30">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <div className="text-xs font-bold text-emerald-700">🌾 Farming Score (60% trọng số)</div>
-                <div className="text-[10px] text-slate-500">Oracle người (Lộc Trời 3 Cùng + drone NDVI)</div>
-              </div>
-              <div className="text-2xl font-bold text-emerald-700">{farming}<span className="text-xs">/{MAX_FARMING}</span></div>
-            </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${farmingPct}%` }} />
-            </div>
-            <p className="text-[10px] text-slate-500 mt-2">Premium SRP: {premium > 0 ? `+${premium}đ/kg lúa cuối vụ` : "chưa đạt — cần FS ≥ 360 (60%)"}</p>
-          </div>
+      {/* ─── PROGRESS TIMELINE 5 BƯỚC ───────────────────────────────────────── */}
+      <section className="bg-white rounded-2xl border border-surface-200 px-6 py-5">
+        <div className="flex items-baseline justify-between mb-5">
+          <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Tiến độ vụ mùa</h3>
+          <span className="text-[12px] font-semibold px-2.5 py-1 rounded-md bg-brand-50 text-brand-800 ring-1 ring-brand-200 tabular">
+            {doneCount}/5 bước
+          </span>
         </div>
 
-        {/* Quyền lợi tier */}
-        <div className="mt-4 bg-slate-50 rounded-xl p-3 border border-slate-100">
-          <div className="text-xs font-bold text-slate-700 mb-2">✨ Quyền lợi Tier {tier.code} hiện tại:</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-            {tier.perks.map((p, i) => (
-              <div key={i} className="text-[11px] text-slate-600 flex items-center gap-2">
-                <span className="text-emerald-500">✓</span>{p}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        <ol className="relative space-y-4">
+          {/* Đường nối dọc */}
+          <span className="absolute left-[18px] top-3 bottom-3 w-[2px] bg-surface-200" aria-hidden></span>
+          {progress.map((step, i) => {
+            const isNext = !step.done && progress.slice(0, i).every(s => s.done);
+            return (
+              <li key={step.key} className="relative pl-12 flex items-center justify-between gap-4 min-h-[40px]">
+                {/* Step dot */}
+                <span
+                  className={`absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center ring-2 ring-white ${
+                    step.done
+                      ? "bg-brand-600 text-white"
+                      : isNext
+                        ? "bg-white ring-brand-600 text-brand-700 ring-2"
+                        : "bg-surface-100 text-slate-400"
+                  }`}
+                >
+                  {step.done ? (
+                    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  ) : (
+                    <span className="text-[13px] font-semibold tabular">{i + 1}</span>
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p className={`text-[15px] ${step.done ? "font-semibold text-slate-900" : isNext ? "font-semibold text-brand-800" : "text-slate-500"}`}>
+                    {step.label}
+                  </p>
+                  {step.done && step.date && (
+                    <p className="text-[12px] text-slate-500 mt-0.5 tabular">{fmtDate(step.date)}</p>
+                  )}
+                  {isNext && (
+                    <p className="text-[12px] text-amber-700 mt-0.5">Đang chờ bước này</p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-2xl">💰</div>
-          <div>
-            <div className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Đã nhận vốn</div>
-            <div className="text-xl font-bold text-green-600">{formatVND(totalReceived)}</div>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
-          <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-2xl">⏳</div>
-          <div>
-            <div className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Đang chờ giải ngân</div>
-            <div className="text-xl font-bold text-orange-600">{formatVND(totalPending)}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* B5 — Báo thu hoạch */}
-      <div className={`rounded-2xl border-2 shadow-sm p-5 ${harvestEligible ? "border-rose-300 bg-rose-50/40" : "border-slate-200 bg-slate-50"}`}>
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${harvestEligible ? "bg-rose-100" : "bg-slate-200"}`}>🌾</div>
-            <div>
-              <div className="text-sm font-bold text-gray-900">B5 — Báo thu hoạch &amp; Tất toán</div>
-              <div className="text-xs text-slate-500">Cuối vụ: cân lúa, nhận tiền theo bao tiêu + Premium SRP, +300 Credit Score.</div>
-            </div>
-          </div>
-          {alreadyHarvested ? (
-            <div className="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-700 text-xs font-bold">✅ Đã tất toán</div>
-          ) : harvestEligible ? (
-            <div onClick={() => onReportHarvest?.(farmer)} className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer shadow-sm select-none">
-              📞 Báo Lộc Trời tới thu hoạch
-            </div>
-          ) : (
-            <div className="px-4 py-2 rounded-xl bg-slate-200 text-slate-500 text-xs font-bold">🔒 Chưa đủ điều kiện</div>
-          )}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3 text-[11px]">
-          <CondLine ok={hasDelivery} label="① Vật tư đã giao (B3 ký số)" />
-          <CondLine ok={hasInspection} label="② Đã kiểm tra SRP (B4)" />
-          <CondLine ok={hasDroneReport} label="③ Có ảnh drone (khuyến nghị)" optional />
-        </div>
         {harvestEligible && (
-          <div className="mt-3 bg-white rounded-lg p-3 border border-rose-200 text-xs">
-            <div className="flex justify-between">
-              <span className="text-slate-500">Ước SL ({farmer.dienTich} ha × 6 tấn/ha):</span>
-              <span className="font-bold">{(farmer.dienTich * 6).toFixed(1)} tấn</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Premium SRP:</span>
-              <span className="font-bold text-emerald-700">+{premium}đ/kg</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-
-      {/* My Invoices */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <h3 className="text-sm font-bold text-gray-800">📄 Hóa đơn & Khoản phải thu</h3>
-            <span className="text-xs text-slate-400 font-semibold">{myInvoices.length} hóa đơn</span>
-          </div>
-          <div
-            onClick={() => onRequestSupply(farmer)}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-sm select-none"
+          <button
+            onClick={() => onReportHarvest(farmer)}
+            className="mt-5 w-full bg-rose-700 hover:bg-rose-800 text-white font-semibold py-3 rounded-xl text-[14px] transition-colors"
           >
-            🛒 Yêu cầu vật tư vụ mới
+            Báo Lộc Trời tới cân lúa và tất toán
+          </button>
+        )}
+      </section>
+
+      {/* ─── DIGITAL ID (toggle từ quick action) ────────────────────────────── */}
+      {showPassport && (
+        <section className="rounded-2xl bg-slate-900 text-white px-6 py-5 relative overflow-hidden fade-in">
+          <div className={`absolute inset-x-0 top-0 h-[3px] ${tok.hi}`} />
+          <div className="flex items-baseline justify-between mb-5">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Digital ID · Hyperledger Fabric</div>
+              <div className="font-display text-[18px] font-semibold tracking-tight mt-1">Hộ chiếu Số của {farmer.hoTen}</div>
+            </div>
+            <div className={`flex items-center gap-1.5 text-[12px] font-semibold ${farmer.trangThai === "Đang canh tác" ? "text-emerald-400" : "text-rose-400"}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${farmer.trangThai === "Đang canh tác" ? "bg-emerald-400" : "bg-rose-400"}`}></span>
+              {farmer.trangThai === "Đang canh tác" ? "ACTIVE" : "WARNED"}
+            </div>
+          </div>
+
+          {/* QR placeholder + DID details */}
+          <div className="flex items-start gap-5 flex-wrap">
+            <div className="w-24 h-24 rounded-xl bg-white text-slate-900 flex flex-col items-center justify-center text-center shrink-0 ring-1 ring-white/10">
+              <div className="text-[8px] font-mono font-bold opacity-50">QR v2.0</div>
+              <div className="font-mono font-bold text-[12px] mt-1">{farmer.digitalId ?? farmer.id}</div>
+              <div className="text-[8px] font-mono opacity-50 mt-1">scan to verify</div>
+            </div>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-[13px] font-mono flex-1 min-w-[240px]">
+              <Row k="DID"        v={farmer.id}              color="text-emerald-300" />
+              <Row k="Guarantor"  v="LOC-TROI-CORP"          color="text-sky-300" />
+              <Row k="Network"    v="LocTroi-AgriChain-v2"   color="text-slate-300" />
+              <Row k="MSP"        v="FarmerMSP"              color="text-slate-300" />
+              <Row k="HTX"        v={farmer.htx ?? "—"}      color="text-slate-300" />
+              <Row k="Diện tích"  v={`${farmer.dienTich} ha`} color="text-slate-300" />
+            </dl>
+          </div>
+
+          <p className="text-[11px] text-slate-400 mt-4 leading-relaxed">
+            QR này dùng để tài xế quét khi giao vật tư, cán bộ 3 Cùng quét khi kiểm tra SRP, và cán bộ thu mua quét khi tất toán.
+            Mọi giao dịch của bạn được ký vào sổ cái bất biến, không ai sửa được.
+          </p>
+        </section>
+      )}
+
+      {/* ─── INVOICES + SCF ACTIONS ─────────────────────────────────────────── */}
+      <section className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-surface-200 flex items-baseline justify-between gap-4 flex-wrap">
+          <div className="flex items-baseline gap-3">
+            <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Hóa đơn và khoản phải thu</h3>
+            <span className="text-[12px] font-mono text-slate-400">{myInvoices.length} hoá đơn</span>
+          </div>
+          <div className="flex items-center gap-3 text-[12px]">
+            <span className="text-slate-500">Đã nhận <b className="text-brand-700 font-display tabular text-[14px] ml-1">{formatVND(myInvoices.filter(i => i.trangThai === "Đã giải ngân").reduce((s,i)=>s+i.amount,0))}</b></span>
+            <span className="text-slate-300">·</span>
+            <span className="text-slate-500">Đang chờ <b className="text-amber-700 font-display tabular text-[14px] ml-1">{formatVND(myInvoices.filter(i => !["Đã giải ngân","Đã tất toán"].includes(i.trangThai)).reduce((s,i)=>s+i.amount,0))}</b></span>
           </div>
         </div>
         {myInvoices.length === 0 ? (
-          <div className="py-12 text-center text-slate-400">
-            <div className="text-4xl mb-3">📭</div>
-            <p className="text-sm font-semibold">Chưa có hóa đơn. Lộc Trời chưa cấp vật tư cho vụ mùa này.</p>
+          <div className="py-14 text-center">
+            <div className="w-12 h-12 mx-auto rounded-full bg-surface-100 flex items-center justify-center text-slate-400 mb-3">
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 12h6M9 16h6M5 20V6a2 2 0 012-2h8l4 4v12a2 2 0 01-2 2H7a2 2 0 01-2-2z"/></svg>
+            </div>
+            <p className="text-[14px] text-slate-600">Chưa có hóa đơn cho vụ mùa này.</p>
+            <button onClick={() => onRequestSupply(farmer)} className="mt-3 inline-flex items-center gap-2 text-[13px] font-semibold text-brand-700 hover:text-brand-800">
+              Đặt vật tư đầu vụ ngay
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </button>
           </div>
         ) : (
-          <div className="divide-y divide-slate-50">
+          <ul className="divide-y divide-surface-200">
             {myInvoices.map(inv => {
-              const cfg = STATUS_STYLE[inv.trangThai] ?? {};
+              const cfg = STATUS_STYLE[inv.trangThai] ?? STATUS_STYLE["Chờ xác nhận"];
               return (
-                <div key={inv.id} className="p-4 hover:bg-slate-50/60 transition-colors">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-xs font-bold text-slate-600">{inv.id}</span>
+                <li key={inv.id} className="px-6 py-4 hover:bg-surface-50/60 transition-colors">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-mono text-[13px] font-semibold text-slate-700">{inv.id}</span>
                         {inv.tokenId && (
-                          <span className="text-[10px] bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded font-bold">{inv.tokenId}</span>
+                          <span className="text-[11px] bg-sky-50 text-sky-800 ring-1 ring-sky-200 px-1.5 py-0.5 rounded-md font-semibold font-mono">{inv.tokenId}</span>
                         )}
                       </div>
-                      <div className="text-xs text-slate-400">{inv.vuMua} · {new Date(inv.date).toLocaleDateString("vi-VN")}</div>
+                      <div className="text-[13px] text-slate-500">{inv.vuMua} · {new Date(inv.date).toLocaleDateString("vi-VN")}</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-green-700 text-base">{formatVND(inv.amount)}</div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${cfg.cls}`}>{cfg.badge}</span>
+                      <div className="font-display text-[19px] font-semibold tabular text-slate-900">{formatVND(inv.amount)}</div>
+                      <span className={`mt-1 inline-flex items-center gap-1.5 text-[12px] px-2 py-0.5 rounded-md font-semibold ring-1 ${cfg.cls}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}></span>
+                        {cfg.label}
+                      </span>
                     </div>
                   </div>
-                  {/* Actions for Farmer */}
                   {inv.trangThai === "Đã token hóa" && (
-                    <div className="mt-3 pt-3 border-t border-slate-100 flex justify-end">
-                      <div
+                    <div className="mt-3 pt-3 border-t border-surface-200 flex justify-end">
+                      <button
                         onClick={() => onSubmitSCF(inv)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm inline-flex items-center gap-2 select-none"
+                        className="bg-sky-700 hover:bg-sky-800 text-white px-4 py-2 rounded-lg text-[13px] font-semibold transition-colors"
                       >
-                        <span>🏦</span> Ký yêu cầu vay vốn SCF
-                      </div>
+                        Ký yêu cầu vay vốn SCF
+                      </button>
                     </div>
                   )}
                   {inv.trangThai === "Chào bán ngân hàng" && (
-                     <div className="mt-3 pt-3 border-t border-slate-100 text-right">
-                       <span className="text-xs text-orange-500 font-bold italic animate-pulse">Đang chờ ngân hàng duyệt hợp đồng...</span>
-                     </div>
-                  )}
-
-                  {/* Recourse info */}
-                  {inv.recourseStatus && (
-                    <div className="mt-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-xs">
-                      <span className="font-bold text-red-700">
-                        {inv.recourseStatus === "DEFAULTED" && "🌊 Đã khai báo thiên tai — chờ Oracle xác minh"}
-                        {inv.recourseStatus === "INSURANCE_CLAIMED" && `🛡️ Bảo hiểm đang xử lý — ${formatVND(inv.insurancePayout ?? 0)}`}
-                        {inv.recourseStatus === "RECOURSE_SETTLED" && "✅ Đã tất toán — Lộc Trời đã bảo lãnh cho bạn"}
+                    <div className="mt-3 pt-3 border-t border-surface-200 text-right">
+                      <span className="text-[12px] text-amber-700 font-semibold">
+                        Đang chờ ngân hàng duyệt hợp đồng…
                       </span>
                     </div>
                   )}
-                </div>
+                  {inv.recourseStatus && (
+                    <div className="mt-3 px-3 py-2 rounded-lg bg-rose-50 ring-1 ring-rose-200 text-[12px] text-rose-800">
+                      {inv.recourseStatus === "DEFAULTED" && "Đã khai báo thiên tai, chờ Oracle xác minh"}
+                      {inv.recourseStatus === "INSURANCE_CLAIMED" && `Bảo hiểm đang xử lý: ${formatVND(inv.insurancePayout ?? 0)}`}
+                      {inv.recourseStatus === "RECOURSE_SETTLED" && "Đã tất toán, Lộc Trời đã bảo lãnh cho bạn"}
+                    </div>
+                  )}
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
 
-      {/* Blockchain activity */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-        <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-green-500" style={{animation:"ping 1.2s ease-in-out infinite"}}></span>
-          ⛓️ Lịch sử Blockchain của tôi
-        </h3>
+      {/* ─── BLOCKCHAIN TIMELINE (compact) ──────────────────────────────────── */}
+      <section className="bg-white rounded-2xl border border-surface-200 px-6 py-5">
+        <div className="flex items-baseline justify-between mb-5">
+          <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Lịch sử trên blockchain</h3>
+          <span className="text-[12px] font-mono text-slate-400">{myLogs.length} blocks</span>
+        </div>
         {myLogs.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6">Chưa có giao dịch blockchain cho hộ này.</p>
+          <p className="text-[14px] text-slate-500 text-center py-6">Chưa có giao dịch nào.</p>
         ) : (
-          <div className="relative border-l-2 border-slate-100 ml-3 space-y-4">
-            {myLogs.map((log, idx) => (
-              <div key={idx} className="relative pl-6">
-                <div className="absolute -left-[11px] top-0.5 w-5 h-5 bg-white border-2 border-green-200 rounded-full flex items-center justify-center shadow-sm">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                </div>
-                <div className="bg-slate-50 rounded-xl border border-slate-100 p-3">
+          <ol className="relative space-y-3.5 before:absolute before:left-[7px] before:top-1 before:bottom-1 before:w-px before:bg-surface-200">
+            {myLogs.slice(0, 8).map((log, idx) => (
+              <li key={idx} className="relative pl-6">
+                <span className={`absolute left-0 top-1 w-[15px] h-[15px] rounded-full ring-2 ring-white ${logDot(log.action)}`} />
+                <div className="bg-surface-50/80 rounded-lg px-3.5 py-2.5 ring-1 ring-surface-200">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold whitespace-nowrap ${
-                      log.action === "LOAN_DEFAULT" ? "bg-red-200 text-red-800" :
-                      log.action === "INSURANCE_TRIGGERED" ? "bg-amber-100 text-amber-800" :
-                      log.action === "RECOURSE_SETTLED" ? "bg-purple-100 text-purple-800" :
-                      log.action === "LOAN_DISBURSED" ? "bg-emerald-100 text-emerald-800" :
-                      log.action === "INVOICE_TOKENIZED" ? "bg-cyan-100 text-cyan-800" :
-                      "bg-green-100 text-green-800"
-                    }`}>{log.action}</span>
-                    <span className="font-mono text-[10px] text-green-700 font-bold">#{log.hash}</span>
-                    <span className="text-[10px] text-slate-400 ml-auto">{new Date(log.timestamp).toLocaleString("vi-VN")}</span>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-semibold ring-1 ${logBadge(log.action)}`}>
+                      {log.action}
+                    </span>
+                    <span className="font-mono text-[11px] text-slate-500">#{log.hash}</span>
+                    <span className="text-[11px] text-slate-400 ml-auto">{new Date(log.timestamp).toLocaleString("vi-VN")}</span>
                   </div>
-                  <p className="text-xs text-slate-600">{log.data}</p>
+                  <p className="text-[13px] text-slate-700 leading-relaxed">{log.data}</p>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+            {myLogs.length > 8 && (
+              <li className="pl-6 text-[12px] text-slate-500">+ {myLogs.length - 8} block trước đó</li>
+            )}
+          </ol>
         )}
-      </div>
+      </section>
 
-      {/* Digital ID card */}
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white shadow-lg">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-lg">🪪</span>
-          <span className="text-sm font-bold text-slate-300">Digital ID — Hyperledger Fabric</span>
-        </div>
-        <div className="space-y-2 font-mono text-xs">
-          <div className="flex justify-between">
-            <span className="text-slate-400">DID</span>
-            <span className="text-green-400 font-bold">{farmer.id}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">Guarantor</span>
-            <span className="text-cyan-400">LOC-TROI-CORP</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">Network</span>
-            <span className="text-purple-300">LocTroi-AgriChain-v2</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">Status</span>
-            <span className={`font-bold ${farmer.trangThai === "Đang canh tác" ? "text-green-400" : "text-red-400"}`}>
-              {farmer.trangThai === "Đang canh tác" ? "ACTIVE" : "WARNED"}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">MSP</span>
-            <span className="text-slate-300">FarmerMSP</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
 
-// ─── Helper ──────────────────────────────────────────────────────────────────
-const CondLine = ({ ok, label, optional }) => (
-  <div className="flex items-center gap-1.5">
-    <span className={ok ? "text-emerald-600" : optional ? "text-slate-400" : "text-rose-500"}>
-      {ok ? "✅" : optional ? "○" : "⏳"}
-    </span>
-    <span className={ok ? "text-emerald-700 font-bold" : "text-slate-500"}>{label}</span>
+// ─── Sub-components ─────────────────────────────────────────────────────────
+const ScorePill = ({ icon, label, value, max, pct }) => (
+  <div className="bg-white/[0.12] ring-1 ring-white/10 rounded-xl px-4 py-3">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        {icon === "leaf"
+          ? <LeafIcon className="w-3.5 h-3.5 text-white/85" />
+          : <BankIcon className="w-3.5 h-3.5 text-white/85" />}
+        <span className="text-[12px] font-semibold tracking-[0.14em] text-white/85">{label}</span>
+      </div>
+      <div className="font-display text-[18px] font-semibold tabular text-white leading-none">
+        {value}<span className="text-[11px] text-white/65 font-normal ml-0.5">/{max}</span>
+      </div>
+    </div>
+    <div className="h-1.5 bg-white/15 rounded-full overflow-hidden mt-2.5">
+      <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+    </div>
   </div>
 );
 
-// ─── Main export ─────────────────────────────────────────────────────────────
-const FarmerPortalTab = ({ farmer, invoices, transactions, droneReports, blockchainLog, formatVND, onSubmitSCF, onRequestSupply, onReportHarvest }) => {
-  return (
-    <FarmerDashboard
-      farmer={farmer}
-      invoices={invoices}
-      transactions={transactions}
-      droneReports={droneReports}
-      blockchainLog={blockchainLog}
-      formatVND={formatVND}
-      onSubmitSCF={onSubmitSCF}
-      onRequestSupply={onRequestSupply}
-      onReportHarvest={onReportHarvest}
-      onLogout={() => {}} // Logout now handled globally
-    />
-  );
+const QuickAction = ({ icon, label, sub, onClick, accent, disabled, active }) => (
+  <button
+    onClick={disabled ? undefined : onClick}
+    disabled={disabled}
+    className={`group relative bg-white rounded-2xl border ${active ? "border-brand-600 ring-1 ring-brand-200" : "border-surface-200"} px-3 py-4 flex flex-col items-center text-center transition-colors ${
+      disabled ? "opacity-50 cursor-not-allowed" : "hover:border-surface-300 cursor-pointer"
+    }`}
+  >
+    <span className={`w-12 h-12 rounded-xl ring-1 ${accent} flex items-center justify-center`}>
+      {icon === "cart"  && <CartIcon  className="w-6 h-6" />}
+      {icon === "wheat" && <WheatIcon className="w-6 h-6" />}
+      {icon === "id"    && <IdIcon    className="w-6 h-6" />}
+    </span>
+    <span className="text-[14px] font-semibold text-slate-900 mt-3">{label}</span>
+    <span className="text-[11px] text-slate-500 mt-0.5">{sub}</span>
+  </button>
+);
+
+const SeasonStat = ({ label, value, small }) => (
+  <div className="bg-white px-4 py-3.5">
+    <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</div>
+    <div className={`font-display ${small ? "text-[15px]" : "text-[20px]"} font-semibold tabular text-slate-900 mt-1.5 leading-tight`}>
+      {value}
+    </div>
+  </div>
+);
+
+const Row = ({ k, v, color = "text-slate-200" }) => (
+  <div className="flex items-baseline justify-between gap-3">
+    <span className="text-slate-500 shrink-0">{k}</span>
+    <span className={`font-semibold ${color} truncate`}>{v}</span>
+  </div>
+);
+
+const logDot = (action) => {
+  if (action === "LOAN_DEFAULT")        return "bg-rose-500";
+  if (action === "INSURANCE_TRIGGERED") return "bg-amber-500";
+  if (action === "RECOURSE_SETTLED")    return "bg-slate-700";
+  if (action === "LOAN_DISBURSED")      return "bg-brand-600";
+  if (action === "INVOICE_TOKENIZED")   return "bg-sky-600";
+  if (action === "HARVEST_SETTLED")     return "bg-rose-600";
+  return "bg-brand-500";
+};
+const logBadge = (action) => {
+  if (action === "LOAN_DEFAULT")        return "bg-rose-50 text-rose-800 ring-rose-200";
+  if (action === "INSURANCE_TRIGGERED") return "bg-amber-50 text-amber-800 ring-amber-200";
+  if (action === "RECOURSE_SETTLED")    return "bg-surface-100 text-slate-700 ring-surface-200";
+  if (action === "LOAN_DISBURSED")      return "bg-brand-50 text-brand-800 ring-brand-200";
+  if (action === "INVOICE_TOKENIZED")   return "bg-sky-50 text-sky-800 ring-sky-200";
+  if (action === "HARVEST_SETTLED")     return "bg-rose-50 text-rose-800 ring-rose-200";
+  return "bg-brand-50 text-brand-800 ring-brand-200";
 };
 
+// ─── Inline icons (no external lib) ─────────────────────────────────────────
+const CartIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 3h2l.4 2M7 13h11l3-8H6"/>
+    <circle cx="9" cy="20" r="1.5"/>
+    <circle cx="17" cy="20" r="1.5"/>
+  </svg>
+);
+const WheatIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22V8"/>
+    <path d="M12 8c-2 0-4-1.5-4-4 2 0 4 1.5 4 4z"/>
+    <path d="M12 8c2 0 4-1.5 4-4-2 0-4 1.5-4 4z"/>
+    <path d="M12 14c-2.5 0-4.5-2-4.5-4.5 2.5 0 4.5 2 4.5 4.5z"/>
+    <path d="M12 14c2.5 0 4.5-2 4.5-4.5-2.5 0-4.5 2-4.5 4.5z"/>
+    <path d="M12 20c-2.5 0-4.5-2-4.5-4.5 2.5 0 4.5 2 4.5 4.5z"/>
+    <path d="M12 20c2.5 0 4.5-2 4.5-4.5-2.5 0-4.5 2-4.5 4.5z"/>
+  </svg>
+);
+const IdIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="5" width="18" height="14" rx="2"/>
+    <circle cx="9" cy="12" r="2.5"/>
+    <path d="M14 10h4M14 14h4"/>
+  </svg>
+);
+const LeafIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17 8C8 10 5.9 16.17 3.82 21.34 4.78 21 5.79 21 6.78 21c7.18 0 13-5.82 13-13V8h-2.78z"/>
+  </svg>
+);
+const BankIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M3 22h18v-2H3v2zM3 10v8h2v-8H3zm6 0v8h2v-8H9zm4 0v8h2v-8h-2zm6 0v8h2v-8h-2zM12 1L1 7v2h22V7L12 1z"/>
+  </svg>
+);
+const SeedlingIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22V11"/>
+    <path d="M12 11c-3 0-5-2-5-5h1c3 0 5 2 5 5z"/>
+    <path d="M12 11c3 0 5-2 5-5h-1c-3 0-5 2-5 5z"/>
+  </svg>
+);
 
 export default FarmerPortalTab;
