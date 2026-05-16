@@ -20,40 +20,40 @@ const StaffHome = ({ staff, farmers, transactions, invoices, supplyRequests, dro
   const kpi = computeKpi(staff, blockchainLog, droneReports, transactions, invoices);
 
   return (
-    <div className="space-y-8 fade-in pb-10">
+    <div className="space-y-6 sm:space-y-8 fade-in pb-10">
       {/* Hero — slate-900 sober, accent line trên đỉnh giúp phân biệt sub-role */}
       <section className="relative overflow-hidden rounded-2xl bg-slate-900 text-white">
         <div className={`absolute inset-x-0 top-0 h-[3px] ${tok.accent}`} />
-        <div className="px-7 pt-7 pb-6">
-          <div className="flex items-start gap-5 flex-wrap">
-            <div className={`w-14 h-14 rounded-xl ${tok.accent} text-white flex items-center justify-center text-2xl shrink-0`}>
+        <div className="px-5 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6">
+          <div className="flex items-start gap-4 sm:gap-5 flex-wrap">
+            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl ${tok.accent} text-white flex items-center justify-center text-xl sm:text-2xl shrink-0`}>
               <span className="drop-shadow-sm">{sr.icon}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 {sr.label}
               </div>
-              <h2 className="text-[32px] font-display font-semibold tracking-tight leading-tight mt-1 text-white">
+              <h2 className="text-[22px] sm:text-[28px] lg:text-[32px] font-display font-semibold tracking-tight leading-tight mt-1 text-white break-words">
                 {staff.hoTen}
               </h2>
-              <p className="text-[14px] text-slate-300 mt-1.5">{staff.chucDanh}</p>
-              <div className="flex items-center gap-3 mt-3 flex-wrap text-[12px]">
+              <p className="text-[13px] sm:text-[14px] text-slate-300 mt-1.5">{staff.chucDanh}</p>
+              <div className="flex items-center gap-2 sm:gap-3 mt-3 flex-wrap text-[11px] sm:text-[12px]">
                 <span className="font-mono text-slate-400 bg-white/5 px-2 py-1 rounded-md ring-1 ring-white/10">{staff.id}</span>
-                <span className="text-slate-400">·</span>
+                <span className="text-slate-400 hidden sm:inline">·</span>
                 <span className="text-slate-400">{staff.khuVuc}</span>
-                <span className="text-slate-400">·</span>
-                <span className="text-slate-400">Vào làm {new Date(staff.ngayVaoLam).toLocaleDateString("vi-VN")}</span>
+                <span className="text-slate-400 hidden sm:inline">·</span>
+                <span className="text-slate-400 hidden sm:inline">Vào làm {new Date(staff.ngayVaoLam).toLocaleDateString("vi-VN")}</span>
               </div>
             </div>
           </div>
 
           {/* KPI strip: 1px white divider grid, không nested cards */}
-          <div className="mt-7 grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 rounded-xl overflow-hidden">
+          <div className="mt-5 sm:mt-7 grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 rounded-xl overflow-hidden">
             {kpi.cards.map((c, i) => (
-              <div key={i} className="bg-slate-900 px-4 py-4">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{c.label}</div>
-                <div className="font-display text-[30px] font-semibold tabular leading-none mt-2.5 text-white">{c.value}</div>
-                {c.sub && <div className="text-[12px] text-slate-500 mt-1.5">{c.sub}</div>}
+              <div key={i} className="bg-slate-900 px-3 sm:px-4 py-3 sm:py-4">
+                <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{c.label}</div>
+                <div className="font-display text-[22px] sm:text-[28px] lg:text-[30px] font-semibold tabular leading-none mt-2 sm:mt-2.5 text-white break-words">{c.value}</div>
+                {c.sub && <div className="text-[11px] sm:text-[12px] text-slate-500 mt-1 sm:mt-1.5">{c.sub}</div>}
               </div>
             ))}
           </div>

@@ -21,7 +21,7 @@ const OracleModal = ({ modal }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in">
-      <div className="bg-white rounded-2xl shadow-[0_24px_64px_-16px_rgba(15,23,42,0.45)] w-full max-w-sm border border-surface-200 text-center px-7 py-7">
+      <div className="bg-white rounded-2xl shadow-[0_24px_64px_-16px_rgba(15,23,42,0.45)] w-full max-w-sm border border-surface-200 text-center px-5 sm:px-7 py-6 sm:py-7">
         {modal.status === "loading" ? (
           <div className="space-y-5">
             <div className="relative mx-auto w-14 h-14 flex items-center justify-center">

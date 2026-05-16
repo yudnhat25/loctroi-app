@@ -475,7 +475,7 @@ const App = () => {
     : blockchainLog;
 
   return (
-    <div className="flex w-screen h-screen overflow-hidden bg-[#f6f8f5]">
+    <div className="flex w-screen bg-[#f6f8f5]" style={{ height: "100dvh", minHeight: "100vh", overflow: "hidden" }}>
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
@@ -506,9 +506,9 @@ const App = () => {
         setIsSidebarOpen={setIsSidebarOpen}
       />
 
-      <main className="flex-1 flex flex-col h-full overflow-hidden w-full relative">
+      <main className="flex-1 flex flex-col h-full overflow-hidden w-full relative min-w-0">
         <Header activeTab={activeTab} user={currentUser} setIsSidebarOpen={setIsSidebarOpen} />
-        <div className="flex-1 overflow-auto p-6 xl:p-8">
+        <div className="flex-1 overflow-auto px-3 py-4 sm:px-5 sm:py-5 lg:p-6 xl:p-8 safe-pb">
           <div className="max-w-screen-xl mx-auto w-full">
 
             {/* Manager subrole tabs */}
@@ -578,18 +578,21 @@ const App = () => {
       </main>
 
       {/* Ledger FAB */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
+      <div
+        className="fixed right-4 sm:right-6 z-40 flex flex-col items-end gap-3"
+        style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      >
         {ledgerOpen && <LedgerPanel blockchainLog={visibleBlockchainLog} onClose={() => setLedgerOpen(false)} />}
         <button
           onClick={() => setLedgerOpen(v => !v)}
-          className="group inline-flex items-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white pl-3 pr-4 py-2.5 rounded-full text-[14px] font-semibold tracking-tight transition-colors ring-1 ring-white/10 shadow-[0_8px_24px_-12px_rgba(15,23,42,0.45)]"
+          className="group inline-flex items-center gap-2 sm:gap-2.5 bg-slate-900 hover:bg-slate-800 text-white pl-2.5 pr-3 sm:pl-3 sm:pr-4 py-2 sm:py-2.5 rounded-full text-[13px] sm:text-[14px] font-semibold tracking-tight transition-colors ring-1 ring-white/10 shadow-[0_8px_24px_-12px_rgba(15,23,42,0.45)]"
         >
-          <span className="relative flex items-center justify-center w-5 h-5">
+          <span className="relative flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5">
             <span className="absolute inset-0 rounded-full bg-emerald-400/30 ping"></span>
             <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-300"></span>
           </span>
           <span className="tabular">{visibleBlockchainLog.length}</span>
-          <span className="text-white/70 font-normal">blocks</span>
+          <span className="text-white/70 font-normal hidden xs:inline">blocks</span>
         </button>
       </div>
 

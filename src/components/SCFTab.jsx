@@ -16,32 +16,32 @@ const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onR
   const rateInk = (kpi) => kpi > 80 ? "text-brand-700" : kpi >= 60 ? "text-amber-700" : "text-rose-700";
 
   return (
-    <div className="space-y-8 fade-in pb-10">
+    <div className="space-y-6 sm:space-y-8 fade-in pb-10">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl bg-slate-900 text-white">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-amber-600" />
-        <div className="px-7 pt-7 pb-6">
-          <div className="flex items-start justify-between gap-6 flex-wrap">
+        <div className="px-5 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6">
+          <div className="flex items-start justify-between gap-4 sm:gap-6 flex-wrap">
             <div className="min-w-0">
-              <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Liên minh Ngân hàng SCF</div>
-              <h2 className="text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">
+              <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Liên minh Ngân hàng SCF</div>
+              <h2 className="text-[20px] sm:text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">
                 Token AR và giải ngân khoản phải thu
               </h2>
-              <p className="text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
+              <p className="text-[13px] sm:text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
                 Thành viên: <span className="text-white">VietinBank · HSBC · Agribank</span> · Lộc Trời là Leading Peer
                 kiêm bên bảo lãnh recourse khi nông dân default vì thiên tai.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 shrink-0">
+            <div className="grid grid-cols-2 sm:gap-x-8 gap-x-4 gap-y-3 shrink-0 w-full sm:w-auto">
               <div>
-                <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-400">Tổng hạn mức</div>
-                <div className="font-display text-[26px] font-semibold tabular text-white mt-1.5 leading-none">
-                  50<span className="text-[14px] text-slate-400 font-normal ml-1">tỷ VNĐ</span>
+                <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-400">Tổng hạn mức</div>
+                <div className="font-display text-[20px] sm:text-[26px] font-semibold tabular text-white mt-1.5 leading-none">
+                  50<span className="text-[12px] sm:text-[14px] text-slate-400 font-normal ml-1">tỷ VNĐ</span>
                 </div>
               </div>
               <div>
-                <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-400">Đã giải ngân</div>
-                <div className="font-display text-[26px] font-semibold tabular text-amber-300 mt-1.5 leading-none">
+                <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-400">Đã giải ngân</div>
+                <div className="font-display text-[16px] sm:text-[26px] font-semibold tabular text-amber-300 mt-1.5 leading-none break-words">
                   {formatVND(disbursedAmount)}
                 </div>
               </div>
@@ -132,7 +132,62 @@ const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onR
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Mobile cards */}
+            <ul className="md:hidden divide-y divide-surface-200">
+              {disbursed.map(inv => {
+                const farmer = farmers.find(f => f.id === inv.nongHoId);
+                return (
+                  <li key={inv.id} className="px-4 py-3.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-mono font-semibold text-sky-700 text-[13px] truncate">{inv.tokenId}</div>
+                        <div className="font-semibold text-slate-900 text-[14px] mt-0.5 truncate">{farmer?.hoTen ?? inv.nongHoId}</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">{new Date(inv.date).toLocaleString("vi-VN")}</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-display font-semibold tabular text-slate-900 whitespace-nowrap text-[14px]">{formatVND(inv.amount)}</div>
+                        {inv.insurancePayout && (
+                          <div className="text-[11px] text-amber-700 font-semibold tabular">BH {formatVND(inv.insurancePayout)}</div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        {inv.trangThai === "Đã giải ngân" && (
+                          <span className="inline-flex items-center gap-1.5 bg-brand-50 text-brand-800 ring-1 ring-brand-200 text-[11px] px-2 py-0.5 rounded-md font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-brand-600"></span>Hoàn tất
+                          </span>
+                        )}
+                        {inv.trangThai === "Nợ xấu" && (
+                          <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-800 ring-1 ring-rose-200 text-[11px] px-2 py-0.5 rounded-md font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>Nợ xấu
+                          </span>
+                        )}
+                        {inv.trangThai === "Đã tất toán" && (
+                          <span className="inline-flex items-center gap-1.5 bg-surface-100 text-slate-600 ring-1 ring-surface-200 text-[11px] px-2 py-0.5 rounded-md font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>Tất toán
+                          </span>
+                        )}
+                        {inv.trangThai === "Từ chối duyệt vay" && (
+                          <span className="inline-flex items-center bg-surface-100 text-slate-600 ring-1 ring-surface-200 text-[11px] px-2 py-0.5 rounded-md font-semibold">Từ chối</span>
+                        )}
+                        {inv.riskLevel && (
+                          <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold ring-1 ${RISK_CONFIG[inv.riskLevel]?.cls}`}>
+                            {RISK_CONFIG[inv.riskLevel]?.label.replace("Rủi ro ", "")}
+                          </span>
+                        )}
+                      </div>
+                      {inv.trangThai === "Đã giải ngân" && (
+                        <button onClick={() => onDeclareDefault(inv)} className="text-[11px] text-rose-700 hover:underline font-semibold whitespace-nowrap">
+                          Khai báo thiên tai
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-[14px]">
                 <thead className="bg-surface-50 text-slate-700 text-[11px] font-bold uppercase tracking-[0.14em] border-b border-surface-200">
                   <tr>
@@ -213,21 +268,21 @@ const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onR
         const farmer = farmers.find(f => f.id === viewingInvoice.nongHoId);
         const logs = blockchainLog.filter(l => l.data.includes(farmer?.hoTen) || l.data.includes(viewingInvoice.id) || (viewingInvoice.tokenId && l.data.includes(viewingInvoice.tokenId)));
         const dReports = droneReports.filter(r => r.farmerId === farmer?.id);
-        
+
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-              <div className="px-6 py-4 border-b border-surface-200 flex items-center justify-between bg-slate-50">
-                <div>
-                  <h3 className="text-[18px] font-display font-semibold text-slate-900">Hồ sơ Cấp tín dụng: {viewingInvoice.tokenId}</h3>
-                  <p className="text-[13px] text-slate-500 font-medium mt-1">
-                    Bên vay: <span className="font-bold text-slate-700">{farmer?.hoTen}</span> ({farmer?.id}) — Nhu cầu: <span className="font-bold text-brand-700">{formatVND(viewingInvoice.amount)}</span>
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4 fade-in">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-surface-200 flex items-center justify-between bg-slate-50 gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-[15px] sm:text-[18px] font-display font-semibold text-slate-900 truncate">Hồ sơ Cấp tín dụng: {viewingInvoice.tokenId}</h3>
+                  <p className="text-[12px] sm:text-[13px] text-slate-500 font-medium mt-1 truncate">
+                    Bên vay: <span className="font-bold text-slate-700">{farmer?.hoTen}</span> ({farmer?.id}) — <span className="font-bold text-brand-700">{formatVND(viewingInvoice.amount)}</span>
                   </p>
                 </div>
-                <button onClick={() => setViewingInvoice(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+                <button onClick={() => setViewingInvoice(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 shrink-0">&times;</button>
               </div>
               
-              <div className="p-6 overflow-y-auto flex-1 space-y-6 bg-surface-50">
+              <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 sm:space-y-6 bg-surface-50">
                 {/* Farming Score & Criteria */}
                 <div className="bg-white p-5 rounded-xl border border-surface-200 shadow-sm">
                   <h4 className="text-[14px] font-bold text-slate-800 mb-4 uppercase tracking-wider flex items-center gap-2">
@@ -304,15 +359,15 @@ const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onR
                 </div>
 
               </div>
-              <div className="px-6 py-4 border-t border-surface-200 bg-white flex justify-end gap-3">
-                <button onClick={() => setViewingInvoice(null)} className="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition-colors text-[14px]">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-surface-200 bg-white safe-pb grid grid-cols-3 sm:flex sm:justify-end gap-2 sm:gap-3">
+                <button onClick={() => setViewingInvoice(null)} className="px-3 sm:px-6 py-2.5 border border-slate-300 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition-colors text-[13px] sm:text-[14px]">
                   Đóng
                 </button>
-                <button onClick={() => { onReject(viewingInvoice); setViewingInvoice(null); }} className="px-6 py-2.5 border border-rose-200 text-rose-700 hover:bg-rose-50 font-semibold rounded-xl transition-colors text-[14px]">
-                  Từ chối vay
+                <button onClick={() => { onReject(viewingInvoice); setViewingInvoice(null); }} className="px-3 sm:px-6 py-2.5 border border-rose-200 text-rose-700 hover:bg-rose-50 font-semibold rounded-xl transition-colors text-[13px] sm:text-[14px]">
+                  Từ chối
                 </button>
-                <button onClick={() => { onDisburse(viewingInvoice); setViewingInvoice(null); }} className="px-6 py-2.5 bg-brand-700 hover:bg-brand-800 text-white font-semibold rounded-xl transition-colors shadow-sm text-[14px]">
-                  ✅ Duyệt giải ngân
+                <button onClick={() => { onDisburse(viewingInvoice); setViewingInvoice(null); }} className="px-3 sm:px-6 py-2.5 bg-brand-700 hover:bg-brand-800 text-white font-semibold rounded-xl transition-colors shadow-sm text-[13px] sm:text-[14px]">
+                  <span className="hidden sm:inline">✅ </span>Duyệt
                 </button>
               </div>
             </div>

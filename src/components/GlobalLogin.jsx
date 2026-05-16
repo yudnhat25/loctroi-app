@@ -72,30 +72,30 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin }) => {
   const codeLabel   = tab === "farmer" ? "Mã nông hộ" : "Mã nhân sự";
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white" style={{ fontFamily: "'Inter', sans-serif", minHeight: "100dvh" }}>
       {/* ─── LEFT: Hero scene 30 năm Lộc Trời + UAV bay ─────────────────── */}
-      <div className="relative lg:w-1/2 min-h-[55vh] lg:min-h-screen overflow-hidden bg-emerald-950">
+      <div className="relative lg:w-1/2 min-h-[38vh] sm:min-h-[48vh] lg:min-h-screen overflow-hidden bg-emerald-950">
         <LocTroi30NamHero />
 
         {/* Caption + stats overlay — panel solid để chữ đọc rõ trên nền busy */}
         <div className="absolute bottom-0 left-0 right-0 z-20">
           {/* Fade transition mềm từ ảnh xuống panel tối */}
-          <div className="h-20 bg-gradient-to-b from-transparent to-emerald-950"></div>
+          <div className="h-12 sm:h-20 bg-gradient-to-b from-transparent to-emerald-950"></div>
           {/* Panel solid */}
-          <div className="bg-emerald-950 px-6 lg:px-10 pb-6 lg:pb-10 pt-0">
-            <div className="text-[10px] font-mono font-bold tracking-[0.25em] text-amber-300 uppercase mb-3 flex items-center gap-2">
+          <div className="bg-emerald-950 px-5 sm:px-6 lg:px-10 pb-5 sm:pb-6 lg:pb-10 pt-0">
+            <div className="text-[10px] font-mono font-bold tracking-[0.25em] text-amber-300 uppercase mb-2 sm:mb-3 flex items-center gap-2">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300" style={{ animation: "ping 1.4s ease-in-out infinite" }}></span>
-              Hyperledger · LocTroi-AgriChain-v2
+              <span className="truncate">Hyperledger · LocTroi-AgriChain-v2</span>
             </div>
-            <h1 className="text-3xl lg:text-4xl font-extrabold text-white leading-tight tracking-tight">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight tracking-tight">
               Lúa gạo Việt Nam<br/>trên Blockchain.
             </h1>
-            <p className="text-sm text-emerald-100/85 mt-3 max-w-md leading-relaxed">
+            <p className="text-[13px] sm:text-sm text-emerald-100/85 mt-2 sm:mt-3 max-w-md leading-relaxed hidden sm:block">
               Hệ thống quản lý hộ nông dân, vật tư, tín dụng và bao tiêu —
               từ ruộng đến gạo xuất khẩu — với mọi giao dịch ghi bất biến lên sổ cái phân tán.
             </p>
 
-            <div className="grid grid-cols-3 gap-6 mt-6 max-w-md pt-5 border-t border-emerald-800/60">
+            <div className="grid grid-cols-3 gap-3 sm:gap-6 mt-4 sm:mt-6 max-w-md pt-4 sm:pt-5 border-t border-emerald-800/60">
               <Stat value={stats.hoThamGia.toLocaleString("vi-VN")} label="hộ tham gia" />
               <Stat value={stats.haDBSCL.toLocaleString("vi-VN")} label="ha · ĐBSCL" />
               <Stat value={stats.blocks.toLocaleString("vi-VN")} label="blocks ghi" />
@@ -105,25 +105,25 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin }) => {
       </div>
 
       {/* ─── RIGHT: Form ─────────────────────────────────────────────────── */}
-      <div className="lg:w-1/2 flex flex-col p-6 lg:p-12 xl:p-16 relative w-full items-center lg:items-start">
+      <div className="lg:w-1/2 flex flex-col p-5 sm:p-6 lg:p-12 xl:p-16 relative w-full items-center lg:items-start safe-pb">
         <div className="w-full max-w-full sm:max-w-md flex flex-col h-full flex-1">
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-8 lg:mb-12">
-          <div className="w-12 h-12 bg-emerald-700 text-white rounded-xl flex items-center justify-center font-extrabold text-lg shadow-md">LT</div>
+        <div className="flex items-center gap-3 mb-5 sm:mb-8 lg:mb-12">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-700 text-white rounded-xl flex items-center justify-center font-extrabold text-base sm:text-lg shadow-md">LT</div>
           <div>
-            <div className="text-xl font-extrabold text-slate-900 tracking-wide leading-none">LỘC TRỜI</div>
-            <div className="text-[10px] font-bold text-emerald-700 tracking-[0.2em]">AGRICHAIN GROUP</div>
+            <div className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-wide leading-none">LỘC TRỜI</div>
+            <div className="text-[10px] font-bold text-emerald-700 tracking-[0.2em] mt-1">AGRICHAIN GROUP</div>
           </div>
         </div>
 
         {/* Headline */}
-        <div className="mb-6 max-w-md">
-          <h2 className="text-2xl lg:text-3xl font-extrabold text-slate-900 leading-tight">
-            Xác minh tài khoản Lộc Trời<br/>
-            để truy cập hệ thống AgriChain
+        <div className="mb-5 sm:mb-6 max-w-md">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 leading-tight">
+            Xác minh tài khoản Lộc Trời<br className="hidden sm:inline"/>
+            <span className="sm:hidden"> </span>để truy cập hệ thống AgriChain
           </h2>
-          <p className="text-[10px] font-bold text-slate-500 tracking-[0.2em] mt-3">DÀNH CHO ĐỐI TÁC HỆ THỐNG</p>
-          <p className="text-xs text-slate-400 italic">Verify your LocTroi account to access the AgriChain platform</p>
+          <p className="text-[10px] font-bold text-slate-500 tracking-[0.2em] mt-2 sm:mt-3">DÀNH CHO ĐỐI TÁC HỆ THỐNG</p>
+          <p className="text-xs text-slate-400 italic hidden sm:block">Verify your LocTroi account to access the AgriChain platform</p>
         </div>
 
         {/* Tabs */}
@@ -135,13 +135,13 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin }) => {
               <button
                 key={t.id}
                 onClick={() => { setTab(t.id); setError(""); setAccountCode(""); }}
-                className={`flex-1 pb-3 text-center transition-all relative ${active ? a.text : "text-slate-400 hover:text-slate-700"}`}
+                className={`flex-1 pb-2.5 sm:pb-3 text-center transition-all relative ${active ? a.text : "text-slate-400 hover:text-slate-700"}`}
               >
-                <div className="flex flex-col items-center gap-1.5">
-                  <t.Icon className={`w-5 h-5 ${active ? a.text : "text-slate-400"}`} />
-                  <div className={`text-base font-bold ${active ? "" : "font-semibold"}`}>{t.vi}</div>
+                <div className="flex flex-col items-center gap-1 sm:gap-1.5">
+                  <t.Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${active ? a.text : "text-slate-400"}`} />
+                  <div className={`text-[13px] sm:text-base font-bold ${active ? "" : "font-semibold"}`}>{t.vi}</div>
                 </div>
-                <div className={`text-[10px] font-bold tracking-[0.15em] mt-1 transition-colors ${active ? a.text : "text-slate-400"}`}>{t.en}</div>
+                <div className={`text-[9px] sm:text-[10px] font-bold tracking-[0.12em] sm:tracking-[0.15em] mt-1 transition-colors ${active ? a.text : "text-slate-400"}`}>{t.en}</div>
                 {active && <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${a.under} rounded-full transition-colors duration-300`}></div>}
               </button>
             );
@@ -247,8 +247,8 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin }) => {
 
 const Stat = ({ value, label }) => (
   <div>
-    <div className="text-2xl lg:text-3xl font-extrabold text-amber-300 leading-none drop-shadow">{value}</div>
-    <div className="text-[11px] text-emerald-50/90 mt-1 font-semibold">{label}</div>
+    <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-amber-300 leading-none drop-shadow">{value}</div>
+    <div className="text-[10px] sm:text-[11px] text-emerald-50/90 mt-1 font-semibold">{label}</div>
   </div>
 );
 

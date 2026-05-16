@@ -27,7 +27,7 @@
 };
 
 const LedgerPanel = ({ blockchainLog, onClose }) => (
-  <div className="bg-white border border-surface-200 shadow-[0_24px_64px_-16px_rgba(15,23,42,0.35)] rounded-2xl w-[480px] max-w-[98vw] max-h-[70vh] flex flex-col overflow-hidden fade-in">
+  <div className="bg-white border border-surface-200 shadow-[0_24px_64px_-16px_rgba(15,23,42,0.35)] rounded-2xl w-[480px] max-w-[calc(100vw-2rem)] max-h-[70vh] sm:max-h-[70vh] flex flex-col overflow-hidden fade-in">
     <div className="flex items-center justify-between px-5 py-4 border-b border-surface-200 shrink-0">
       <div className="flex items-center gap-2.5">
         <span className="relative flex w-2 h-2">

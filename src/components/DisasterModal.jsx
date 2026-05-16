@@ -44,7 +44,7 @@
           ))}
         </div>
 
-        <div className="px-8 py-7 text-center space-y-5">
+        <div className="px-5 sm:px-8 py-6 sm:py-7 text-center space-y-4 sm:space-y-5">
 
           {/* Step indicator */}
           <div className="flex justify-center gap-2">

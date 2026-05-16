@@ -118,32 +118,30 @@ const InspectionTab = ({ staff, farmers, droneReports, blockchainLog, onInspect 
   const totalDroneReports = droneReports.length;
 
   return (
-    <div className="space-y-6 fade-in pb-10">
+    <div className="space-y-5 sm:space-y-6 fade-in pb-10">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl bg-slate-900 text-white">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-brand-700" />
-        <div className="px-7 pt-7 pb-6">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="px-5 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6">
+          <div className="flex items-start justify-between gap-3 sm:gap-4 flex-wrap">
             <div className="min-w-0">
-              <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Đội 3 Cùng</div>
-              <h2 className="text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">Kiểm tra SRP thực địa</h2>
-              <p className="text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
-                Sau khi drone bay phát hiện vấn đề, xuống đồng kiểm tra trực tiếp, chụp ảnh thực địa, Gemini AI tự chấm
-                checklist SRP, KTV xác nhận hoặc sửa, ký số ghi blockchain. Ba lớp bằng chứng (drone + ảnh thực địa + chữ ký số)
-                đảm bảo không thể giả mạo.
+              <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Đội 3 Cùng</div>
+              <h2 className="text-[22px] sm:text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">Kiểm tra SRP thực địa</h2>
+              <p className="text-[13px] sm:text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
+                Drone bay phát hiện vấn đề → xuống đồng chụp ảnh → Gemini AI tự chấm checklist SRP → ký số ghi blockchain.
               </p>
             </div>
             {isGeminiConfigured() && (
-              <span className="inline-flex items-center gap-1.5 bg-white/5 text-brand-300 text-[11px] font-semibold tracking-[0.12em] px-2.5 py-1.5 rounded-md ring-1 ring-white/10 uppercase shrink-0">
+              <span className="inline-flex items-center gap-1.5 bg-white/5 text-brand-300 text-[10px] sm:text-[11px] font-semibold tracking-[0.12em] px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md ring-1 ring-white/10 uppercase shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-400"></span>
-                Gemini 2.5 Flash
+                Gemini 2.5
               </span>
             )}
           </div>
-          <div className="mt-6 grid grid-cols-3 gap-px bg-white/10 rounded-xl overflow-hidden">
-            <Stat label="Báo cáo drone đang chờ" value={totalDroneReports} />
-            <Stat label="Lần đã ghi chain" value={blockchainLog.filter(l => l.action === "FIELD_INSPECTION").length} />
-            <Stat label="Tiêu chí SRP áp dụng" value={`${SRP_CRITERIA.length}/41`} />
+          <div className="mt-5 sm:mt-6 grid grid-cols-3 gap-px bg-white/10 rounded-xl overflow-hidden">
+            <Stat label="Drone chờ" value={totalDroneReports} />
+            <Stat label="Đã ghi chain" value={blockchainLog.filter(l => l.action === "FIELD_INSPECTION").length} />
+            <Stat label="Tiêu chí SRP" value={`${SRP_CRITERIA.length}/41`} />
           </div>
         </div>
       </section>
@@ -406,10 +404,10 @@ const InspectionTab = ({ staff, farmers, droneReports, blockchainLog, onInspect 
 };
 
 const Stat = ({ label, value, sub }) => (
-  <div className="bg-slate-900 px-4 py-3.5">
-    <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</div>
-    <div className="font-display text-[28px] font-semibold tabular leading-none mt-2.5 text-white">{value}</div>
-    {sub && <div className="text-[12px] text-slate-500 mt-1.5">{sub}</div>}
+  <div className="bg-slate-900 px-3 sm:px-4 py-3 sm:py-3.5">
+    <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</div>
+    <div className="font-display text-[20px] sm:text-[28px] font-semibold tabular leading-none mt-2 sm:mt-2.5 text-white break-words">{value}</div>
+    {sub && <div className="text-[11px] sm:text-[12px] text-slate-500 mt-1 sm:mt-1.5">{sub}</div>}
   </div>
 );
 const Metric = ({ label, value, color }) => {

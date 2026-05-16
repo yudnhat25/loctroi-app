@@ -87,45 +87,45 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
     <div className="fade-in pb-12" style={{ fontFamily: "'Inter', sans-serif" }}>
       
       {/* ─── ROW 1: 4 Metrics Cards ────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-5 sm:mb-6">
         {/* Card 1 */}
-        <div className="bg-white rounded-2xl p-6 border border-surface-200">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-4">TỔNG HỘ THAM GIA</div>
-          <div className="flex items-end justify-between">
-            <div>
-              <div className="text-4xl font-extrabold text-slate-900 tracking-tight">{farmers.length.toLocaleString("vi-VN")}</div>
-              <div className="text-[13px] text-slate-500 font-medium mt-1">Vụ này</div>
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-surface-200">
+          <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 sm:mb-4">TỔNG HỘ THAM GIA</div>
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">{farmers.length.toLocaleString("vi-VN")}</div>
+              <div className="text-[12px] sm:text-[13px] text-slate-500 font-medium mt-1">Vụ này</div>
             </div>
-            <div className="text-right text-emerald-600 font-bold text-[14px]">
+            <div className="text-right text-emerald-600 font-bold text-[13px] sm:text-[14px] shrink-0">
               ↑ +{Math.max(1, Math.floor(farmers.length * 0.05))}
             </div>
           </div>
         </div>
 
         {/* Card 2 */}
-        <div className="bg-white rounded-2xl p-6 border border-surface-200">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-4">DIỆN TÍCH QUẢN LÝ</div>
-          <div className="flex items-end justify-between">
-            <div>
-              <div className="text-4xl font-extrabold text-slate-900 tracking-tight">{(totalArea || 9847).toLocaleString("vi-VN")} <span className="text-2xl">ha</span></div>
-              <div className="text-[13px] text-slate-500 font-medium mt-1">{new Set(farmers.map(f => f.htx)).size || 42} HTX</div>
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-surface-200">
+          <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 sm:mb-4">DIỆN TÍCH QUẢN LÝ</div>
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">{(totalArea || 9847).toLocaleString("vi-VN")} <span className="text-lg sm:text-2xl">ha</span></div>
+              <div className="text-[12px] sm:text-[13px] text-slate-500 font-medium mt-1">{new Set(farmers.map(f => f.htx)).size || 42} HTX</div>
             </div>
-            <div className="text-right text-blue-500 font-bold text-[14px] flex flex-col items-end">
+            <div className="text-right text-blue-500 font-bold text-[13px] sm:text-[14px] flex flex-col items-end shrink-0">
               <span>↑</span>
-              <span>+{Math.max(10, Math.floor((totalArea || 9847) * 0.04))} ha</span>
+              <span className="whitespace-nowrap">+{Math.max(10, Math.floor((totalArea || 9847) * 0.04))} ha</span>
             </div>
           </div>
         </div>
 
         {/* Card 3 */}
-        <div className="bg-white rounded-2xl p-6 border border-surface-200">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-4">VẬT TƯ ĐÃ GIAO</div>
-          <div className="flex items-end justify-between">
-            <div>
-              <div className="text-4xl font-extrabold text-slate-900 tracking-tight">{formatBillion(totalReceivables)}</div>
-              <div className="text-[13px] text-slate-500 font-medium mt-1">MTD</div>
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-surface-200">
+          <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 sm:mb-4">VẬT TƯ ĐÃ GIAO</div>
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">{formatBillion(totalReceivables)}</div>
+              <div className="text-[12px] sm:text-[13px] text-slate-500 font-medium mt-1">MTD</div>
             </div>
-            <div className="text-right text-amber-500 font-bold text-[14px] flex flex-col items-end">
+            <div className="text-right text-amber-500 font-bold text-[13px] sm:text-[14px] flex flex-col items-end shrink-0">
               <span>↑</span>
               <span>+8.2%</span>
             </div>
@@ -133,14 +133,14 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
         </div>
 
         {/* Card 4 */}
-        <div className="bg-white rounded-2xl p-6 border border-surface-200">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-4">AVG FARMING SCORE</div>
-          <div className="flex items-end justify-between">
-            <div>
-              <div className="text-4xl font-extrabold text-slate-900 tracking-tight">{avgFarmingScore || 487}</div>
-              <div className="text-[13px] text-slate-500 font-medium mt-1">/600</div>
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-surface-200">
+          <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 sm:mb-4">AVG FARMING SCORE</div>
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">{avgFarmingScore || 487}</div>
+              <div className="text-[12px] sm:text-[13px] text-slate-500 font-medium mt-1">/600</div>
             </div>
-            <div className="text-right text-purple-600 font-bold text-[14px]">
+            <div className="text-right text-purple-600 font-bold text-[13px] sm:text-[14px] shrink-0">
               ↑ +23
             </div>
           </div>
@@ -148,20 +148,20 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
       </div>
 
       {/* ─── ROW 2: Charts & Logs ────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-5 sm:mb-6">
+
         {/* Phân bổ Tier */}
-        <div className="bg-white rounded-2xl p-6 border border-surface-200 flex flex-col">
-          <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Phân bổ Tier</h3>
-          <p className="text-[13px] font-medium text-slate-500 mb-8">Tổng {farmers.length} hộ</p>
-          <div className="flex-1 flex items-center justify-center relative my-4">
-            <div 
-              className="w-56 h-56 rounded-full" 
+        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-surface-200 flex flex-col">
+          <h3 className="text-[16px] sm:text-[17px] font-display font-semibold text-slate-900 tracking-tight">Phân bổ Tier</h3>
+          <p className="text-[12px] sm:text-[13px] font-medium text-slate-500 mb-5 sm:mb-8">Tổng {farmers.length} hộ</p>
+          <div className="flex-1 flex items-center justify-center relative my-2 sm:my-4">
+            <div
+              className="w-44 h-44 sm:w-56 sm:h-56 rounded-full"
               style={{ background: `conic-gradient(${conicStr})` }}
             ></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-36 h-36 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
-                <span className="text-3xl font-extrabold text-slate-900 leading-none tracking-tight">{farmers.length}</span>
+              <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
+                <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-none tracking-tight">{farmers.length}</span>
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">HỘ NÔNG DÂN</span>
               </div>
             </div>
@@ -169,7 +169,7 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
         </div>
 
         {/* Live Blockchain */}
-        <div className="bg-white rounded-2xl p-6 border border-surface-200 flex flex-col relative overflow-hidden">
+        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-surface-200 flex flex-col relative overflow-hidden min-h-[280px]">
           <div className="flex justify-between items-start mb-6 relative z-10">
             <div>
               <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight flex items-center gap-2">
@@ -208,26 +208,26 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
         </div>
 
         {/* Avg Score theo HTX */}
-        <div className="bg-white rounded-2xl p-6 border border-surface-200 flex flex-col">
-          <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Avg Score theo HTX</h3>
-          <p className="text-[13px] font-medium text-slate-500 mb-8">Top {topHtx.length} HTX • 6 vụ gần nhất</p>
+        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-surface-200 flex flex-col">
+          <h3 className="text-[16px] sm:text-[17px] font-display font-semibold text-slate-900 tracking-tight">Avg Score theo HTX</h3>
+          <p className="text-[12px] sm:text-[13px] font-medium text-slate-500 mb-5 sm:mb-8">Top {topHtx.length} HTX • 6 vụ gần nhất</p>
           <div className="flex-1 flex flex-col justify-between space-y-4">
             {topHtx.map((htx, i) => {
               const colors = ["#10b981", "#3b82f6", "#a855f7"];
               const color = colors[i % colors.length];
               return (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="w-24">
-                    <div className="font-extrabold text-[14px] text-slate-800 truncate">{htx.name}</div>
+                <div key={i} className="flex items-center justify-between gap-2">
+                  <div className="w-20 sm:w-24 min-w-0">
+                    <div className="font-extrabold text-[13px] sm:text-[14px] text-slate-800 truncate">{htx.name}</div>
                     <div className="flex items-center gap-1.5 mt-1">
-                      <div className="text-[11px] font-bold text-slate-400 uppercase">Score</div>
-                      <div className="text-[11px] font-bold text-slate-500">{htx.avg}</div>
+                      <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase">Score</div>
+                      <div className="text-[10px] sm:text-[11px] font-bold text-slate-500">{htx.avg}</div>
                     </div>
                   </div>
-                  <div className="flex-1 flex justify-center px-2">
+                  <div className="flex-1 flex justify-center px-1 sm:px-2 min-w-0">
                     {renderSparkline(htx.avg, color)}
                   </div>
-                  <div className={`text-[20px] font-extrabold w-10 text-right`} style={{ color }}>{htx.avg}</div>
+                  <div className={`text-[18px] sm:text-[20px] font-extrabold w-9 sm:w-10 text-right shrink-0`} style={{ color }}>{htx.avg}</div>
                 </div>
               );
             })}
@@ -237,10 +237,10 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
       </div>
 
       {/* ─── ROW 3: Alerts & Drones ────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+
         {/* Cảnh báo cần xử lý */}
-        <div className="bg-white rounded-2xl p-6 border border-surface-200 lg:col-span-1">
+        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-surface-200 lg:col-span-1">
           <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight mb-6 flex items-center gap-2">
             <span className="text-xl drop-shadow-sm grayscale opacity-80">🚨</span> Cảnh báo cần xử lý
           </h3>
@@ -261,29 +261,29 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
         </div>
 
         {/* Drone Fleet */}
-        <div className="bg-white rounded-2xl p-6 border border-surface-200 lg:col-span-2">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-surface-200 lg:col-span-2">
+          <div className="flex justify-between items-center mb-5 sm:mb-8 gap-3 flex-wrap">
+            <h3 className="text-[16px] sm:text-[17px] font-display font-semibold text-slate-900 tracking-tight flex items-center gap-2">
               <span className="text-xl drop-shadow-sm grayscale opacity-80">🛸</span> Drone Fleet
             </h3>
-            <div className="bg-cyan-50 text-cyan-700 px-4 py-1.5 rounded-full text-[12px] font-semibold border border-cyan-100">
+            <div className="bg-cyan-50 text-cyan-700 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-[12px] font-semibold border border-cyan-100">
               8 drones • 6 đang bay
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {[1,2,3,4,5,6].map(i => (
-              <div key={i} className="bg-cyan-50/40 border border-cyan-100/50 rounded-2xl p-5 flex flex-col items-center justify-center text-center hover:bg-cyan-50 transition-colors">
-                <div className="text-4xl mb-3 drop-shadow-md">🛸</div>
-                <div className="font-semibold text-slate-700 text-[14px]">DR-014{i-1}</div>
+              <div key={i} className="bg-cyan-50/40 border border-cyan-100/50 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center hover:bg-cyan-50 transition-colors">
+                <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 drop-shadow-md">🛸</div>
+                <div className="font-semibold text-slate-700 text-[13px] sm:text-[14px]">DR-014{i-1}</div>
                 <div className="text-[10px] font-bold text-cyan-600 uppercase tracking-widest mt-1.5 flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-full shadow-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span> BAY
                 </div>
               </div>
             ))}
             {[7,8].map(i => (
-              <div key={i} className="bg-slate-50/50 border border-slate-100 rounded-2xl p-5 flex flex-col items-center justify-center text-center opacity-60">
-                <div className="text-4xl mb-3 drop-shadow-sm grayscale">🛸</div>
-                <div className="font-semibold text-slate-500 text-[14px]">DR-014{i-1}</div>
+              <div key={i} className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center opacity-60">
+                <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 drop-shadow-sm grayscale">🛸</div>
+                <div className="font-semibold text-slate-500 text-[13px] sm:text-[14px]">DR-014{i-1}</div>
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-full shadow-sm">
                   <span className="w-1.5 h-1.5 rounded-full border-2 border-slate-300"></span> SẠC
                 </div>

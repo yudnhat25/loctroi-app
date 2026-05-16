@@ -57,21 +57,21 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
   };
 
   return (
-    <div className="space-y-6 fade-in pb-10">
+    <div className="space-y-5 sm:space-y-6 fade-in pb-10">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl bg-slate-900 text-white">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-rose-700" />
-        <div className="px-7 pt-7 pb-6">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Cán bộ thu mua</div>
-          <h2 className="text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">
+        <div className="px-5 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6">
+          <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Cán bộ thu mua</div>
+          <h2 className="text-[22px] sm:text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">
             Thu hoạch và tất toán bao tiêu
           </h2>
-          <p className="text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
+          <p className="text-[13px] sm:text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
             Cuối vụ: cân lúa, tính tiền theo công thức <b className="text-white">Sản lượng × (Giá bao tiêu + Premium SRP)</b>,
-            trừ công nợ vật tư đầu vụ, chuyển khoản qua ngân hàng/đại lý, cập nhật
-            <b className="text-white"> +200/+100 Credit Score</b> để nông dân có thể lên Tier.
+            trừ công nợ vật tư, chuyển khoản, cập nhật
+            <b className="text-white"> +200/+100 Credit Score</b>.
           </p>
-          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 rounded-xl overflow-hidden">
+          <div className="mt-5 sm:mt-6 grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 rounded-xl overflow-hidden">
             <Stat label="Hộ đủ điều kiện" value={eligibleCount} />
             <Stat label="Tổng hộ liên kết" value={farmers.length} />
             <Stat label="Hộ đã tất toán" value={myHarvests} />
@@ -81,9 +81,9 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
       </section>
 
       {/* Eligibility legend */}
-      <section className="bg-white rounded-2xl border border-surface-200 px-6 py-4">
-        <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500 mb-3">Điều kiện mở khoá thu hoạch</div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[14px]">
+      <section className="bg-white rounded-2xl border border-surface-200 px-4 sm:px-6 py-3 sm:py-4">
+        <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500 mb-2 sm:mb-3">Điều kiện mở khoá thu hoạch</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[13px] sm:text-[14px]">
           <CondTag ok={true} label="Vật tư đã giao (B3 ký số)" />
           <CondTag ok={true} label="Ít nhất 1 lần kiểm tra SRP" />
           <CondTag ok={true} label="Chưa tất toán vụ này" />
@@ -92,10 +92,10 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
 
       {/* Farmer list with eligibility */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-sm font-bold text-gray-800">Danh sách hộ — chọn để thu hoạch</h3>
+        <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/50">
+          <h3 className="text-[13px] sm:text-sm font-bold text-gray-800">Danh sách hộ — chọn để thu hoạch</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 p-3 sm:p-4">
           {eligibility.map(({ farmer: f, hasDelivery, hasInspection, alreadyHarvested, eligible }) => {
             const tier = getTier(f);
             const fs = f.farmingScore ?? 0;
@@ -152,14 +152,14 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
 
       {/* Weighing / settlement modal */}
       {selectedFarmer && step !== "idle" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 max-h-[92vh] flex flex-col">
-            <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-rose-50/40">
-              <h3 className="text-base font-bold text-gray-900">🌾 Thu hoạch — {selectedFarmer.hoTen}</h3>
-              <div onClick={() => { setStep("idle"); setSelectedFarmer(null); }} className="text-slate-400 hover:text-slate-700 cursor-pointer">✕</div>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-gray-900/60 backdrop-blur-sm fade-in">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 max-h-[95vh] sm:max-h-[92vh] flex flex-col">
+            <div className="flex justify-between items-center p-4 sm:p-5 border-b border-slate-100 bg-rose-50/40 gap-3">
+              <h3 className="text-[14px] sm:text-base font-bold text-gray-900 truncate">🌾 Thu hoạch — {selectedFarmer.hoTen}</h3>
+              <button aria-label="Đóng" onClick={() => { setStep("idle"); setSelectedFarmer(null); }} className="text-slate-400 hover:text-slate-700 text-2xl leading-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 shrink-0">&times;</button>
             </div>
 
-            <div className="overflow-y-auto p-5 space-y-4">
+            <div className="overflow-y-auto p-4 sm:p-5 space-y-4 safe-pb">
               {step === "weighing" && (
                 <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-8 text-center">
                   <div className="text-5xl mb-3">⚖️</div>
@@ -270,10 +270,10 @@ const CondTag = ({ ok, label }) => (
 );
 
 const Stat = ({ label, value, sub }) => (
-  <div className="bg-slate-900 px-4 py-3.5">
-    <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</div>
-    <div className="font-display text-[26px] font-semibold tabular leading-none mt-2.5 text-white">{value}</div>
-    {sub && <div className="text-[12px] text-slate-500 mt-1.5">{sub}</div>}
+  <div className="bg-slate-900 px-3 sm:px-4 py-3 sm:py-3.5">
+    <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</div>
+    <div className="font-display text-[20px] sm:text-[26px] font-semibold tabular leading-none mt-2 sm:mt-2.5 text-white break-words">{value}</div>
+    {sub && <div className="text-[11px] sm:text-[12px] text-slate-500 mt-1 sm:mt-1.5">{sub}</div>}
   </div>
 );
 

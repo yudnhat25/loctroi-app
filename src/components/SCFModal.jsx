@@ -2,7 +2,7 @@
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md fade-in">
     <div className="bg-white rounded-2xl shadow-[0_24px_64px_-16px_rgba(15,23,42,0.45)] w-full max-w-md border border-surface-200 overflow-hidden">
       {modal.status === "loading" ? (
-        <div className="px-8 py-10 text-center space-y-6">
+        <div className="px-5 sm:px-8 py-8 sm:py-10 text-center space-y-5 sm:space-y-6">
           <div className="relative mx-auto w-16 h-16 flex items-center justify-center">
             <svg className="w-16 h-16 text-brand-600 spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
@@ -18,7 +18,7 @@
           </div>
         </div>
       ) : (
-        <div className="px-8 py-8 text-center space-y-5 fade-in">
+        <div className="px-5 sm:px-8 py-6 sm:py-8 text-center space-y-4 sm:space-y-5 fade-in">
           <div className="w-14 h-14 mx-auto rounded-full bg-brand-100 text-brand-700 flex items-center justify-center">
             <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
           </div>

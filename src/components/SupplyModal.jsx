@@ -70,19 +70,19 @@ const SupplyModal = ({ modal, setModal, supplies, onConfirm, formatVND }) => {
   const tierAccent = { A: "bg-brand-700", B: "bg-sky-700", C: "bg-amber-600", D: "bg-rose-700" }[farmerTier.code] ?? "bg-brand-700";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
-      <div className="bg-white rounded-2xl shadow-[0_24px_64px_-16px_rgba(15,23,42,0.45)] w-full max-w-3xl overflow-hidden border border-surface-200 max-h-[92vh] flex flex-col">
-        <div className="flex justify-between items-center px-6 py-4 border-b border-surface-200">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Tier-based Finance</div>
-            <h3 className="text-[18px] font-display font-semibold text-slate-900 tracking-tight mt-0.5">Đăng ký vật tư đầu vụ</h3>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-sm fade-in">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-[0_24px_64px_-16px_rgba(15,23,42,0.45)] w-full max-w-3xl overflow-hidden border border-surface-200 max-h-[95vh] sm:max-h-[92vh] flex flex-col">
+        <div className="flex justify-between items-center px-4 sm:px-6 py-3 sm:py-4 border-b border-surface-200 gap-3">
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Tier-based Finance</div>
+            <h3 className="text-[15px] sm:text-[18px] font-display font-semibold text-slate-900 tracking-tight mt-0.5">Đăng ký vật tư đầu vụ</h3>
           </div>
-          <button onClick={() => setModal(m => ({ ...m, isOpen: false }))} className="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-surface-50">
+          <button aria-label="Đóng" onClick={() => setModal(m => ({ ...m, isOpen: false }))} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-surface-50 shrink-0">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
 
-        <div className="overflow-y-auto px-6 py-5 space-y-5">
+        <div className="overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5 safe-pb">
           {/* Tier card — slate-900, accent line */}
           {farmer && (
             <section className="relative overflow-hidden rounded-xl bg-slate-900 text-white">

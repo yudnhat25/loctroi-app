@@ -60,7 +60,10 @@ const Sidebar = ({ activeTab, setActiveTab, blockchainLog, invoices, role, subro
         />
       )}
       
-      <aside className={`fixed inset-y-0 left-0 lg:static w-64 lg:w-60 xl:w-64 bg-white/95 lg:bg-white/80 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.02)] flex flex-col z-40 shrink-0 h-full transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+      <aside
+        aria-label="Điều hướng chính"
+        className={`fixed inset-y-0 left-0 lg:static w-[84vw] max-w-[280px] lg:w-60 xl:w-64 bg-white lg:bg-white/80 lg:backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.08)] lg:shadow-[4px_0_24px_rgba(0,0,0,0.02)] flex flex-col z-40 shrink-0 h-full transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+      >
         {/* Brand mark */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-surface-200">
           <div className="flex items-center gap-2.5">
@@ -70,7 +73,7 @@ const Sidebar = ({ activeTab, setActiveTab, blockchainLog, invoices, role, subro
               <div className="text-[16px] font-display font-bold tracking-tight text-slate-900 mt-1">AgriChain</div>
             </div>
           </div>
-          <button className="lg:hidden text-slate-400 hover:text-slate-600 p-1" onClick={() => setIsSidebarOpen(false)}>
+          <button aria-label="Đóng menu" className="lg:hidden text-slate-400 hover:text-slate-600 p-1.5 -mr-1.5 rounded-lg active:bg-slate-100" onClick={() => setIsSidebarOpen(false)}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>

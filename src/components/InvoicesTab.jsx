@@ -55,14 +55,14 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
   };
 
   return (
-    <div className="flex flex-col gap-8 fade-in pb-10">
+    <div className="flex flex-col gap-6 sm:gap-8 fade-in pb-10">
       <section className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-surface-200 flex items-baseline justify-between">
-          <h2 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Khoản phải thu</h2>
-          <span className="text-[12px] font-mono text-slate-400">{invoices.length} hoá đơn</span>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-surface-200 flex items-baseline justify-between gap-3">
+          <h2 className="text-[15px] sm:text-[17px] font-display font-semibold text-slate-900 tracking-tight">Khoản phải thu</h2>
+          <span className="text-[11px] sm:text-[12px] font-mono text-slate-400 shrink-0">{invoices.length} hoá đơn</span>
         </div>
         {invoices.length === 0 ? (
-          <div className="py-16 text-center">
+          <div className="py-12 sm:py-16 text-center">
             <div className="w-12 h-12 mx-auto rounded-full bg-surface-100 flex items-center justify-center text-slate-400 mb-3">
               <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 12h6M9 16h6M5 20V6a2 2 0 012-2h8l4 4v12a2 2 0 01-2 2H7a2 2 0 01-2-2z"/></svg>
             </div>
@@ -70,7 +70,45 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
             <p className="text-[12px] text-slate-400 mt-1">Cấp vật tư ở tab Hộ Nông dân và Vật tư.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Mobile: card list */}
+          <ul className="md:hidden divide-y divide-surface-200">
+            {invoices.map(inv => {
+              const farmer = farmers.find(f => f.id === inv.nongHoId);
+              const cfg = STATUS_CONFIG[inv.trangThai] ?? STATUS_CONFIG["Chờ xác nhận"];
+              return (
+                <li key={inv.id} className="px-4 py-3.5 hover:bg-surface-50/60 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono font-semibold text-slate-700 text-[13px]">{inv.id}</span>
+                        {inv.tokenId && <span className="text-[10px] bg-sky-50 text-sky-800 ring-1 ring-sky-200 px-1.5 py-0.5 rounded-md font-semibold font-mono">{inv.tokenId}</span>}
+                      </div>
+                      <div className="font-semibold text-slate-900 text-[14px] mt-1 truncate">{farmer?.hoTen ?? inv.nongHoId}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5 truncate">{inv.vuMua || "—"}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-display text-[15px] font-semibold tabular text-slate-900 whitespace-nowrap">{formatVND(inv.amount)}</div>
+                      {inv.riskLevel && (
+                        <span className={`mt-1 inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-md font-semibold ring-1 ${RISK_CONFIG[inv.riskLevel]?.cls}`}>
+                          {RISK_CONFIG[inv.riskLevel]?.label}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-2.5 flex items-center justify-between gap-2 flex-wrap">
+                    <span className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md font-semibold ring-1 ${cfg.cls}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}></span>
+                      {cfg.label}
+                    </span>
+                    <div>{getAction(inv, farmer)}</div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {/* Tablet+: full table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-[14px]">
               <thead className="bg-surface-50 text-slate-500 text-[11px] font-semibold uppercase tracking-[0.14em] border-b border-surface-200">
                 <tr>
@@ -119,18 +157,19 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
 
       {/* Summary */}
       <section className="grid grid-cols-2 gap-px bg-surface-200 rounded-2xl overflow-hidden border border-surface-200">
-        <div className="bg-white p-5">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">Đang chờ giải ngân</p>
-          <p className="font-display text-[28px] font-semibold tabular text-amber-700 mt-3 leading-none">{formatVND(pendingAmount)}</p>
+        <div className="bg-white p-4 sm:p-5">
+          <p className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">Đang chờ giải ngân</p>
+          <p className="font-display text-[18px] sm:text-[28px] font-semibold tabular text-amber-700 mt-2 sm:mt-3 leading-none break-words">{formatVND(pendingAmount)}</p>
         </div>
-        <div className="bg-white p-5">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">Đã giải ngân</p>
-          <p className="font-display text-[28px] font-semibold tabular text-brand-700 mt-3 leading-none">{formatVND(disbursedAmount)}</p>
+        <div className="bg-white p-4 sm:p-5">
+          <p className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-500">Đã giải ngân</p>
+          <p className="font-display text-[18px] sm:text-[28px] font-semibold tabular text-brand-700 mt-2 sm:mt-3 leading-none break-words">{formatVND(disbursedAmount)}</p>
         </div>
       </section>
     </div>

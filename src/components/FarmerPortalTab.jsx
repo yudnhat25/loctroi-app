@@ -129,35 +129,35 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
   const tierLabel = (tier.label.split("—")[1] ?? tier.label).trim();
 
   return (
-    <div className="space-y-6 fade-in pb-10">
+    <div className="space-y-5 sm:space-y-6 fade-in pb-10">
 
       {/* ─── HERO TIER (solid theo Tier, dáng cards mobile) ─────────────────── */}
-      <section className={`relative rounded-3xl ${tok.bg} ${tok.shadow} text-white overflow-hidden`}>
+      <section className={`relative rounded-2xl sm:rounded-3xl ${tok.bg} ${tok.shadow} text-white overflow-hidden`}>
         {/* texture: chỉ 2 vòng nhẹ trên góc, không ảnh hưởng readability */}
         <div className="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-white/[0.06]"></div>
         <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-white/[0.04]"></div>
 
-        <div className="relative px-7 py-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/75">
+        <div className="relative px-5 sm:px-7 py-5 sm:py-6">
+          <div className="flex items-start justify-between gap-3 sm:gap-4">
+            <div className="min-w-0">
+              <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.18em] text-white/75">
                 Hộ chiếu Số · Lộc Trời
               </div>
-              <div className="flex items-end gap-3 mt-3">
-                <span className="font-display font-bold text-[88px] leading-[0.85] tabular">{tier.code}</span>
-                <span className="text-[16px] font-semibold tracking-wide text-white/85 pb-3">{tierLabel}</span>
+              <div className="flex items-end gap-2 sm:gap-3 mt-2 sm:mt-3 flex-wrap">
+                <span className="font-display font-bold text-[64px] sm:text-[88px] leading-[0.85] tabular">{tier.code}</span>
+                <span className="text-[13px] sm:text-[16px] font-semibold tracking-wide text-white/85 pb-1 sm:pb-3">{tierLabel}</span>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">Overall Score</div>
-              <div className="font-display text-[44px] font-bold tabular leading-none mt-1.5">
-                {overall}<span className="text-[15px] text-white/65 font-normal ml-1">/1000</span>
+            <div className="text-right shrink-0">
+              <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">Overall</div>
+              <div className="font-display text-[28px] sm:text-[44px] font-bold tabular leading-none mt-1.5">
+                {overall}<span className="text-[12px] sm:text-[15px] text-white/65 font-normal ml-1">/1000</span>
               </div>
             </div>
           </div>
 
           {/* Progress strip: FARMING + CREDIT */}
-          <div className="grid grid-cols-2 gap-3 mt-5">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mt-4 sm:mt-5">
             <ScorePill icon="leaf"   label="FARMING" value={farming} max={MAX_FARMING} pct={farmingPct} />
             <ScorePill icon="bank"   label="CREDIT"  value={credit}  max={MAX_CREDIT}  pct={creditPct} />
           </div>
@@ -187,7 +187,7 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
       </section>
 
       {/* ─── QUICK ACTIONS (3 ô, không gồm Drone) ───────────────────────────── */}
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+      <section className="grid grid-cols-3 gap-2 sm:gap-3 mt-4">
         <QuickAction
           icon="cart"
           label="Đặt vật tư"
@@ -214,7 +214,7 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
       </section>
 
       {/* ─── CURRENT SEASON ─────────────────────────────────────────────────── */}
-      <section className="bg-white rounded-2xl border border-surface-200 px-6 py-5">
+      <section className="bg-white rounded-2xl border border-surface-200 px-4 sm:px-6 py-4 sm:py-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4 min-w-0">
             <div className={`w-12 h-12 rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-200 flex items-center justify-center shrink-0`}>
@@ -239,7 +239,7 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
       </section>
 
       {/* ─── PROGRESS TIMELINE 5 BƯỚC ───────────────────────────────────────── */}
-      <section className="bg-white rounded-2xl border border-surface-200 px-6 py-5">
+      <section className="bg-white rounded-2xl border border-surface-200 px-4 sm:px-6 py-4 sm:py-5">
         <div className="flex items-baseline justify-between mb-5">
           <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Tiến độ vụ mùa</h3>
           <span className="text-[12px] font-semibold px-2.5 py-1 rounded-md bg-brand-50 text-brand-800 ring-1 ring-brand-200 tabular">
@@ -396,7 +396,7 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
 
       {/* ─── INVOICES + SCF ACTIONS ─────────────────────────────────────────── */}
       <section className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-surface-200 flex items-baseline justify-between gap-4 flex-wrap">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-surface-200 flex items-baseline justify-between gap-3 sm:gap-4 flex-wrap">
           <div className="flex items-baseline gap-3">
             <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Hóa đơn và khoản phải thu</h3>
             <span className="text-[12px] font-mono text-slate-400">{myInvoices.length} hoá đơn</span>
@@ -423,7 +423,7 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
             {myInvoices.map(inv => {
               const cfg = STATUS_STYLE[inv.trangThai] ?? STATUS_STYLE["Chờ xác nhận"];
               return (
-                <li key={inv.id} className="px-6 py-4 hover:bg-surface-50/60 transition-colors">
+                <li key={inv.id} className="px-4 sm:px-6 py-3.5 sm:py-4 hover:bg-surface-50/60 transition-colors">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -474,7 +474,7 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
       </section>
 
       {/* ─── BLOCKCHAIN TIMELINE (compact) ──────────────────────────────────── */}
-      <section className="bg-white rounded-2xl border border-surface-200 px-6 py-5">
+      <section className="bg-white rounded-2xl border border-surface-200 px-4 sm:px-6 py-4 sm:py-5">
         <div className="flex items-baseline justify-between mb-5">
           <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Lịch sử trên blockchain</h3>
           <span className="text-[12px] font-mono text-slate-400">{myLogs.length} blocks</span>
@@ -533,17 +533,17 @@ const QuickAction = ({ icon, label, sub, onClick, accent, disabled, active }) =>
   <button
     onClick={disabled ? undefined : onClick}
     disabled={disabled}
-    className={`group relative bg-white rounded-2xl border ${active ? "border-brand-600 ring-1 ring-brand-200" : "border-surface-200"} px-3 py-4 flex flex-col items-center text-center transition-colors ${
+    className={`group relative bg-white rounded-2xl border ${active ? "border-brand-600 ring-1 ring-brand-200" : "border-surface-200"} px-2 sm:px-3 py-3 sm:py-4 flex flex-col items-center text-center transition-colors ${
       disabled ? "opacity-50 cursor-not-allowed" : "hover:border-surface-300 cursor-pointer"
     }`}
   >
-    <span className={`w-12 h-12 rounded-xl ring-1 ${accent} flex items-center justify-center`}>
-      {icon === "cart"  && <CartIcon  className="w-6 h-6" />}
-      {icon === "wheat" && <WheatIcon className="w-6 h-6" />}
-      {icon === "id"    && <IdIcon    className="w-6 h-6" />}
+    <span className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ring-1 ${accent} flex items-center justify-center`}>
+      {icon === "cart"  && <CartIcon  className="w-5 h-5 sm:w-6 sm:h-6" />}
+      {icon === "wheat" && <WheatIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+      {icon === "id"    && <IdIcon    className="w-5 h-5 sm:w-6 sm:h-6" />}
     </span>
-    <span className="text-[14px] font-semibold text-slate-900 mt-3">{label}</span>
-    <span className="text-[11px] text-slate-500 mt-0.5">{sub}</span>
+    <span className="text-[12px] sm:text-[14px] font-semibold text-slate-900 mt-2 sm:mt-3 leading-tight">{label}</span>
+    <span className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 leading-tight line-clamp-2">{sub}</span>
   </button>
 );
 

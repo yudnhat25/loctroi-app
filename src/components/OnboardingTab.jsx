@@ -61,19 +61,19 @@ const OnboardingTab = ({ staff, blockchainLog, farmers, onCreateFarmer }) => {
   const myOnboardCount = blockchainLog.filter(l => l.action === "PASSPORT_CREATED" && l.data.includes(staff.id)).length;
 
   return (
-    <div className="space-y-8 fade-in pb-10">
+    <div className="space-y-6 sm:space-y-8 fade-in pb-10">
       {/* Hero — slate-900, brand accent line */}
       <section className="relative overflow-hidden rounded-2xl bg-slate-900 text-white">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-brand-700" />
-        <div className="px-7 pt-7 pb-6">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Cán bộ 3 Cùng</div>
-          <h2 className="text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">Onboard hộ nông dân</h2>
-          <p className="text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
+        <div className="px-5 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6">
+          <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Cán bộ 3 Cùng</div>
+          <h2 className="text-[22px] sm:text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">Onboard hộ nông dân</h2>
+          <p className="text-[13px] sm:text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
             Đến từng HTX, đăng ký Hộ chiếu Số (Digital ID) cho nông dân. Smart contract <code className="font-mono text-brand-300">createPassport()</code> chạy tự động: sinh DID, ghi Genesis Record bất biến lên blockchain.
           </p>
-          <div className="mt-6 grid grid-cols-3 gap-px bg-white/10 rounded-xl overflow-hidden">
-            <Stat label="Tổng hộ trong hệ thống" value={farmers.length} />
-            <Stat label="Hộ tôi đã onboard" value={myOnboardCount} />
+          <div className="mt-5 sm:mt-6 grid grid-cols-3 gap-px bg-white/10 rounded-xl overflow-hidden">
+            <Stat label="Tổng hộ" value={farmers.length} />
+            <Stat label="Tôi đã onboard" value={myOnboardCount} />
             <Stat label="Tier khởi tạo" value="D" sub="Mới · Score 0/0" />
           </div>
         </div>
@@ -81,11 +81,11 @@ const OnboardingTab = ({ staff, blockchainLog, farmers, onCreateFarmer }) => {
 
       {/* Form */}
       <section className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-surface-200">
-          <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Form đăng ký nông dân mới</h3>
-          <p className="text-[12px] text-slate-500 mt-1">CCCD sẽ được hash SHA-256 trước khi đưa lên chain (không lưu raw để bảo mật).</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-surface-200">
+          <h3 className="text-[15px] sm:text-[17px] font-display font-semibold text-slate-900 tracking-tight">Form đăng ký nông dân mới</h3>
+          <p className="text-[11px] sm:text-[12px] text-slate-500 mt-1">CCCD sẽ được hash SHA-256 trước khi đưa lên chain (không lưu raw để bảo mật).</p>
         </div>
-        <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Họ và tên" error={errors.hoTen}>
             <input value={form.hoTen} onChange={e => setForm({ ...form, hoTen: e.target.value })} placeholder="VD: Nguyễn Văn An" className="input" />
           </Field>
@@ -207,10 +207,10 @@ const Field = ({ label, error, full, children }) => (
 );
 
 const Stat = ({ label, value, sub }) => (
-  <div className="bg-slate-900 px-4 py-3.5">
-    <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</div>
-    <div className="font-display text-[28px] font-semibold tabular leading-none mt-2.5 text-white">{value}</div>
-    {sub && <div className="text-[12px] text-slate-500 mt-1.5">{sub}</div>}
+  <div className="bg-slate-900 px-3 sm:px-4 py-3 sm:py-3.5">
+    <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</div>
+    <div className="font-display text-[22px] sm:text-[28px] font-semibold tabular leading-none mt-2 sm:mt-2.5 text-white break-words">{value}</div>
+    {sub && <div className="text-[11px] sm:text-[12px] text-slate-500 mt-1 sm:mt-1.5">{sub}</div>}
   </div>
 );
 
