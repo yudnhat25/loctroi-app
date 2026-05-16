@@ -4,15 +4,13 @@ import { Html5Qrcode } from "html5-qrcode";
 // Tài xế đến nhà nông dân, quét QR Hộ chiếu Số → app hiện danh sách vật tư cần giao
 // → 2 bên ký số → smart contract confirmDelivery() → +10 Credit Score.
 const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDelivery, formatVND, blockchainLog }) => {
-  const [scanning, setScanning] = useState(null); // delivery being scanned
+  const [scanning, setScanning] = useState(null); // delivery being signed
+  const [verifyingDelivery, setVerifyingDelivery] = useState(null); // delivery being verified by camera
   const [farmerSigned, setFarmerSigned] = useState(false);
   const [driverSigned, setDriverSigned] = useState(false);
-  
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [scannedFarmerFilter, setScannedFarmerFilter] = useState(null);
 
   useEffect(() => {
-    if (!cameraOpen) return;
+    if (!verifyingDelivery) return;
     
     const html5QrCode = new Html5Qrcode("qr-reader");
     let isComponentMounted = true;
@@ -29,10 +27,18 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
         try {
           const data = JSON.parse(decodedText);
           if (data.type === "PASSPORT" && data.id) {
-            html5QrCode.stop().then(() => {
-              setCameraOpen(false);
-              setScannedFarmerFilter(data.id);
-            }).catch(console.error);
+            if (data.id === verifyingDelivery.farmer.id) {
+              // Quét đúng mã của nông dân đặt hàng
+              html5QrCode.stop().then(() => {
+                setScanning(verifyingDelivery); // Chuyển sang bước ký số
+                setVerifyingDelivery(null);     // Đóng camera
+                setFarmerSigned(false);
+                setDriverSigned(false);
+              }).catch(console.error);
+            } else {
+              // Sai mã
+              alert(`❌ Sai người nhận! Bạn đang quét mã của nông dân khác (${data.name || data.id}) chứ không phải ${verifyingDelivery.farmer.hoTen}.`);
+            }
           }
         } catch(e) {
           // ignore invalid qr
@@ -49,25 +55,15 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
         html5QrCode.stop().catch(console.error);
       }
     };
-  }, [cameraOpen]);
+  }, [verifyingDelivery]);
 
   const myDeliveries = blockchainLog.filter(l => l.action === "DELIVERY_CONFIRMED" && l.data.includes(staff.id)).length;
-
-  const startScan = (d) => {
-    setScanning(d);
-    setFarmerSigned(false);
-    setDriverSigned(false);
-  };
 
   const finalize = () => {
     if (!scanning || !farmerSigned || !driverSigned) return;
     onConfirmDelivery(scanning, staff);
     setScanning(null);
   };
-
-  const displayQueue = scannedFarmerFilter 
-    ? deliveryQueue.filter(d => d.farmer.id === scannedFarmerFilter)
-    : deliveryQueue;
 
   return (
     <div className="space-y-6 fade-in pb-10">
@@ -80,9 +76,8 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
             Giao vật tư và ký số 2 bên
           </h2>
           <p className="text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
-            Quét QR Hộ chiếu Số nông dân, app hiện danh sách vật tư, 2 bên cùng ký số,
-            smart contract <code className="font-mono text-amber-300">confirmDelivery()</code> ghi blockchain
-            và cộng <b className="text-white">+10 Credit Score</b> cho nông dân (Tầng 2, không ai làm giả được).
+            Chọn đơn hàng cần giao, quét QR Hộ chiếu Số của nông dân để xác minh chính chủ,
+            sau đó 2 bên cùng ký số. Smart contract <code className="font-mono text-amber-300">confirmDelivery()</code> sẽ ghi đè lên blockchain.
           </p>
           <div className="mt-6 grid grid-cols-3 gap-px bg-white/10 rounded-xl overflow-hidden">
             <Stat label="Đơn chờ giao" value={deliveryQueue.length} />
@@ -97,24 +92,10 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
         <div className="p-5 border-b border-slate-100 bg-orange-50/30 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <h3 className="text-sm font-bold text-gray-800">📦 Đơn chờ giao</h3>
-            {displayQueue.length > 0 && <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">{displayQueue.length} pending</span>}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {scannedFarmerFilter ? (
-              <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 px-3 py-1.5 rounded-lg text-[13px] font-semibold">
-                <span>Đã quét nông dân: <b>{displayQueue[0]?.farmer.hoTen ?? scannedFarmerFilter}</b></span>
-                <button onClick={() => setScannedFarmerFilter(null)} className="ml-2 hover:text-rose-600 bg-emerald-200/50 rounded-full w-5 h-5 flex items-center justify-center">✕</button>
-              </div>
-            ) : (
-              <button onClick={() => setCameraOpen(true)} className="bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
-                Quét Hộ Chiếu QR
-              </button>
-            )}
+            {deliveryQueue.length > 0 && <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">{deliveryQueue.length} pending</span>}
           </div>
         </div>
-        {displayQueue.length === 0 ? (
+        {deliveryQueue.length === 0 ? (
           <div className="py-12 text-center text-slate-400">
             <div className="text-4xl mb-3">✅</div>
             <p className="text-sm font-semibold">Hết đơn — không còn vật tư nào chờ giao.</p>
@@ -122,7 +103,7 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
           </div>
         ) : (
           <div className="divide-y divide-slate-50">
-            {displayQueue.map(d => {
+            {deliveryQueue.map(d => {
               const supply = supplies.find(s => s.id === d.supplyId);
               const total = d.quantity * (supply?.donGia ?? 0);
               return (
@@ -138,9 +119,9 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
                   <div className="text-right">
                     <div className="text-sm font-bold text-orange-600">{formatVND(total)}</div>
                     <div className="text-[11px] text-slate-400 mb-2">Tier {d.tier}</div>
-                    <div onClick={() => startScan(d)} className="bg-amber-700 hover:bg-amber-800 text-white text-[14px] font-semibold px-4 py-2 rounded-lg cursor-pointer transition-colors select-none inline-flex items-center gap-2">
+                    <div onClick={() => setVerifyingDelivery(d)} className="bg-amber-700 hover:bg-amber-800 text-white text-[14px] font-semibold px-4 py-2 rounded-lg cursor-pointer transition-colors select-none inline-flex items-center gap-2">
                       <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
-                      Quét QR và giao
+                      Quét QR để xác minh & Giao
                     </div>
                   </div>
                 </div>
@@ -212,17 +193,17 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
       )}
 
       {/* Camera Scanner Modal */}
-      {cameraOpen && (
+      {verifyingDelivery && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm fade-in">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden relative shadow-2xl">
             <div className="p-4 border-b border-surface-200 flex justify-between items-center bg-slate-50">
               <h3 className="font-bold text-slate-900">📷 Quét mã QR Hộ Chiếu Số</h3>
-              <button onClick={() => setCameraOpen(false)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors">&times;</button>
+              <button onClick={() => setVerifyingDelivery(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors">&times;</button>
             </div>
             <div className="p-4 bg-slate-100">
               <div id="qr-reader" className="w-full rounded-xl overflow-hidden bg-black ring-1 ring-slate-200 min-h-[300px]"></div>
               <div className="mt-4 text-center text-[13px] text-slate-600 font-medium">
-                Hãy hướng camera về phía mã QR trên ứng dụng của nông dân để tự động tìm đơn hàng cần giao.
+                Hãy hướng camera về phía mã QR trên ứng dụng của nông dân <b className="text-slate-800">{verifyingDelivery.farmer.hoTen}</b> để xác minh danh tính trước khi giao hàng.
               </div>
             </div>
           </div>
