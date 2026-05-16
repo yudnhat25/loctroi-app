@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { db } from "./firebase";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import OverviewTab from "./components/OverviewTab";
@@ -55,17 +57,52 @@ export const GIA_LUA = 8500; // VNĐ/kg cơ sở bao tiêu
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState("");
-  const [farmers, setFarmers] = useState(initialFarmers);
   const [staff] = useState(initialStaff);
   const [supplies] = useState(initialSupplies);
-  const [transactions, setTransactions] = useState([]);
-  const [invoices, setInvoices] = useState([]);
-  const [supplyRequests, setSupplyRequests] = useState([]);
-  const [deliveryQueue, setDeliveryQueue] = useState([]); // các đơn đã duyệt nhưng chưa giao (B3)
-  const [droneReports, setDroneReports] = useState([]);   // ảnh drone đã upload + AI phân tích
-  const [blockchainLog, setBlockchainLog] = useState([
+
+  const [farmers, setFarmersLocal] = useState(initialFarmers);
+  const [transactions, setTransactionsLocal] = useState([]);
+  const [invoices, setInvoicesLocal] = useState([]);
+  const [supplyRequests, setSupplyRequestsLocal] = useState([]);
+  const [deliveryQueue, setDeliveryQueueLocal] = useState([]);
+  const [droneReports, setDroneReportsLocal] = useState([]);
+  const [blockchainLog, setBlockchainLogLocal] = useState([
     { timestamp: new Date().toISOString(), hash: generateHash(), action: "GENESIS_BLOCK", data: "Khởi tạo hệ thống LocTroi AgriChain v2.0" }
   ]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "agrichain", "globalState"), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.farmers) setFarmersLocal(data.farmers);
+        if (data.transactions) setTransactionsLocal(data.transactions);
+        if (data.invoices) setInvoicesLocal(data.invoices);
+        if (data.supplyRequests) setSupplyRequestsLocal(data.supplyRequests);
+        if (data.deliveryQueue) setDeliveryQueueLocal(data.deliveryQueue);
+        if (data.droneReports) setDroneReportsLocal(data.droneReports);
+        if (data.blockchainLog) setBlockchainLogLocal(data.blockchainLog);
+      } else {
+        setDoc(doc(db, "agrichain", "globalState"), {
+          farmers: initialFarmers,
+          transactions: [],
+          invoices: [],
+          supplyRequests: [],
+          deliveryQueue: [],
+          droneReports: [],
+          blockchainLog: [{ timestamp: new Date().toISOString(), hash: generateHash(), action: "GENESIS_BLOCK", data: "Khởi tạo hệ thống LocTroi AgriChain v2.0" }]
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const setFarmers = (val) => setFarmersLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { farmers: n }, { merge: true }); return n; });
+  const setTransactions = (val) => setTransactionsLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { transactions: n }, { merge: true }); return n; });
+  const setInvoices = (val) => setInvoicesLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { invoices: n }, { merge: true }); return n; });
+  const setSupplyRequests = (val) => setSupplyRequestsLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { supplyRequests: n }, { merge: true }); return n; });
+  const setDeliveryQueue = (val) => setDeliveryQueueLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { deliveryQueue: n }, { merge: true }); return n; });
+  const setDroneReports = (val) => setDroneReportsLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { droneReports: n }, { merge: true }); return n; });
+  const setBlockchainLog = (val) => setBlockchainLogLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { blockchainLog: n }, { merge: true }); return n; });
 
   // Modals
   const [supplyModal, setSupplyModal] = useState({ isOpen: false, farmer: null, season: "Vụ Đông Xuân 2026-2027" });
