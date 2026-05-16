@@ -329,22 +329,11 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
                   {/* QR Code */}
                   <div className="mt-8 flex flex-col items-center">
                     <div className="w-[180px] h-[180px] bg-white p-2">
-                      <svg viewBox="0 0 100 100" className="w-full h-full fill-slate-900">
-                        <path d="M0,0 h30 v30 h-30 z M5,5 v20 h20 v-20 z M10,10 h10 v10 h-10 z" />
-                        <path d="M70,0 h30 v30 h-30 z M75,5 v20 h20 v-20 z M80,10 h10 v10 h-10 z" />
-                        <path d="M0,70 h30 v30 h-30 z M5,75 v20 h20 v-20 z M10,80 h10 v10 h-10 z" />
-                        <rect x="40" y="0" width="20" height="10" />
-                        <rect x="40" y="20" width="10" height="10" />
-                        <rect x="50" y="40" width="40" height="10" />
-                        <rect x="0" y="40" width="30" height="10" />
-                        <rect x="40" y="40" width="10" height="30" />
-                        <rect x="80" y="60" width="20" height="10" />
-                        <rect x="50" y="80" width="20" height="20" />
-                        <rect x="80" y="80" width="20" height="20" />
-                        <rect x="60" y="60" width="10" height="10" />
-                        <rect x="20" y="55" width="10" height="10" />
-                        <rect x="35" y="85" width="10" height="10" />
-                      </svg>
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=164x164&data=${encodeURIComponent(JSON.stringify({ type: "PASSPORT", id: farmer.id, digitalId: farmer.digitalId, name: farmer.hoTen }))}`}
+                        alt="QR Code"
+                        className="w-[164px] h-[164px] object-contain mix-blend-multiply"
+                      />
                     </div>
                     <div className="mt-4 text-center">
                       <div className="text-[22px] font-display font-bold text-slate-900">{farmer.hoTen}</div>
