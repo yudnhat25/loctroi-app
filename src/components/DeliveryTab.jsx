@@ -79,7 +79,7 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
             Chọn đơn hàng cần giao, quét QR Hộ chiếu Số của nông dân để xác minh chính chủ,
             sau đó 2 bên cùng ký số. Smart contract <code className="font-mono text-amber-300">confirmDelivery()</code> sẽ ghi đè lên blockchain.
           </p>
-          <div className="mt-6 grid grid-cols-3 gap-px bg-white/10 rounded-xl overflow-hidden">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-px bg-white/10 rounded-xl overflow-hidden">
             <Stat label="Đơn chờ giao" value={deliveryQueue.length} />
             <Stat label="Đơn tôi đã giao" value={myDeliveries} />
             <Stat label="Bonus Credit/đơn" value="+10" />
@@ -107,8 +107,8 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
               const supply = supplies.find(s => s.id === d.supplyId);
               const total = d.quantity * (supply?.donGia ?? 0);
               return (
-                <div key={d.id} className="p-4 hover:bg-amber-50/40 transition-colors flex items-start justify-between gap-3 flex-wrap">
-                  <div>
+                <div key={d.id} className="p-4 hover:bg-amber-50/40 transition-colors flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div className="w-full sm:w-auto">
                     <div className="font-bold text-gray-900 text-sm">{d.farmer.hoTen}</div>
                     <div className="text-[12px] text-slate-500">{d.farmer.htx ?? d.farmer.diaChi} · {d.farmer.dienTich} ha</div>
                     <div className="text-xs text-slate-700 mt-1">
@@ -116,11 +116,13 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
                     </div>
                     <div className="text-[11px] font-mono text-slate-400 mt-0.5">{d.id} → {d.farmer.digitalId ?? d.farmer.id}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-orange-600">{formatVND(total)}</div>
-                    <div className="text-[11px] text-slate-400 mb-2">Tier {d.tier}</div>
-                    <div onClick={() => setVerifyingDelivery(d)} className="bg-amber-700 hover:bg-amber-800 text-white text-[14px] font-semibold px-4 py-2 rounded-lg cursor-pointer transition-colors select-none inline-flex items-center gap-2">
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+                  <div className="w-full sm:w-auto flex flex-col gap-2 pt-2 sm:pt-0 sm:items-end border-t border-slate-100 sm:border-0 mt-2 sm:mt-0">
+                    <div className="flex justify-between sm:flex-col sm:items-end w-full">
+                      <div className="text-sm font-bold text-orange-600">{formatVND(total)}</div>
+                      <div className="text-[11px] text-slate-400">Tier {d.tier}</div>
+                    </div>
+                    <div onClick={() => setVerifyingDelivery(d)} className="bg-amber-700 hover:bg-amber-800 text-white text-[14px] font-semibold px-4 py-2 rounded-lg cursor-pointer transition-colors select-none flex items-center justify-center gap-2 w-full sm:w-auto mt-1 sm:mt-0">
+                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
                       Quét QR để xác minh & Giao
                     </div>
                   </div>
@@ -142,15 +144,15 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
 
             <div className="p-5 space-y-4">
               {/* QR mock */}
-              <div className="bg-slate-900 text-white rounded-xl p-4 flex items-center gap-4">
-                <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center text-slate-900 font-mono text-[8px] leading-tight p-1 text-center">
+              <div className="bg-slate-900 text-white rounded-xl p-4 flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                <div className="w-20 h-20 bg-white rounded-lg flex shrink-0 items-center justify-center text-slate-900 font-mono text-[8px] leading-tight p-1 text-center">
                   {scanning.farmer.digitalId ?? scanning.farmer.id}<br/>QR<br/>v2.0
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="text-[11px] text-slate-400 font-bold uppercase">Hộ chiếu Số đã quét</div>
-                  <div className="font-bold text-base">{scanning.farmer.hoTen}</div>
-                  <div className="text-xs text-slate-300">{scanning.farmer.htx} · {scanning.farmer.dienTich} ha</div>
-                  <div className="text-[11px] font-mono text-emerald-400 mt-0.5">{scanning.farmer.digitalId ?? scanning.farmer.id}</div>
+                  <div className="font-bold text-base truncate">{scanning.farmer.hoTen}</div>
+                  <div className="text-xs text-slate-300 truncate">{scanning.farmer.htx} · {scanning.farmer.dienTich} ha</div>
+                  <div className="text-[11px] font-mono text-emerald-400 mt-0.5 truncate">{scanning.farmer.digitalId ?? scanning.farmer.id}</div>
                 </div>
               </div>
 
@@ -164,7 +166,7 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
               </div>
 
               {/* Signatures */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <SignBox
                   label="Chữ ký Nông dân"
                   who={scanning.farmer.hoTen}
