@@ -75,10 +75,6 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
           <h2 className="text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">
             Giao vật tư và ký số 2 bên
           </h2>
-          <p className="text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
-            Chọn đơn hàng cần giao, quét QR Hộ chiếu Số của nông dân để xác minh chính chủ,
-            sau đó 2 bên cùng ký số. Smart contract <code className="font-mono text-amber-300">confirmDelivery()</code> sẽ ghi đè lên blockchain.
-          </p>
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-px bg-white/10 rounded-xl overflow-hidden">
             <Stat label="Đơn chờ giao" value={deliveryQueue.length} />
             <Stat label="Đơn tôi đã giao" value={myDeliveries} />
