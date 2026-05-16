@@ -1,4 +1,4 @@
-﻿import { LT_SUBROLES } from "../lib/staff";
+import { LT_SUBROLES } from "../lib/staff";
 import { TAB_DEF } from "./Sidebar";
 
 // Solid accent classes per role/subrole. Replaces gradient soup.
@@ -16,7 +16,7 @@ const accentByRole = (user) => {
   return "bg-slate-700";
 };
 
-const Header = ({ activeTab, user }) => {
+const Header = ({ activeTab, user, setIsSidebarOpen }) => {
   const tabLabel = TAB_DEF[activeTab]?.label ?? activeTab;
   const sr = user?.role === "loctroi" ? LT_SUBROLES[user.subrole] : null;
   const initial = (user?.profile?.hoTen ?? "?").trim().charAt(0).toUpperCase();
@@ -33,8 +33,11 @@ const Header = ({ activeTab, user }) => {
   const showLive = activeTab === "managerHome" || activeTab === "overview";
 
   return (
-    <header className="h-16 bg-white border-b border-surface-200 flex items-center justify-between px-6 xl:px-8 shrink-0 z-10">
+    <header className="h-16 bg-white border-b border-surface-200 flex items-center justify-between px-4 lg:px-6 xl:px-8 shrink-0 z-10">
       <div className="flex items-center gap-3 min-w-0">
+        <button className="lg:hidden text-slate-500 hover:text-slate-900 p-1 -ml-1" onClick={() => setIsSidebarOpen(true)}>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
         <div className="leading-none">
           <div className="text-[11px] font-semibold tracking-[0.16em] uppercase text-slate-400">{eyebrow}</div>
           <h2 className="text-[19px] xl:text-[21px] font-display font-semibold tracking-tight text-slate-900 mt-1">{tabLabel}</h2>

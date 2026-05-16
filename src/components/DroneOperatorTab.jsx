@@ -1,17 +1,11 @@
-﻿import { useRef, useState } from "react";
+import { useState } from "react";
 import { analyzeDroneImage } from "../lib/imageAnalysis";
 import { isGeminiConfigured } from "../lib/geminiClient";
 import { pickLowCreditFarmer, pickAutoPhotos, fetchAsFile, sleep } from "../lib/anhluaPicker";
 import UavScanScene from "./UavScanScene";
 
 const DroneOperatorTab = ({ staff, farmers, droneReports, onSubmitDroneReport, blockchainLog }) => {
-  const fileInputRef = useRef(null);
-
   const [selectedFarmer, setSelectedFarmer] = useState(farmers[0] ?? null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analyses, setAnalyses] = useState([]);   // mảng kết quả phân tích từng ảnh
-  const [scanProgress, setScanProgress] = useState(0);
-  const [scanMessage, setScanMessage] = useState("");
 
   // Auto-pilot state
   const [autoSimRunning, setAutoSimRunning] = useState(false);
@@ -98,51 +92,6 @@ const DroneOperatorTab = ({ staff, farmers, droneReports, onSubmitDroneReport, b
     setAutoSimResults({ farmer: target, reports });
   };
 
-  const onFiles = async (files) => {
-    if (!files?.length || !selectedFarmer) return;
-    setAnalyzing(true);
-    setAnalyses([]);
-    setScanProgress(0);
-    setScanMessage(`Chuẩn bị phân tích ${files.length} ảnh...`);
-
-    const results = [];
-    for (let i = 0; i < files.length; i++) {
-      setScanMessage(`Gemini đang đọc ảnh ${i + 1}/${files.length} — ${files[i].name}`);
-      try {
-        const result = await analyzeDroneImage(files[i], "drone");
-        results.push(result);
-      } catch (err) {
-        results.push({ error: err.message, fileName: files[i].name, previewUrl: URL.createObjectURL(files[i]), greenPct: 0, brownPct: 0, waterPct: 0, ndvi: 0, qualityNote: "Phân tích thất bại", diseases: [], recommendations: [], srpCompliance: {} });
-      }
-      setAnalyses([...results]);
-      setScanProgress(((i + 1) / files.length) * 100);
-    }
-
-    setScanMessage(`✅ Hoàn tất ${results.length} ảnh — kiểm tra kết quả & ký số gửi blockchain`);
-    setAnalyzing(false);
-  };
-
-  const submitAll = () => {
-    if (!analyses.length || !selectedFarmer) return;
-    let submitted = 0;
-    analyses.forEach(a => {
-      if (a.error) return;
-      onSubmitDroneReport({
-        farmerId: selectedFarmer.id,
-        farmerName: selectedFarmer.hoTen,
-        farmerArea: selectedFarmer.dienTich,
-        operatorId: staff.id,
-        operatorName: staff.hoTen,
-        ...a,
-        timestamp: new Date().toISOString(),
-      });
-      submitted++;
-    });
-    setAnalyses([]);
-    setScanProgress(0);
-    setScanMessage("");
-    if (submitted) alert(`✅ Đã ký số & ghi ${submitted} báo cáo lên blockchain.`);
-  };
 
   return (
     <div className="space-y-6 fade-in pb-10">
@@ -157,8 +106,8 @@ const DroneOperatorTab = ({ staff, farmers, droneReports, onSubmitDroneReport, b
                 DJI Agras T40 · Gemini Vision
               </h2>
               <p className="text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
-                Auto-pilot: drone bay đến hộ điểm thấp, chụp 3 ảnh đa phổ, Gemini AI phân tích từng ảnh, gửi báo cáo
-                cho 3 Cùng đánh giá thực địa. Hoặc upload ảnh thủ công cho hộ tùy chọn.
+                Auto-pilot: drone bay đến hộ điểm thấp, chụp 3 ảnh đa phổ, Gemini AI phân tích từng ảnh và tổng hợp kết quả để
+                gửi báo cáo cho 3 Cùng kiểm tra thực địa.
               </p>
             </div>
             {isGeminiConfigured() && (
@@ -181,7 +130,7 @@ const DroneOperatorTab = ({ staff, farmers, droneReports, onSubmitDroneReport, b
         <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between flex-wrap gap-2">
           <div>
             <h3 className="text-sm font-bold text-gray-800">📍 Chọn ruộng cần bay drone</h3>
-            <p className="text-[12px] text-slate-500 mt-0.5">Lựa chọn này áp dụng cho cả Auto-pilot và Upload thủ công bên dưới.</p>
+            <p className="text-[12px] text-slate-500 mt-0.5">Lựa chọn này áp dụng cho Auto-pilot bên dưới.</p>
           </div>
           {selectedFarmer && (
             <div className="text-xs bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-full font-bold">
@@ -250,6 +199,11 @@ const DroneOperatorTab = ({ staff, farmers, droneReports, onSubmitDroneReport, b
             </div>
             <div onClick={() => setAutoSimResults(null)} className="text-slate-400 hover:text-slate-700 cursor-pointer text-xl">✕</div>
           </div>
+          
+          <div className="p-5 pb-0">
+            <AggregateSummary analyses={autoSimResults.reports} />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5">
             {autoSimResults.reports.map((r, i) => (
               <div key={i} className={`border-2 rounded-xl overflow-hidden ${r.error ? "border-red-200 bg-red-50" : r.brownPct > 30 || (r.diseases && r.diseases.length > 0) ? "border-rose-300" : "border-emerald-200"}`}>
@@ -280,6 +234,15 @@ const DroneOperatorTab = ({ staff, farmers, droneReports, onSubmitDroneReport, b
                           ))}
                         </div>
                       )}
+                      {r.recommendations?.length > 0 && (
+                        <ul className="text-[11px] text-amber-800 mt-1 space-y-0.5 bg-amber-50 rounded p-1.5 border border-amber-100">
+                          {r.recommendations.slice(0, 2).map((rec, ri) => (
+                            <li key={ri} className="flex gap-1">
+                              <span className="text-amber-500">▸</span><span className="line-clamp-2">{rec}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </>
                   )}
                 </div>
@@ -302,84 +265,6 @@ const DroneOperatorTab = ({ staff, farmers, droneReports, onSubmitDroneReport, b
           totalPhotos={3}
         />
       )}
-
-      {/* Manual upload */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-sm font-bold text-gray-800">📤 Upload thủ công — bay đến ruộng {selectedFarmer?.hoTen ?? "—"}</h3>
-          <p className="text-[12px] text-slate-500 mt-1">
-            {isGeminiConfigured()
-              ? "Tuỳ chọn upload 1 hoặc nhiều ảnh cụ thể. Gemini sẽ phân tích từng ảnh + tổng hợp kết quả."
-              : "AI canvas sẽ đếm pixel để chấm % phủ xanh & NDVI."}
-          </p>
-        </div>
-        <div className="p-5">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={e => onFiles(Array.from(e.target.files || []))}
-          />
-          {!analyzing && analyses.length === 0 && (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-sky-300 rounded-2xl p-12 text-center cursor-pointer hover:bg-sky-50/50 transition-colors select-none"
-            >
-              <div className="text-5xl mb-3">📤</div>
-              <p className="font-bold text-sm text-gray-800">Bấm để chọn 1 hoặc nhiều ảnh drone</p>
-              <p className="text-xs text-slate-500 mt-2">
-                Hỗ trợ multi-upload — Gemini sẽ tự phân tích lần lượt từng ảnh và tổng hợp kết quả.
-                Sau đó 3 Cùng có thể bổ sung ảnh thực địa khi xuống đồng.
-              </p>
-            </div>
-          )}
-
-          {/* Progress bar khi đang phân tích */}
-          {analyzing && (
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-6 mb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="text-2xl spin inline-block">{isGeminiConfigured() ? "✨" : "🚁"}</div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-bold">{isGeminiConfigured() ? "Gemini 2.5 Flash" : "AI Computer Vision"} — phân tích batch</h3>
-                  <p className="text-xs text-slate-400">{scanMessage}</p>
-                </div>
-                <div className="text-xl font-mono font-bold text-emerald-300">{Math.round(scanProgress)}%</div>
-              </div>
-              <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-300" style={{ width: `${scanProgress}%` }} />
-              </div>
-            </div>
-          )}
-
-          {/* Grid kết quả nhiều ảnh */}
-          {analyses.length > 0 && (
-            <div className="space-y-4">
-              {/* Aggregate summary */}
-              <AggregateSummary analyses={analyses} />
-
-              {/* Individual cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {analyses.map((a, i) => <AnalysisCard key={i} analysis={a} index={i} />)}
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-3 flex-wrap">
-                <div onClick={() => fileInputRef.current?.click()} className="flex-1 min-w-[200px] text-center py-3 rounded-xl border-2 border-sky-300 bg-white text-sky-700 hover:bg-sky-50 font-bold text-sm cursor-pointer select-none">
-                  ➕ Thêm ảnh nữa
-                </div>
-                <div onClick={() => { setAnalyses([]); setScanProgress(0); setScanMessage(""); }} className="flex-1 min-w-[200px] text-center py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm cursor-pointer hover:bg-slate-50 select-none">
-                  Hủy tất cả
-                </div>
-                <div onClick={submitAll} className="flex-1 min-w-[200px] text-center py-3 rounded-lg text-white font-semibold text-[14px] cursor-pointer select-none bg-sky-700 hover:bg-sky-800 transition-colors">
-                  Ký số và gửi {analyses.filter(a=>!a.error).length} báo cáo cho 3 Cùng
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* My drone reports */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
@@ -518,6 +403,15 @@ const AnalysisCard = ({ analysis, index }) => {
               <div className="flex flex-wrap gap-1">
                 {a.diseases.map((d, i) => <span key={i} className="bg-rose-600 text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full">{d}</span>)}
               </div>
+            )}
+            {a.recommendations?.length > 0 && (
+              <ul className="text-[11px] text-amber-800 mt-1 space-y-0.5 bg-amber-50 rounded p-1.5 border border-amber-100">
+                {a.recommendations.slice(0, 2).map((rec, ri) => (
+                  <li key={ri} className="flex gap-1">
+                    <span className="text-amber-500">▸</span><span className="line-clamp-2">{rec}</span>
+                  </li>
+                ))}
+              </ul>
             )}
           </>
         )}

@@ -1,4 +1,4 @@
-﻿// SupplyModal — B1: Đăng ký vật tư đầu vụ
+// SupplyModal — B1: Đăng ký vật tư đầu vụ
 // AI gợi ý gói theo ha (chỉ là gợi ý, user có quyền thêm/sửa/bỏ vật tư bất kỳ)
 // Tier cao có thể chọn phương thức thanh toán tier thấp hơn; tier thấp KHÔNG được chọn cao hơn.
 import { useEffect, useMemo, useState } from "react";
@@ -175,13 +175,13 @@ const SupplyModal = ({ modal, setModal, supplies, onConfirm, formatVND }) => {
                       <p className="text-[12px] text-slate-500 mt-0.5 tabular">{formatVND(s.donGia)}/{s.donVi}</p>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => dec(s.id)} className="w-7 h-7 bg-surface-100 hover:bg-surface-200 rounded-md flex items-center justify-center font-semibold text-slate-700 transition-colors">−</button>
+                      <button onClick={() => dec(s.id)} className="w-7 h-7 bg-white hover:bg-surface-50 border border-surface-200 rounded-md flex items-center justify-center font-semibold text-slate-700 transition-colors">−</button>
                       <input
                         type="number" min="0" value={qty}
                         onChange={e => setQty(s.id, e.target.value)}
-                        className="w-14 border border-surface-200 rounded-md py-1 px-2 text-center font-semibold text-[14px] tabular focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500"
+                        className="w-14 bg-white text-slate-900 border border-surface-200 rounded-md py-1 px-2 text-center font-semibold text-[14px] tabular focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500"
                       />
-                      <button onClick={() => inc(s.id)} className="w-7 h-7 bg-surface-100 hover:bg-surface-200 rounded-md flex items-center justify-center font-semibold text-slate-700 transition-colors">+</button>
+                      <button onClick={() => inc(s.id)} className="w-7 h-7 bg-white hover:bg-surface-50 border border-surface-200 rounded-md flex items-center justify-center font-semibold text-slate-700 transition-colors">+</button>
                     </div>
                     <div className="text-right w-24 shrink-0">
                       <div className="text-[14px] font-semibold tabular text-brand-800">{qty > 0 ? formatVND(qty * s.donGia) : "—"}</div>

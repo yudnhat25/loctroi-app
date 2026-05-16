@@ -150,6 +150,12 @@ const LocTroi30NamHero = () => (
         object-fit: cover;
         object-position: center top;
         z-index: 1;
+        transform-origin: center center;
+        animation: ltPan 60s alternate infinite ease-in-out;
+      }
+      @keyframes ltPan {
+        0% { transform: scale(1) translate(0, 0); }
+        100% { transform: scale(1.05) translate(-1%, 1%); }
       }
     `}</style>
 

@@ -106,3 +106,10 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+button:active {
+  transform: scale(0.98);
+}
+button {
+  transition: transform 0.15s ease;
+}

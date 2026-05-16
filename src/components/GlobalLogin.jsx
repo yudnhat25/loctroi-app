@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import LocTroi30NamHero from "./LocTroi30NamHero";
+import { User, Briefcase, Landmark, Eye, EyeOff } from "lucide-react";
 
 // Login redesign theo mockup: split-screen, hero trái + form phải, 3 tabs trên đầu.
 // Vẫn giữ đủ 3 vai (Nông dân / Lộc Trời / Ngân hàng) + 5 sub-role nội bộ Lộc Trời.
 
 const TABS = [
-  { id: "farmer",  vi: "Nông dân",  en: "FARMER",       color: "green"  },
-  { id: "loctroi", vi: "Lộc Trời",  en: "STAFF",        color: "emerald"},
-  { id: "bank",    vi: "Ngân hàng", en: "BANK SCF",     color: "orange" },
+  { id: "farmer",  vi: "Nông dân",  en: "FARMER",       color: "green",   Icon: User },
+  { id: "loctroi", vi: "Lộc Trời",  en: "STAFF",        color: "emerald", Icon: Briefcase },
+  { id: "bank",    vi: "Ngân hàng", en: "BANK SCF",     color: "orange",  Icon: Landmark },
 ];
 
 const DEMO_PASSWORD = "123456";
@@ -16,6 +17,7 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin }) => {
   const [tab, setTab] = useState("farmer");
   const [accountCode, setAccountCode] = useState("");  // Mã đăng nhập (LT001 / LT-MGR-001)
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState("");
 
@@ -103,7 +105,8 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin }) => {
       </div>
 
       {/* ─── RIGHT: Form ─────────────────────────────────────────────────── */}
-      <div className="lg:w-1/2 flex flex-col p-6 lg:p-12 xl:p-16 relative">
+      <div className="lg:w-1/2 flex flex-col p-6 lg:p-12 xl:p-16 relative w-full items-center lg:items-start">
+        <div className="w-full max-w-full sm:max-w-md flex flex-col h-full flex-1">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8 lg:mb-12">
           <div className="w-12 h-12 bg-emerald-700 text-white rounded-xl flex items-center justify-center font-extrabold text-lg shadow-md">LT</div>
@@ -134,9 +137,12 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin }) => {
                 onClick={() => { setTab(t.id); setError(""); setAccountCode(""); }}
                 className={`flex-1 pb-3 text-center transition-all relative ${active ? a.text : "text-slate-400 hover:text-slate-700"}`}
               >
-                <div className={`text-base font-bold ${active ? "" : "font-semibold"}`}>{t.vi}</div>
-                <div className="text-[10px] font-bold tracking-[0.15em] mt-0.5">{t.en}</div>
-                {active && <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${a.under} rounded-full`}></div>}
+                <div className="flex flex-col items-center gap-1.5">
+                  <t.Icon className={`w-5 h-5 ${active ? a.text : "text-slate-400"}`} />
+                  <div className={`text-base font-bold ${active ? "" : "font-semibold"}`}>{t.vi}</div>
+                </div>
+                <div className={`text-[10px] font-bold tracking-[0.15em] mt-1 transition-colors ${active ? a.text : "text-slate-400"}`}>{t.en}</div>
+                {active && <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${a.under} rounded-full transition-colors duration-300`}></div>}
               </button>
             );
           })}
@@ -158,7 +164,8 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin }) => {
                 placeholder={placeholder}
                 spellCheck={false}
                 autoComplete="off"
-                className={`w-full border-2 border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold tracking-widest focus:outline-none focus:ring-4 transition-all bg-white uppercase ${accent.ring}`}
+                style={{ colorScheme: 'light' }}
+                className={`w-full border-2 border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold tracking-widest focus:outline-none focus:ring-4 transition-all bg-white text-slate-900 uppercase ${accent.ring}`}
               />
             </div>
           )}
@@ -178,16 +185,26 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin }) => {
             <label className="block text-xs font-bold text-slate-700 mb-2">
               Mật khẩu <span className="text-slate-400 italic font-normal">/ Password</span>
             </label>
-            <input
-              type="password"
-              value={password}
-              autoFocus
-              maxLength={20}
-              placeholder="••••••"
-              onChange={e => { setPassword(e.target.value); setError(""); }}
-              onKeyDown={e => { if (e.key === "Enter") handleSubmit(); }}
-              className={`w-full border-2 border-slate-200 rounded-xl px-4 py-3.5 text-lg font-bold tracking-[0.4em] focus:outline-none focus:ring-4 transition-all bg-white ${accent.ring}`}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                autoFocus
+                maxLength={20}
+                placeholder="••••••"
+                onChange={e => { setPassword(e.target.value); setError(""); }}
+                onKeyDown={e => { if (e.key === "Enter") handleSubmit(); }}
+                style={{ colorScheme: 'light' }}
+                className={`w-full border-2 border-slate-200 rounded-xl px-4 py-3.5 text-lg font-bold tracking-[0.4em] focus:outline-none focus:ring-4 transition-all bg-white text-slate-900 ${accent.ring} pr-12`}
+              />
+              <button
+                type="button"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
             {error && <p className="text-red-500 text-xs font-bold mt-2">⚠ {error}</p>}
           </div>
 
@@ -217,10 +234,11 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin }) => {
         </div>
 
         {/* Footer */}
-        <div className="mt-auto pt-8 max-w-md">
-          <a href="#" onClick={e => e.preventDefault()} className="text-[10px] font-bold text-slate-500 tracking-[0.2em] hover:text-emerald-700">
+        <div className="mt-auto pt-8">
+          <a href="#" onClick={e => e.preventDefault()} className="text-[10px] font-bold text-slate-500 tracking-[0.2em] hover:text-emerald-700 block text-center lg:text-left">
             QUẢN LÝ TÀI KHOẢN LỘC TRỜI <span className="text-slate-300">/</span> ACCOUNT MANAGEMENT
           </a>
+        </div>
         </div>
       </div>
     </div>

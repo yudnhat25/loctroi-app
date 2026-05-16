@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 
 // Tài xế đến nhà nông dân, quét QR Hộ chiếu Số → app hiện danh sách vật tư cần giao
 // → 2 bên ký số → smart contract confirmDelivery() → +10 Credit Score.
@@ -136,10 +136,6 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
                 />
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-                ⚠️ Cả 2 chữ ký đều bắt buộc. Sau khi ký xong, smart contract <code>confirmDelivery()</code> ghi block bất biến.
-                Nông dân được <b>+10 Credit Score</b> ngay lập tức.
-              </div>
 
               <div onClick={finalize} className={`w-full text-center py-3 rounded-lg text-white font-semibold text-[14px] cursor-pointer select-none transition-colors ${
                 farmerSigned && driverSigned ? "bg-amber-700 hover:bg-amber-800" : "bg-slate-300 cursor-not-allowed"

@@ -1,4 +1,4 @@
-﻿import { LT_SUBROLES } from "../lib/staff";
+import { LT_SUBROLES } from "../lib/staff";
 
 // Mapping subrole → bộ token màu (accent solid + soft bg + ink) cho UI tinh giản.
 // Quản lý & 3 Cùng dùng brand emerald (chính của Lộc Trời); 3 sub-role còn lại
@@ -33,7 +33,7 @@ const StaffHome = ({ staff, farmers, transactions, invoices, supplyRequests, dro
               <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 {sr.label}
               </div>
-              <h2 className="text-[32px] font-display font-semibold tracking-tight leading-tight mt-1">
+              <h2 className="text-[32px] font-display font-semibold tracking-tight leading-tight mt-1 text-white">
                 {staff.hoTen}
               </h2>
               <p className="text-[14px] text-slate-300 mt-1.5">{staff.chucDanh}</p>
@@ -52,7 +52,7 @@ const StaffHome = ({ staff, farmers, transactions, invoices, supplyRequests, dro
             {kpi.cards.map((c, i) => (
               <div key={i} className="bg-slate-900 px-4 py-4">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{c.label}</div>
-                <div className="font-display text-[30px] font-semibold tabular leading-none mt-2.5">{c.value}</div>
+                <div className="font-display text-[30px] font-semibold tabular leading-none mt-2.5 text-white">{c.value}</div>
                 {c.sub && <div className="text-[12px] text-slate-500 mt-1.5">{c.sub}</div>}
               </div>
             ))}

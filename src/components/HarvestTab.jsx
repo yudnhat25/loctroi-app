@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { getTier, MAX_FARMING, calcHarvestRevenue, getPremiumPerKg } from "../lib/scoring";
 
 // Cán bộ thu mua lúa cuối vụ.
@@ -187,13 +187,13 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
                       <div>
                         <div className="text-[11px] text-slate-400 font-bold uppercase">Độ ẩm</div>
                         <input type="number" min="10" max="20" step="0.5" value={moisture} onChange={e => setMoisture(parseFloat(e.target.value))}
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-center text-amber-400 font-bold focus:outline-none" />
+                          className="w-full bg-white text-slate-900 border border-surface-200 rounded-md py-1.5 px-3" />
                         <div className="text-[11px] text-slate-500 mt-0.5">%</div>
                       </div>
                       <div>
                         <div className="text-[11px] text-slate-400 font-bold uppercase">Tạp chất</div>
                         <input type="number" min="0" max="10" step="0.1" value={impurity} onChange={e => setImpurity(parseFloat(e.target.value))}
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-center text-cyan-400 font-bold focus:outline-none" />
+                          className="w-full bg-white text-slate-900 border border-surface-200 rounded-md py-1.5 px-3" />
                         <div className="text-[11px] text-slate-500 mt-0.5">%</div>
                       </div>
                     </div>

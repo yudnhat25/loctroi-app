@@ -187,7 +187,7 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
       </section>
 
       {/* ─── QUICK ACTIONS (3 ô, không gồm Drone) ───────────────────────────── */}
-      <section className="grid grid-cols-3 gap-3">
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
         <QuickAction
           icon="cart"
           label="Đặt vật tư"
@@ -296,43 +296,113 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
         )}
       </section>
 
-      {/* ─── DIGITAL ID (toggle từ quick action) ────────────────────────────── */}
+      {/* ─── DIGITAL ID POP-UP (Hộ chiếu số) ────────────────────────────── */}
       {showPassport && (
-        <section className="rounded-2xl bg-slate-900 text-white px-6 py-5 relative overflow-hidden fade-in">
-          <div className={`absolute inset-x-0 top-0 h-[3px] ${tok.hi}`} />
-          <div className="flex items-baseline justify-between mb-5">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Digital ID · Hyperledger Fabric</div>
-              <div className="font-display text-[18px] font-semibold tracking-tight mt-1">Hộ chiếu Số của {farmer.hoTen}</div>
-            </div>
-            <div className={`flex items-center gap-1.5 text-[12px] font-semibold ${farmer.trangThai === "Đang canh tác" ? "text-emerald-400" : "text-rose-400"}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${farmer.trangThai === "Đang canh tác" ? "bg-emerald-400" : "bg-rose-400"}`}></span>
-              {farmer.trangThai === "Đang canh tác" ? "ACTIVE" : "WARNED"}
-            </div>
-          </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-in" onClick={() => setShowPassport(false)}>
+          <div className="relative max-w-[400px] w-full" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setShowPassport(false)}
+              className="absolute -top-12 right-0 text-white hover:text-slate-200 transition-colors bg-white/10 hover:bg-white/20 p-2 rounded-full"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <section className="bg-[#486C52] rounded-[24px] p-3 sm:p-5 relative overflow-hidden shadow-2xl">
+              <div className="bg-white rounded-[20px] overflow-hidden">
+                {/* Top White Section */}
+                <div className="px-6 pt-6 pb-5 relative">
+                  {/* Header */}
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#486C52] rounded-lg flex items-center justify-center text-white font-bold text-[16px]">
+                        LT
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">TẬP ĐOÀN LỘC TRỜI</div>
+                        <div className="text-[14px] font-bold text-slate-800 mt-0.5">Hộ chiếu Số · AgriChain v2</div>
+                      </div>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-white font-bold text-[13px] ${tok.bg}`}>
+                      Tier {tier.code}
+                    </div>
+                  </div>
 
-          {/* QR placeholder + DID details */}
-          <div className="flex items-start gap-5 flex-wrap">
-            <div className="w-24 h-24 rounded-xl bg-white text-slate-900 flex flex-col items-center justify-center text-center shrink-0 ring-1 ring-white/10">
-              <div className="text-[8px] font-mono font-bold opacity-50">QR v2.0</div>
-              <div className="font-mono font-bold text-[12px] mt-1">{farmer.digitalId ?? farmer.id}</div>
-              <div className="text-[8px] font-mono opacity-50 mt-1">scan to verify</div>
-            </div>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-[13px] font-mono flex-1 min-w-[240px]">
-              <Row k="DID"        v={farmer.id}              color="text-emerald-300" />
-              <Row k="Guarantor"  v="LOC-TROI-CORP"          color="text-sky-300" />
-              <Row k="Network"    v="LocTroi-AgriChain-v2"   color="text-slate-300" />
-              <Row k="MSP"        v="FarmerMSP"              color="text-slate-300" />
-              <Row k="HTX"        v={farmer.htx ?? "—"}      color="text-slate-300" />
-              <Row k="Diện tích"  v={`${farmer.dienTich} ha`} color="text-slate-300" />
-            </dl>
-          </div>
+                  {/* QR Code */}
+                  <div className="mt-8 flex flex-col items-center">
+                    <div className="w-[180px] h-[180px] bg-white p-2">
+                      <svg viewBox="0 0 100 100" className="w-full h-full fill-slate-900">
+                        <path d="M0,0 h30 v30 h-30 z M5,5 v20 h20 v-20 z M10,10 h10 v10 h-10 z" />
+                        <path d="M70,0 h30 v30 h-30 z M75,5 v20 h20 v-20 z M80,10 h10 v10 h-10 z" />
+                        <path d="M0,70 h30 v30 h-30 z M5,75 v20 h20 v-20 z M10,80 h10 v10 h-10 z" />
+                        <rect x="40" y="0" width="20" height="10" />
+                        <rect x="40" y="20" width="10" height="10" />
+                        <rect x="50" y="40" width="40" height="10" />
+                        <rect x="0" y="40" width="30" height="10" />
+                        <rect x="40" y="40" width="10" height="30" />
+                        <rect x="80" y="60" width="20" height="10" />
+                        <rect x="50" y="80" width="20" height="20" />
+                        <rect x="80" y="80" width="20" height="20" />
+                        <rect x="60" y="60" width="10" height="10" />
+                        <rect x="20" y="55" width="10" height="10" />
+                        <rect x="35" y="85" width="10" height="10" />
+                      </svg>
+                    </div>
+                    <div className="mt-4 text-center">
+                      <div className="text-[22px] font-display font-bold text-slate-900">{farmer.hoTen}</div>
+                      <div className="text-[14px] font-mono font-semibold text-brand-700 mt-1">{farmer.digitalId ?? farmer.id}</div>
+                    </div>
+                  </div>
 
-          <p className="text-[11px] text-slate-400 mt-4 leading-relaxed">
-            QR này dùng để tài xế quét khi giao vật tư, cán bộ 3 Cùng quét khi kiểm tra SRP, và cán bộ thu mua quét khi tất toán.
-            Mọi giao dịch của bạn được ký vào sổ cái bất biến, không ai sửa được.
-          </p>
-        </section>
+                  {/* Divider */}
+                  <div className="border-t border-dashed border-slate-200 my-5"></div>
+
+                  {/* Details */}
+                  <div className="space-y-3 text-[14px]">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">HTX</span>
+                      <span className="font-semibold text-slate-900">{farmer.htx ?? "—"}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Địa chỉ</span>
+                      <span className="font-semibold text-slate-900 text-right max-w-[200px] truncate">{farmer.diaChi ?? "—"}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Diện tích</span>
+                      <span className="font-semibold text-slate-900">{farmer.dienTich} ha</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Tham gia hệ thống</span>
+                      <span className="font-semibold text-slate-900">15/3/2024</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Mạng</span>
+                      <span className="font-semibold text-slate-900">LocTroi-AgriChain-v2</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Trạng thái</span>
+                      <div className={`flex items-center gap-1.5 font-bold ${farmer.trangThai === "Đang canh tác" ? "text-[#486C52]" : "text-rose-600"}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${farmer.trangThai === "Đang canh tác" ? "bg-[#486C52]" : "bg-rose-600"}`}></span>
+                        {farmer.trangThai === "Đang canh tác" ? "ACTIVE" : "WARNED"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Green Section */}
+                <div className="bg-[#5A7E62] px-6 py-5 text-white/95 text-[13px] leading-relaxed">
+                  <div className="font-bold text-white mb-3 flex items-center gap-2">
+                    <span className="text-[16px]">📌</span> Hướng dẫn sử dụng
+                  </div>
+                  <ul className="space-y-2 font-medium">
+                    <li>• Đưa QR cho tài xế Lộc Trời khi giao vật tư</li>
+                    <li>• Đưa QR cho cán bộ 3 Cùng khi kiểm tra ruộng</li>
+                    <li>• Đưa QR khi cân lúa thu hoạch cuối vụ</li>
+                    <li>• Mọi giao dịch quét QR đều ghi vào blockchain</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
       )}
 
       {/* ─── INVOICES + SCF ACTIONS ─────────────────────────────────────────── */}

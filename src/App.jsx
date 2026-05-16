@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import OverviewTab from "./components/OverviewTab";
@@ -74,6 +74,7 @@ const App = () => {
   const [disasterModal, setDisasterModal] = useState({ isOpen: false, step: 0, data: null, insuranceAmount: null, recourseAmount: null });
   const [ledgerOpen, setLedgerOpen] = useState(false);
   const [toast, setToast] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 4000); };
   const logBlockchain = (action, data, hash = null) => {
@@ -303,15 +304,20 @@ const App = () => {
 
   // ─── SCF / Insurance handlers (giữ logic cũ) ─────────────────────────────
   const handleVerifyField = (invoice) => {
+    const farmer = farmers.find(f => f.id === invoice.nongHoId);
+    const currentScore = farmer?.farmingScore || 0;
+    const isPassing = currentScore >= 250; // Ngưỡng đạt chuẩn SRP để đúc Token
+
     setOracleModal({ isOpen: true, status: "loading", invoiceId: invoice.id, nongHoId: invoice.nongHoId });
     setTimeout(() => {
-      if (invoice.nongHoId === "LT004") {
+      // Đánh giá dựa trên dữ liệu THỰC TẾ từ đội 3 Cùng ghi nhận
+      if (!isPassing) {
         setOracleModal(m => ({ ...m, status: "failed" }));
         setTimeout(() => {
           const hash = generateHash();
-          setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Cảnh báo và Điều tra" } : inv));
-          logBlockchain("ORACLE_REJECTED", `Oracle: HĐ ${invoice.id} bị từ chối do vi phạm SRP`, hash);
-          showToast(`❌ Từ chối Token hóa: Vi phạm thực địa`);
+          setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Từ chối duyệt vay" } : inv));
+          logBlockchain("ORACLE_REJECTED", `Oracle: HĐ ${invoice.id} bị từ chối do Farming Score (${currentScore}/${MAX_FARMING}) không đạt chuẩn thế chấp`, hash);
+          showToast(`❌ Từ chối Token hóa: Vi phạm thực địa (Score: ${currentScore})`);
           setOracleModal({ isOpen: false, status: "idle", invoiceId: null, nongHoId: null });
         }, 3000);
       } else {
@@ -320,7 +326,7 @@ const App = () => {
           const hash = generateHash();
           const tokenId = `TKN-${hash.substring(0, 6).toUpperCase()}`;
           setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Đã token hóa", tokenId } : inv));
-          logBlockchain("INVOICE_TOKENIZED", `Mã HĐ: ${invoice.id} → Token: ${tokenId}`, hash);
+          logBlockchain("INVOICE_TOKENIZED", `Mã HĐ: ${invoice.id} → Token: ${tokenId}. Farming Score: ${currentScore}/${MAX_FARMING} (Đạt)`, hash);
           showToast(`✅ Phát hành ${tokenId} thành công`);
           setOracleModal({ isOpen: false, status: "idle", invoiceId: null, nongHoId: null });
         }, 1500);
@@ -418,8 +424,9 @@ const App = () => {
   const handleLogin = (user) => {
     setCurrentUser(user);
     setActiveTab(defaultTabFor(user));
+    setIsSidebarOpen(false);
   };
-  const handleLogout = () => { setCurrentUser(null); setActiveTab(""); };
+  const handleLogout = () => { setCurrentUser(null); setActiveTab(""); setIsSidebarOpen(false); };
 
   if (!currentUser) {
     return <GlobalLogin farmers={farmers} staff={staff} blockchainLog={blockchainLog} onLogin={handleLogin} />;
@@ -451,17 +458,19 @@ const App = () => {
 
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(id) => { setActiveTab(id); setIsSidebarOpen(false); }}
         blockchainLog={blockchainLog}
         invoices={invoices}
         role={currentUser.role}
         subrole={currentUser.subrole}
         profile={currentUser.profile}
         onLogout={handleLogout}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
       />
 
-      <main className="flex-1 flex flex-col h-full overflow-hidden">
-        <Header activeTab={activeTab} user={currentUser} />
+      <main className="flex-1 flex flex-col h-full overflow-hidden w-full relative">
+        <Header activeTab={activeTab} user={currentUser} setIsSidebarOpen={setIsSidebarOpen} />
         <div className="flex-1 overflow-auto p-6 xl:p-8">
           <div className="max-w-screen-xl mx-auto w-full">
 

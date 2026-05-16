@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 
 // Cán bộ 3 Cùng đến HTX đăng ký Hộ chiếu Số cho nông dân mới.
 // Smart contract createPassport() chạy tự động → sinh DigitalID, ghi Genesis Record lên chain.
@@ -104,7 +104,7 @@ const OnboardingTab = ({ staff, blockchainLog, farmers, onCreateFarmer }) => {
             </select>
           </Field>
           <Field label="Diện tích ruộng (ha)" error={errors.dienTich}>
-            <input type="number" min="0.1" step="0.1" value={form.dienTich} onChange={e => setForm({ ...form, dienTich: e.target.value })} className="input" />
+            <input type="number" min="0.1" step="0.1" value={form.dienTich} onChange={e => setForm({ ...form, dienTich: e.target.value })} className="input bg-white text-slate-900" />
           </Field>
           <Field label="Giống lúa thường dùng" full>
             <select value={form.giong} onChange={e => setForm({ ...form, giong: e.target.value })} className="input">
@@ -112,11 +112,7 @@ const OnboardingTab = ({ staff, blockchainLog, farmers, onCreateFarmer }) => {
             </select>
           </Field>
 
-          <div className="md:col-span-2 rounded-lg bg-amber-50 ring-1 ring-amber-200 px-3.5 py-3 text-[14px] text-amber-900 leading-relaxed">
-            <b>Tự động khi nộp đơn:</b> Smart contract <code className="font-mono text-amber-800">createPassport()</code> sẽ
-            sinh Digital ID (LT-NDxxxxxx), hash CCCD, tạo block Genesis Record, set Tier D, Score 0/0.
-            Trả về QR code để in ra giấy đưa nông dân giữ.
-          </div>
+
 
           <div className="md:col-span-2 flex gap-3">
             <button

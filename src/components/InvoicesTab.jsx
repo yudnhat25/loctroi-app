@@ -1,4 +1,4 @@
-﻿const STATUS_CONFIG = {
+const STATUS_CONFIG = {
   "Chờ xác nhận":       { dot: "bg-amber-500",  label: "Chờ xác nhận",       cls: "text-amber-800 bg-amber-50 ring-amber-200" },
   "Đã token hóa":       { dot: "bg-sky-500",    label: "Đã token hóa",        cls: "text-sky-800 bg-sky-50 ring-sky-200" },
   "Chào bán ngân hàng": { dot: "bg-amber-600",  label: "Chào bán ngân hàng",  cls: "text-amber-900 bg-amber-50 ring-amber-200" },
@@ -14,11 +14,17 @@ const RISK_CONFIG = {
   HIGH:   { label: "Cao",    cls: "text-rose-800 bg-rose-50 ring-rose-200" },
 };
 
-const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, formatVND, onVerifyField, onSubmitSCF, onSettleInvoice }) => {
-  const getAction = (inv) => {
+const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, formatVND, onVerifyField, onSubmitSCF, onSettleInvoice, blockchainLog }) => {
+  const getAction = (inv, farmer) => {
     switch (inv.trangThai) {
-      case "Chờ xác nhận":
-        return <button onClick={() => onVerifyField(inv)} className="bg-brand-700 hover:bg-brand-800 text-white px-3 py-1.5 rounded-lg text-[14px] font-semibold transition-colors whitespace-nowrap">Xác nhận thực địa</button>;
+      case "Chờ xác nhận": {
+        const hasInspection = blockchainLog?.some(l => l.action === "FIELD_INSPECTION" && l.data.includes(farmer?.hoTen));
+        return hasInspection ? (
+          <button onClick={() => onVerifyField(inv)} className="bg-brand-700 hover:bg-brand-800 text-white px-3 py-1.5 rounded-lg text-[14px] font-semibold transition-colors whitespace-nowrap">Xác nhận thực địa</button>
+        ) : (
+          <button disabled className="bg-surface-200 text-slate-400 px-3 py-1.5 rounded-lg text-[14px] font-semibold cursor-not-allowed whitespace-nowrap" title="Chờ lực lượng 3 Cùng xuống đồng kiểm tra và chụp ảnh trước">Chờ 3 Cùng kiểm tra</button>
+        );
+      }
       case "Đã token hóa":
         return <span className="text-sky-700 text-[12px] font-semibold whitespace-nowrap">Chờ hộ nông dân ký SCF…</span>;
       case "Chào bán ngân hàng":
@@ -106,7 +112,7 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
                           {cfg.label}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-right">{getAction(inv)}</td>
+                      <td className="px-5 py-3.5 text-right">{getAction(inv, farmer)}</td>
                     </tr>
                   );
                 })}
