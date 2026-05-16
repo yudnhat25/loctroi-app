@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 
 // Tài xế đến nhà nông dân, quét QR Hộ chiếu Số → app hiện danh sách vật tư cần giao
 // → 2 bên ký số → smart contract confirmDelivery() → +10 Credit Score.
@@ -14,31 +14,40 @@ const DeliveryTab = ({ staff, deliveryQueue, farmers, supplies, onConfirmDeliver
   useEffect(() => {
     if (!cameraOpen) return;
     
-    // Create scanner instance
-    const scanner = new Html5QrcodeScanner("qr-reader", { 
-      fps: 10, 
-      qrbox: { width: 250, height: 250 },
-      aspectRatio: 1.0,
-    }, false);
+    const html5QrCode = new Html5Qrcode("qr-reader");
+    let isComponentMounted = true;
 
-    scanner.render(
+    html5QrCode.start(
+      { facingMode: "environment" }, // Ưu tiên camera sau của điện thoại
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+      },
       (decodedText) => {
+        if (!isComponentMounted) return;
         try {
           const data = JSON.parse(decodedText);
           if (data.type === "PASSPORT" && data.id) {
-            scanner.clear();
-            setCameraOpen(false);
-            setScannedFarmerFilter(data.id);
+            html5QrCode.stop().then(() => {
+              setCameraOpen(false);
+              setScannedFarmerFilter(data.id);
+            }).catch(console.error);
           }
         } catch(e) {
-          console.error("Invalid QR format:", decodedText);
+          // ignore invalid qr
         }
       },
-      (err) => { /* ignore normal scanning errors */ }
-    );
+      (err) => { /* ignore scanning errors */ }
+    ).catch(err => {
+      console.error("Lỗi khởi động camera:", err);
+    });
 
     return () => {
-      scanner.clear().catch(e => console.error("Failed to clear scanner", e));
+      isComponentMounted = false;
+      if (html5QrCode.isScanning) {
+        html5QrCode.stop().catch(console.error);
+      }
     };
   }, [cameraOpen]);
 
