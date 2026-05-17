@@ -108,11 +108,10 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin }) => {
       <div className="lg:w-1/2 flex flex-col p-5 sm:p-6 lg:p-12 xl:p-16 relative w-full items-center lg:items-start safe-pb">
         <div className="w-full max-w-full sm:max-w-md flex flex-col h-full flex-1">
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-5 sm:mb-8 lg:mb-12">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-700 text-white rounded-xl flex items-center justify-center font-extrabold text-base sm:text-lg shadow-md">LT</div>
-          <div>
-            <div className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-wide leading-none">LỘC TRỜI</div>
-            <div className="text-[10px] font-bold text-emerald-700 tracking-[0.2em] mt-1">AGRICHAIN GROUP</div>
+        <div className="flex items-end gap-3 mb-5 sm:mb-8 lg:mb-12">
+          <img src="/loctroi-logo.png" alt="Lộc Trời" className="h-16 sm:h-20 lg:h-24 w-auto shrink-0" />
+          <div className="pb-1 sm:pb-2">
+            <div className="text-[10px] sm:text-[11px] font-bold text-emerald-700 tracking-[0.2em]">AGRICHAIN GROUP</div>
           </div>
         </div>
 

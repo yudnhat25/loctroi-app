@@ -67,7 +67,9 @@ const Sidebar = ({ activeTab, setActiveTab, blockchainLog, invoices, role, subro
         {/* Brand mark */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-surface-200">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-brand-700 text-white flex items-center justify-center font-display font-bold text-[17px] tracking-tight">LT</div>
+            <div className="w-12 h-8 overflow-hidden shrink-0">
+              <img src="/loctroi-logo.png" alt="Lộc Trời" className="w-full block" />
+            </div>
             <div className="leading-none">
               <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-brand-700">Lộc Trời</div>
               <div className="text-[16px] font-display font-bold tracking-tight text-slate-900 mt-1">AgriChain</div>
