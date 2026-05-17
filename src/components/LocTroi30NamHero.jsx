@@ -147,7 +147,7 @@ const LocTroi30NamHero = () => (
       .lt-hero-base {
         position: absolute; inset: 0;
         width: 100%; height: 100%;
-        object-fit: cover;
+        object-fit: contain;
         object-position: center top;
         z-index: 1;
         transform-origin: center center;
