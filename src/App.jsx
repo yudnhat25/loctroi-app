@@ -10,6 +10,7 @@ import SCFTab from "./components/SCFTab";
 import FarmerPortalTab from "./components/FarmerPortalTab";
 import InspectionTab from "./components/InspectionTab";
 import OnboardingTab from "./components/OnboardingTab";
+import RegistrationsTab from "./components/RegistrationsTab";
 import DroneOperatorTab from "./components/DroneOperatorTab";
 import DeliveryTab from "./components/DeliveryTab";
 import HarvestTab from "./components/HarvestTab";
@@ -66,6 +67,7 @@ const App = () => {
   const [supplyRequests, setSupplyRequestsLocal] = useState([]);
   const [deliveryQueue, setDeliveryQueueLocal] = useState([]);
   const [droneReports, setDroneReportsLocal] = useState([]);
+  const [farmerApplications, setFarmerApplicationsLocal] = useState([]);
   const [blockchainLog, setBlockchainLogLocal] = useState([
     { timestamp: new Date().toISOString(), hash: generateHash(), action: "GENESIS_BLOCK", data: "Khởi tạo hệ thống LocTroi AgriChain v2.0" }
   ]);
@@ -81,6 +83,7 @@ const App = () => {
         if (data.deliveryQueue) setDeliveryQueueLocal(data.deliveryQueue);
         if (data.droneReports) setDroneReportsLocal(data.droneReports);
         if (data.blockchainLog) setBlockchainLogLocal(data.blockchainLog);
+        if (data.farmerApplications) setFarmerApplicationsLocal(data.farmerApplications);
       } else {
         setDoc(doc(db, "agrichain", "globalState"), {
           farmers: initialFarmers,
@@ -89,6 +92,7 @@ const App = () => {
           supplyRequests: [],
           deliveryQueue: [],
           droneReports: [],
+          farmerApplications: [],
           blockchainLog: [{ timestamp: new Date().toISOString(), hash: generateHash(), action: "GENESIS_BLOCK", data: "Khởi tạo hệ thống LocTroi AgriChain v2.0" }]
         });
       }
@@ -103,6 +107,7 @@ const App = () => {
   const setDeliveryQueue = (val) => setDeliveryQueueLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { deliveryQueue: n }, { merge: true }); return n; });
   const setDroneReports = (val) => setDroneReportsLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { droneReports: n }, { merge: true }); return n; });
   const setBlockchainLog = (val) => setBlockchainLogLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { blockchainLog: n }, { merge: true }); return n; });
+  const setFarmerApplications = (val) => setFarmerApplicationsLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { farmerApplications: n }, { merge: true }); return n; });
 
   // Modals
   const [supplyModal, setSupplyModal] = useState({ isOpen: false, farmer: null, season: "Vụ Đông Xuân 2026-2027" });
@@ -146,6 +151,76 @@ const App = () => {
     );
     showToast(`🪪 Đã tạo Hộ chiếu Số ${digitalId} cho ${hoTen}`);
     return newFarmer;
+  };
+
+  // ─── Nông dân tự đăng ký ─ ghi vào hàng chờ duyệt của Giám đốc ─────────────
+  const handleSubmitRegistration = (form) => {
+    const trimmedSdt = String(form.sdt || "").trim();
+    const dupApp = farmerApplications.find(a => a.sdt === trimmedSdt && a.status === "Chờ duyệt");
+    if (dupApp) {
+      return { ok: false, error: `Đã có đơn chờ duyệt với SĐT này (mã ${dupApp.id}). Vui lòng tra cứu trạng thái.` };
+    }
+    const appId = "APP-" + Math.random().toString(36).substring(2, 7).toUpperCase();
+    const newApp = {
+      id: appId,
+      hoTen: form.hoTen.trim(),
+      cccd: form.cccd,
+      sdt: trimmedSdt,
+      diaChi: form.diaChi.trim(),
+      htx: form.htx,
+      dienTich: parseFloat(form.dienTich),
+      giong: form.giong,
+      status: "Chờ duyệt",
+      submittedAt: new Date().toISOString(),
+      reviewedBy: null,
+      reviewedAt: null,
+      rejectReason: null,
+      assignedFarmerId: null,
+    };
+    setFarmerApplications(prev => [newApp, ...prev]);
+    logBlockchain(
+      "REGISTRATION_SUBMITTED",
+      `[Đăng ký] ${newApp.hoTen} (${newApp.htx} · ${newApp.dienTich}ha) gửi đơn ${appId} — chờ Giám đốc Vùng duyệt.`
+    );
+    return { ok: true, app: newApp };
+  };
+
+  const handleApproveRegistration = (app, manager) => {
+    const newFarmer = handleCreateFarmer({
+      hoTen: app.hoTen,
+      cccd: app.cccd,
+      sdt: app.sdt,
+      diaChi: app.diaChi,
+      htx: app.htx,
+      dienTich: app.dienTich,
+      giong: app.giong,
+      onboardedBy: `${manager.id} (Tự đăng ký · duyệt bởi Giám đốc)`,
+    });
+    setFarmerApplications(prev => prev.map(a => a.id === app.id
+      ? { ...a, status: "Đã duyệt", reviewedBy: manager.id, reviewedAt: new Date().toISOString(), assignedFarmerId: newFarmer.id }
+      : a));
+    logBlockchain(
+      "REGISTRATION_APPROVED",
+      `[Duyệt đơn] Giám đốc ${manager.hoTen} duyệt đơn ${app.id} của ${app.hoTen} → cấp Hộ chiếu Số ${newFarmer.id}.`
+    );
+    showToast(`✅ Đã duyệt ${app.hoTen} — cấp mã ${newFarmer.id}`);
+  };
+
+  const handleRejectRegistration = (app, manager, reason) => {
+    setFarmerApplications(prev => prev.map(a => a.id === app.id
+      ? { ...a, status: "Từ chối", reviewedBy: manager.id, reviewedAt: new Date().toISOString(), rejectReason: reason || "Không đạt điều kiện" }
+      : a));
+    logBlockchain(
+      "REGISTRATION_REJECTED",
+      `[Từ chối đơn] Giám đốc ${manager.hoTen} từ chối đơn ${app.id} của ${app.hoTen}. Lý do: ${reason || "Không đạt điều kiện"}.`
+    );
+    showToast(`❌ Đã từ chối đơn của ${app.hoTen}`);
+  };
+
+  const lookupApplication = (sdt) => {
+    const s = String(sdt || "").trim();
+    if (!s) return null;
+    return farmerApplications.find(a => a.sdt === s) ?? null;
   };
 
   // ─── B1-B2: Yêu cầu vật tư + smart contract auto duyệt ───────────────────
@@ -466,7 +541,16 @@ const App = () => {
   const handleLogout = () => { setCurrentUser(null); setActiveTab(""); setIsSidebarOpen(false); };
 
   if (!currentUser) {
-    return <GlobalLogin farmers={farmers} staff={staff} blockchainLog={blockchainLog} onLogin={handleLogin} />;
+    return (
+      <GlobalLogin
+        farmers={farmers}
+        staff={staff}
+        blockchainLog={blockchainLog}
+        onLogin={handleLogin}
+        onSubmitRegistration={handleSubmitRegistration}
+        onLookupApplication={lookupApplication}
+      />
+    );
   }
 
   // Filter blockchain log for farmer (private view)
@@ -498,6 +582,7 @@ const App = () => {
         setActiveTab={(id) => { setActiveTab(id); setIsSidebarOpen(false); }}
         blockchainLog={blockchainLog}
         invoices={invoices}
+        farmerApplications={farmerApplications}
         role={currentUser.role}
         subrole={currentUser.subrole}
         profile={currentUser.profile}
@@ -514,6 +599,14 @@ const App = () => {
             {/* Manager subrole tabs */}
             {currentUser.role === "loctroi" && currentUser.subrole === "manager" && activeTab === "managerHome" && (
               <StaffHome {...sharedProps} staff={currentUser.profile} />
+            )}
+            {currentUser.role === "loctroi" && currentUser.subrole === "manager" && activeTab === "registrations" && (
+              <RegistrationsTab
+                staff={currentUser.profile}
+                farmerApplications={farmerApplications}
+                onApprove={handleApproveRegistration}
+                onReject={handleRejectRegistration}
+              />
             )}
             {currentUser.role === "loctroi" && activeTab === "overview" && <OverviewTab {...sharedProps} />}
             {currentUser.role === "loctroi" && activeTab === "farmers" && (

@@ -10,7 +10,7 @@ export const LT_SUBROLES = {
     color: "from-blue-500 to-indigo-600",
     bg: "bg-blue-50",
     text: "text-blue-700",
-    tabs: ["managerHome", "overview", "farmers", "invoices"],
+    tabs: ["managerHome", "registrations", "overview", "farmers", "invoices"],
   },
   fieldOfficer: {
     code: "fieldOfficer",

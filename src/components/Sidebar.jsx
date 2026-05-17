@@ -9,12 +9,14 @@ import {
   Truck as TruckIcon,
   Wheat as HarvestIcon,
   UserPlus as UserPlusIcon,
-  ClipboardCheck as ClipboardIcon
+  ClipboardCheck as ClipboardIcon,
+  ShieldCheck as ShieldCheckIcon
 } from "lucide-react";
 
 // Map: tab id → { label, icon }
 export const TAB_DEF = {
   managerHome:     { label: "Trang chủ Quản lý",       icon: LayoutDashboardIcon },
+  registrations:   { label: "Duyệt đơn đăng ký",        icon: ShieldCheckIcon },
   overview:        { label: "Tổng quan mạng lưới",      icon: LayoutDashboardIcon },
   farmers:         { label: "Hộ Nông dân & Vật tư",     icon: UsersIcon },
   invoices:        { label: "Khoản phải thu",           icon: FileTextIcon },
@@ -31,8 +33,9 @@ export const TAB_DEF = {
   farmerPortal:    { label: "Hồ sơ cá nhân",            icon: SmartphoneIcon },
 };
 
-const Sidebar = ({ activeTab, setActiveTab, blockchainLog, invoices, role, subrole, profile, onLogout, isSidebarOpen, setIsSidebarOpen }) => {
+const Sidebar = ({ activeTab, setActiveTab, blockchainLog, invoices, farmerApplications = [], role, subrole, profile, onLogout, isSidebarOpen, setIsSidebarOpen }) => {
   const pendingScf = invoices.filter(i => i.trangThai === "Chào bán ngân hàng").length;
+  const pendingRegs = farmerApplications.filter(a => a.status === "Chờ duyệt").length;
 
   let availableTabs = [];
   if (role === "loctroi") {
@@ -121,6 +124,9 @@ const Sidebar = ({ activeTab, setActiveTab, blockchainLog, invoices, role, subro
               <span className="truncate text-left flex-1">{def.label}</span>
               {id === "scf" && pendingScf > 0 && (
                 <span className="bg-amber-500 text-white text-[11px] px-1.5 py-0.5 rounded-md font-semibold shrink-0 tabular">{pendingScf}</span>
+              )}
+              {id === "registrations" && pendingRegs > 0 && (
+                <span className="bg-rose-500 text-white text-[11px] px-1.5 py-0.5 rounded-md font-semibold shrink-0 tabular">{pendingRegs}</span>
               )}
             </button>
           );

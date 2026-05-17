@@ -4,7 +4,11 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
   const totalReceivables = invoices.reduce((s, i) => s + (i.totalValue || i.amount), 0) || 12400000000;
   const avgFarmingScore = Math.round(farmers.reduce((s, f) => s + (f.farmingScore || 0), 0) / (farmers.length || 1));
 
-  const formatBillion = (val) => "đ" + (val / 1e9).toFixed(1) + " tỷ";
+  const formatBillion = (val) => (
+    <>
+      <span className="text-lg sm:text-2xl">đ</span>{(val / 1e9).toFixed(1)} <span className="text-lg sm:text-2xl">tỷ</span>
+    </>
+  );
 
   // Calculate Tier distribution
   const tierCounts = { A: 0, B: 0, C: 0, D: 0 };
