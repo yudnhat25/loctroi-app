@@ -5,19 +5,20 @@ import { LT_SUBROLES } from "../lib/staff";
 // dùng accent riêng để phân biệt nghiệp vụ thực địa.
 const ROLE_TOKENS = {
   manager:        { accent: "bg-brand-700",  soft: "bg-brand-50",  ink: "text-brand-800",  ring: "ring-brand-200" },
-  fieldOfficer:   { accent: "bg-brand-700",  soft: "bg-brand-50",  ink: "text-brand-800",  ring: "ring-brand-200" },
-  droneOperator:  { accent: "bg-sky-700",    soft: "bg-sky-50",    ink: "text-sky-800",    ring: "ring-sky-200" },
+  fieldOfficer:   { accent: "bg-emerald-700",soft: "bg-emerald-50",ink: "text-emerald-800",ring: "ring-emerald-200" },
   driver:         { accent: "bg-amber-700",  soft: "bg-amber-50",  ink: "text-amber-800",  ring: "ring-amber-200" },
-  procurement:    { accent: "bg-rose-700",   soft: "bg-rose-50",   ink: "text-rose-800",   ring: "ring-rose-200" },
 };
 
 // Trang chủ cá nhân — mỗi sub-role có KPI khác nhau, tính từ blockchainLog & state.
-const StaffHome = ({ staff, farmers, transactions, invoices, supplyRequests, droneReports, deliveryQueue, blockchainLog, formatVND }) => {
+const StaffHome = ({ staff, farmers, transactions, invoices, supplyRequests, droneReports, deliveryQueue, blockchainLog, formatVND, insurancePool = 0, buyerInvoices = [], harvestLots = [] }) => {
   const sr = LT_SUBROLES[staff.subrole];
   const tok = ROLE_TOKENS[staff.subrole] ?? ROLE_TOKENS.manager;
 
   // Tính KPI cho từng sub-role
-  const kpi = computeKpi(staff, blockchainLog, droneReports, transactions, invoices);
+  const kpi = computeKpi(staff, blockchainLog, droneReports, transactions, invoices, buyerInvoices, harvestLots);
+
+  // SCF Portfolio breakdown — chỉ hiển thị cho Giám đốc Vùng
+  const scfPortfolio = staff.subrole === "manager" ? computeScfPortfolio(invoices, buyerInvoices) : null;
 
   return (
     <div className="space-y-6 sm:space-y-8 fade-in pb-10">
@@ -59,6 +60,48 @@ const StaffHome = ({ staff, farmers, transactions, invoices, supplyRequests, dro
           </div>
         </div>
       </section>
+
+      {/* SCF Portfolio breakdown — chỉ Giám đốc Vùng */}
+      {scfPortfolio && (
+        <section className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
+          <div className="px-5 py-4 border-b border-surface-200 flex items-baseline justify-between">
+            <div>
+              <h3 className="text-[16px] sm:text-[17px] font-display font-semibold text-slate-900 tracking-tight">Cấu trúc SCF Portfolio (V3)</h3>
+              <p className="text-[12px] text-slate-500 mt-0.5">Buyer-SCF (factoring khoản phải thu từ buyer xuất khẩu) là cơ chế chính · AR nội bộ hộ nông dân giữ vai trò phụ.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-surface-200">
+            <PortfolioCard
+              label="⚡ Buyer-SCF chờ bank"
+              count={scfPortfolio.buyerPendingCount}
+              amount={formatVND(scfPortfolio.buyerPendingAmount)}
+              sub="token buyer · low risk"
+              accent="text-indigo-700"
+            />
+            <PortfolioCard
+              label="💰 Buyer-SCF đã giải ngân"
+              count={scfPortfolio.buyerDisbursedCount}
+              amount={formatVND(scfPortfolio.buyerDisbursedAmount)}
+              sub="LT đã có tiền trả nông dân"
+              accent="text-brand-700"
+            />
+            <PortfolioCard
+              label="🔀 AR nội bộ active"
+              count={scfPortfolio.farmerActiveCount}
+              amount={formatVND(scfPortfolio.farmerActiveAmount)}
+              sub="legacy · vật tư đầu vụ"
+              accent="text-amber-700"
+            />
+            <PortfolioCard
+              label="🛡 Insurance Pool"
+              count={null}
+              amount={formatVND(insurancePool)}
+              sub="5% face mỗi HĐ · đệm vỡ nợ"
+              accent="text-sky-700"
+            />
+          </div>
+        </section>
+      )}
 
       {/* Quick actions — list, không phải grid card đồng phục */}
       <section>
@@ -119,6 +162,38 @@ const StaffHome = ({ staff, farmers, transactions, invoices, supplyRequests, dro
   );
 };
 
+// Mini card cho SCF Portfolio breakdown
+const PortfolioCard = ({ label, count, amount, sub, accent }) => (
+  <div className="bg-white px-4 py-3.5">
+    <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</div>
+    <div className={`font-display text-[18px] sm:text-[22px] font-semibold tabular leading-none mt-2 ${accent}`}>
+      {amount}
+    </div>
+    {count !== null && (
+      <div className="text-[12px] text-slate-600 mt-1.5 font-semibold tabular">{count} hóa đơn</div>
+    )}
+    <div className="text-[11px] text-slate-400 mt-0.5 italic">{sub}</div>
+  </div>
+);
+
+// V3: gộp Buyer-SCF (cơ chế chính) + AR nội bộ hộ (legacy)
+const computeScfPortfolio = (invoices, buyerInvoices = []) => {
+  const farmerActive = invoices.filter(i => !["Đã tất toán", "Nợ xấu", "Từ chối duyệt vay"].includes(i.trangThai));
+  const buyerPending = buyerInvoices.filter(i => i.trangThai === "Đã token hóa" || i.trangThai === "Chào bán ngân hàng");
+  const buyerDisbursed = buyerInvoices.filter(i => i.trangThai === "Đã giải ngân" || i.trangThai === "Buyer đã thanh toán");
+  const sumF = arr => arr.reduce((s, i) => s + (i.amount || 0), 0);
+  const sumBFace = arr => arr.reduce((s, i) => s + (i.faceValue || 0), 0);
+  const sumBDisbursed = arr => arr.reduce((s, i) => s + (i.bankDiscount?.disbursedAmount || 0), 0);
+  return {
+    farmerActiveCount: farmerActive.length,
+    farmerActiveAmount: sumF(farmerActive),
+    buyerPendingCount: buyerPending.length,
+    buyerPendingAmount: sumBFace(buyerPending),
+    buyerDisbursedCount: buyerDisbursed.length,
+    buyerDisbursedAmount: sumBDisbursed(buyerDisbursed),
+  };
+};
+
 // Mapping action → màu badge. Giữ palette hẹp.
 const actionBg = (action) => {
   if (action.includes("PASSPORT"))                       return "bg-brand-50 text-brand-800 ring-1 ring-brand-100";
@@ -130,34 +205,40 @@ const actionBg = (action) => {
   return "bg-surface-100 text-slate-700 ring-1 ring-surface-200";
 };
 
-function computeKpi(staff, blockchainLog, droneReports, transactions, invoices) {
+function computeKpi(staff, blockchainLog, droneReports, transactions, invoices, buyerInvoices = [], harvestLots = []) {
   const myLogs = blockchainLog.filter(l => l.data?.includes(staff.id) || l.data?.includes(staff.hoTen));
 
   switch (staff.subrole) {
     case "manager": {
       const approved = blockchainLog.filter(l => l.action === "SUPPLY_APPROVED").length;
-      const issued   = blockchainLog.filter(l => l.action === "SUPPLY_ISSUED").length;
-      const settled  = blockchainLog.filter(l => l.action === "LOAN_REPAID_ON_TIME").length;
-      const totalRev = invoices.reduce((s, i) => s + (i.amount || 0), 0);
+      const harvestSettled = blockchainLog.filter(l => l.action === "HARVEST_SETTLED").length;
+      const buyerTokenized = buyerInvoices.length;
+      const lotsAvail = harvestLots.filter(l => !l.buyerInvoiceId).length;
+      const buyerDisbursed = buyerInvoices
+        .filter(i => i.trangThai === "Đã giải ngân" || i.trangThai === "Buyer đã thanh toán")
+        .reduce((s, i) => s + (i.bankDiscount?.disbursedAmount ?? 0), 0);
       return {
         cards: [
           { label: "Đơn vật tư đã duyệt", value: approved },
-          { label: "Lô vật tư đã giao", value: issued },
-          { label: "Hợp đồng tất toán", value: settled },
-          { label: "Tổng AR đang quản lý", value: (totalRev/1e6).toFixed(0) + "M" },
+          { label: "Phiên thu hoạch tất toán", value: harvestSettled },
+          { label: "HĐ Buyer đã token hóa", value: buyerTokenized, sub: `${lotsAvail} lô chờ gom` },
+          { label: "Tiền bank giải ngân", value: buyerDisbursed > 0 ? `${(buyerDisbursed/1e9).toFixed(2)}T` : "0", sub: "VNĐ qua Buyer-SCF" },
         ],
         shortcuts: [
           { icon: "📊", title: "Tổng quan mạng lưới", desc: "Theo dõi KPI toàn vùng và phân bố Tier của các hộ liên kết." },
           { icon: "✅", title: "Duyệt đơn vật tư", desc: "Smart contract đối chiếu Tier tự động, bạn xác nhận hoặc từ chối." },
-          { icon: "📄", title: "Khoản phải thu (AR)", desc: "Token hóa hóa đơn rồi chào bán cho liên minh ngân hàng SCF." },
-          { icon: "🌊", title: "Bảo lãnh recourse", desc: "Khi nông dân default vì thiên tai, kích hoạt bảo hiểm và recourse." },
+          { icon: "🌾", title: "Điều phối thu mua", desc: "Mở phiên cân lúa cho hộ đủ điều kiện, tự tính premium SRP, trừ nợ vật tư." },
+          { icon: "🚢", title: "Ký HĐ buyer & token hóa", desc: "Gom lô lúa thành HĐ xuất khẩu, token hóa khoản phải thu, bank giải ngân T+1." },
         ],
         myLogs,
       };
     }
     case "fieldOfficer": {
+      // GỘP: 3 Cùng + Drone Operator — 1 chuyến xuống đồng làm cả 2 việc
       const onboarded = blockchainLog.filter(l => l.action === "PASSPORT_CREATED" && l.data.includes(staff.id)).length;
       const inspected = blockchainLog.filter(l => l.action === "FIELD_INSPECTION" && l.data.includes(staff.id)).length;
+      const flights   = droneReports.filter(r => r.operatorId === staff.id).length;
+      const totalArea = droneReports.filter(r => r.operatorId === staff.id).reduce((s, r) => s + (r.farmerArea || 0), 0);
       const insps = blockchainLog.filter(l => l.action === "FIELD_INSPECTION" && l.data.includes(staff.id));
       const avgScore = insps.length === 0 ? 0 : Math.round(insps.reduce((s, l) => {
         const m = /Farming Score (\d+)/.exec(l.data);
@@ -167,32 +248,16 @@ function computeKpi(staff, blockchainLog, droneReports, transactions, invoices) 
         cards: [
           { label: "Hộ đã onboard", value: onboarded, sub: "Tạo Hộ chiếu Số" },
           { label: "Lần kiểm tra SRP", value: inspected, sub: "Đã ký số" },
+          { label: "Lần bay drone", value: flights, sub: `${totalArea.toFixed(1)} ha đã quét` },
           { label: "Farming Score TB", value: avgScore, sub: "trên thang 600" },
-          { label: "Khu vực phụ trách", value: staff.khuVuc.split("—")[0].trim() },
         ],
         shortcuts: [
           { icon: "🪪", title: "Onboard hộ mới", desc: "Đến HTX, đăng ký Hộ chiếu Số. Tạo Digital ID và Genesis Record." },
+          { icon: "🚁", title: "Bay drone & AI scan", desc: "Bay drone đa phổ → AI Gemini chấm NDVI/phủ xanh/sâu bệnh." },
           { icon: "✅", title: "Tick checklist SRP", desc: "Sau khi drone bay, xuống đồng tick 41 tiêu chí rồi ký số." },
+          { icon: "📈", title: "Re-tier real-time", desc: "Farming Score đổi → Tier leo/tụt ngay → ảnh hưởng premium vụ tới." },
         ],
         myLogs,
-      };
-    }
-    case "droneOperator": {
-      const flights = droneReports.filter(r => r.operatorId === staff.id).length;
-      const totalArea = droneReports.filter(r => r.operatorId === staff.id).reduce((s, r) => s + (r.farmerArea || 0), 0);
-      const avgGreen = flights === 0 ? 0 : Math.round(droneReports.filter(r => r.operatorId === staff.id).reduce((s, r) => s + r.greenPct, 0) / flights);
-      return {
-        cards: [
-          { label: "Lần bay drone", value: flights },
-          { label: "Diện tích đã quét", value: `${totalArea.toFixed(1)} ha` },
-          { label: "Phủ xanh TB", value: `${avgGreen}%`, sub: "AI Computer Vision" },
-          { label: "Drone hoạt động", value: "DJI T40", sub: "Đa phổ và RGB" },
-        ],
-        shortcuts: [
-          { icon: "🚁", title: "Bay drone và upload ảnh", desc: "Ảnh đa phổ được AI đếm pixel xanh, ghi DRONE_REPORT lên chain." },
-          { icon: "📡", title: "NDVI và vùng úng/khô", desc: "Báo cáo tự sinh, 3 Cùng nhận thông báo xuống đồng kiểm tra." },
-        ],
-        myLogs: blockchainLog.filter(l => l.action === "DRONE_REPORT" && l.data.includes(staff.id)),
       };
     }
     case "driver": {
@@ -208,26 +273,6 @@ function computeKpi(staff, blockchainLog, droneReports, transactions, invoices) 
         shortcuts: [
           { icon: "📷", title: "Quét QR Hộ chiếu Số", desc: "Quét QR rồi app hiện danh sách vật tư cần giao cho đúng hộ." },
           { icon: "✍️", title: "Ký số 2 bên", desc: "Cả nông dân và bạn cùng ký, smart contract confirmDelivery chạy." },
-        ],
-        myLogs,
-      };
-    }
-    case "procurement": {
-      const settled = blockchainLog.filter(l => l.action === "HARVEST_SETTLED" && l.data.includes(staff.id)).length;
-      const totalKg = blockchainLog.filter(l => l.action === "HARVEST_SETTLED" && l.data.includes(staff.id)).reduce((s, l) => {
-        const m = /(\d+(?:\.\d+)?) tấn/.exec(l.data);
-        return s + (m ? parseFloat(m[1]) * 1000 : 0);
-      }, 0);
-      return {
-        cards: [
-          { label: "Hợp đồng tất toán", value: settled },
-          { label: "Tổng lúa thu mua", value: `${(totalKg/1000).toFixed(1)}t` },
-          { label: "Trạm thu mua", value: staff.khuVuc.split("—")[0].trim() },
-          { label: "Premium SRP đã chi", value: "Auto" },
-        ],
-        shortcuts: [
-          { icon: "🌾", title: "Cân lúa và tất toán", desc: "Cân điện tử, tính bao tiêu cộng Premium, trừ công nợ, chuyển khoản." },
-          { icon: "📈", title: "Cập nhật Credit Score", desc: "Smart contract +300 Credit khi nông dân giao đủ và trả nợ đúng hạn." },
         ],
         myLogs,
       };

@@ -1,36 +1,30 @@
-// Nhân sự Lộc Trời — 5 sub-role tương ứng từng bước trong quy trình A1 → B5
-// Mỗi nhân sự có chỉ số KPI cá nhân riêng, được cập nhật real-time khi họ tác nghiệp.
+// Nhân sự Lộc Trời — sau refactor V3 còn 3 sub-role chính:
+//   • manager       — kiêm Procurement (thu mua) + Buyer Sales (bán cho buyer xuất khẩu)
+//   • fieldOfficer  — kiêm Drone Operator (1 chuyến xuống = bay drone + tick SRP)
+//   • driver        — giao vật tư, ký số
+// Role droneOperator & procurement cũ đã GỘP vào 2 role trên để giảm chi phí nhân sự và
+// rút ngắn handoff trong luồng end-to-end.
 
 export const LT_SUBROLES = {
   manager: {
     code: "manager",
     label: "Quản lý cấp Vùng",
     icon: "👔",
-    desc: "Duyệt yêu cầu vật tư, theo dõi KPI mạng lưới, quản lý invoice & SCF.",
+    desc: "Duyệt yêu cầu vật tư, điều phối phiên thu mua, ký hợp đồng bán lúa cho buyer xuất khẩu và token hóa khoản phải thu.",
     color: "from-blue-500 to-indigo-600",
     bg: "bg-blue-50",
     text: "text-blue-700",
-    tabs: ["managerHome", "registrations", "overview", "farmers", "invoices"],
+    tabs: ["managerHome", "registrations", "overview", "farmers", "harvest", "buyerSales", "invoices"],
   },
   fieldOfficer: {
     code: "fieldOfficer",
-    label: "Cán bộ 3 Cùng",
+    label: "Cán bộ Đồng ruộng (3 Cùng + Drone)",
     icon: "🧑‍🌾",
-    desc: "Onboard hộ nông dân, kiểm tra SRP thực địa và xác nhận checklist sau khi drone bay.",
+    desc: "Onboard hộ. Bay drone đa phổ + tick checklist SRP trong cùng 1 chuyến xuống đồng. Re-tier nông dân real-time.",
     color: "from-emerald-500 to-green-600",
     bg: "bg-emerald-50",
     text: "text-emerald-700",
-    tabs: ["officerHome", "onboarding", "inspection"],
-  },
-  droneOperator: {
-    code: "droneOperator",
-    label: "Phi công Drone",
-    icon: "🚁",
-    desc: "Bay drone DJI, upload ảnh đa phổ — AI Gemini tự chấm điểm phủ xanh & phát hiện sâu bệnh.",
-    color: "from-sky-500 to-cyan-600",
-    bg: "bg-sky-50",
-    text: "text-sky-700",
-    tabs: ["droneHome", "droneUpload"],
+    tabs: ["officerHome", "onboarding", "droneUpload", "inspection"],
   },
   driver: {
     code: "driver",
@@ -42,19 +36,9 @@ export const LT_SUBROLES = {
     text: "text-amber-700",
     tabs: ["driverHome", "delivery"],
   },
-  procurement: {
-    code: "procurement",
-    label: "Cán bộ thu mua",
-    icon: "🌾",
-    desc: "Cuối vụ: cân lúa, tất toán bao tiêu + Premium SRP, cập nhật Credit Score.",
-    color: "from-rose-500 to-pink-600",
-    bg: "bg-rose-50",
-    text: "text-rose-700",
-    tabs: ["procurementHome", "harvest"],
-  },
 };
 
-export const SUBROLE_ORDER = ["manager", "fieldOfficer", "droneOperator", "driver", "procurement"];
+export const SUBROLE_ORDER = ["manager", "fieldOfficer", "driver"];
 
 export const initialStaff = [
   {
@@ -70,28 +54,19 @@ export const initialStaff = [
     id: "LT-FO-002",
     subrole: "fieldOfficer",
     hoTen: "Trần Minh Đức",
-    chucDanh: "Cán bộ 3 Cùng — Khu Thoại Sơn",
+    chucDanh: "Cán bộ Đồng ruộng — Khu Thoại Sơn (Drone + 3 Cùng)",
     khuVuc: "Thoại Sơn, Châu Phú — An Giang",
     ngayVaoLam: "2021-06-01",
-    kpi: { hoOnboard: 0, soLanKiemTra: 0, srpDiemTrungBinh: 0 },
+    kpi: { hoOnboard: 0, soLanKiemTra: 0, soLanBay: 0, srpDiemTrungBinh: 0 },
   },
   {
     id: "LT-FO-003",
     subrole: "fieldOfficer",
     hoTen: "Lê Thị Hồng",
-    chucDanh: "Cán bộ 3 Cùng — Khu Cần Thơ",
+    chucDanh: "Cán bộ Đồng ruộng — Khu Cần Thơ (Drone + 3 Cùng)",
     khuVuc: "Vĩnh Thạnh, Cờ Đỏ — Cần Thơ",
     ngayVaoLam: "2022-09-12",
-    kpi: { hoOnboard: 0, soLanKiemTra: 0, srpDiemTrungBinh: 0 },
-  },
-  {
-    id: "LT-DO-004",
-    subrole: "droneOperator",
-    hoTen: "Phạm Văn Khoa",
-    chucDanh: "Phi công Drone DJI Agras T40",
-    khuVuc: "Đội bay 1 — ĐBSCL",
-    ngayVaoLam: "2023-01-08",
-    kpi: { soLanBay: 0, anhUpload: 0, dienTichQuet: 0 },
+    kpi: { hoOnboard: 0, soLanKiemTra: 0, soLanBay: 0, srpDiemTrungBinh: 0 },
   },
   {
     id: "LT-DR-005",
@@ -101,14 +76,5 @@ export const initialStaff = [
     khuVuc: "Đội xe Long Xuyên",
     ngayVaoLam: "2020-04-20",
     kpi: { donGiao: 0, kmDiChuyen: 0 },
-  },
-  {
-    id: "LT-PR-006",
-    subrole: "procurement",
-    hoTen: "Vũ Thị Lan",
-    chucDanh: "Cán bộ thu mua lúa & tất toán",
-    khuVuc: "Trạm thu mua An Giang",
-    ngayVaoLam: "2019-11-03",
-    kpi: { tanLuaThuMua: 0, hopDongTatToan: 0, premiumChi: 0 },
   },
 ];

@@ -257,26 +257,69 @@ AgriChain tạo ra một **CIC mới** dựa trên hành vi sản xuất: ký nh
 
 Quan trọng hơn: dữ liệu này **không sửa được** vì đã ghi blockchain. Lộc Trời không thể "trang điểm" hồ sơ trước khi đem chào bán cho ngân hàng.
 
-### 9.3 Token hóa khoản phải thu
+### 9.3 Token hóa khoản phải thu theo mô hình 2-Track
 
-Đây là cơ chế SCF cốt lõi. Khi tài xế giao vật tư xong và sinh invoice, app tự tạo một **token AR** đại diện cho khoản phải thu đó:
+Đây là cơ chế SCF cốt lõi. Khi tài xế giao vật tư xong và sinh invoice, hệ thống tự định tuyến vào 1 trong 2 luồng dựa trên track record của nông dân:
+
+#### Track 1 — Auto-SCF (hộ cũ Tier A/B)
+
+Điều kiện: hộ đã có ≥ 1 vụ hoàn thành + đang ở Tier A hoặc B.
+
+Smart contract tự động:
+1. Đúc token AR full face value ngay tại thời điểm giao (`createTokenFast()`).
+2. Đẩy thẳng vào hàng chợ ngân hàng (status "Chào bán ngân hàng") — **bỏ qua bước verify field/drone của vụ này**.
+3. Bank đã pre-approve hạn mức tổng → duyệt trong 24h → tiền về Lộc Trời.
+
+Lý do an toàn: bank đã có **track record đầy đủ vụ trước** ghi trên blockchain — Credit Score, Farming Score, tỷ lệ trả nợ đúng hạn, điểm SRP — đủ để định giá rủi ro mà không cần đợi dữ liệu vụ hiện tại. Drone + 3 Cùng vẫn bay/inspect vụ này nhưng dữ liệu thu được dùng cho **vụ sau** (quyết định Tier kế tiếp), không gating SCF vụ hiện tại.
+
+#### Track 2 — Tranching (hộ mới hoặc Tier C/D)
+
+Điều kiện: hộ chưa có vụ nào (vừa đăng ký) hoặc đang ở Tier C/D.
+
+Hệ thống chia invoice thành 2 lớp tài sản:
+
+```
+Invoice face value 10 triệu
+  ├── Senior tranche 70% (7 tr) → chào bán bank NGAY
+  │     - Token TKN-SR-xxxxx, status "Chào bán ngân hàng"
+  │     - Rủi ro thấp vì có LT recourse + insurance wrap + tỷ lệ nhỏ
+  └── Junior tranche 30% (3 tr) → LT giữ làm "skin in the game"
+        - Status "Junior chờ verify"
+        - Khi drone + 3 Cùng inspect OK → đúc token TKN-JR-xxxxx → bán bank
+```
+
+Cấu trúc này giải quyết nghịch lý "không có lịch sử thì không cho vay" — bank vẫn mua được 70% face value ngay từ đầu vì có 30% LT giữ làm bảo lãnh. Junior tranche được "release" sau khi vụ canh tác chứng minh được chất lượng. Đây là kỹ thuật **securitization 2 lớp** mà các deal MBS, ABS lớn của Goldman, JPMorgan đều dùng.
+
+#### Cấu trúc token chung
 
 ```
 INV-A7B3 = {
   con_nợ: LT00789,
-  số_tiền: 12.500.000đ,
+  face_value: 12.500.000đ,
+  amount: 8.750.000đ (Senior 70%),
   kỳ_hạn: 2026-08-15,
   rủi_ro: MEDIUM (vì Tier B),
   bảo_lãnh: LOC-TROI-CORP,
-  bảo_hiểm: INS-XX44 (Bảo Việt)
+  bảo_hiểm: INS-XX44 (Bảo Việt),
+  insurance_fee: 437.500đ (5% face → Insurance Pool),
+  scf_track: "TRANCHED",
+  tranche: "Senior" | "Junior",
+  tranche_pct: 70 | 30
 }
 ```
 
-Token này có 3 đặc tính làm ngân hàng yên tâm:
+Mỗi token có 3 đặc tính làm ngân hàng yên tâm: truy xuất 100% lịch sử, bảo lãnh kép (LT recourse + insurance), và có thể chia nhỏ tiếp cho nhiều bank cùng mua phân tán rủi ro.
 
-- **Truy xuất 100%**: bấm vào là thấy đủ chuỗi sự kiện từ lúc onboard tới lúc giao.
-- **Bảo lãnh kép**: Lộc Trời đứng ra recourse (mua lại nếu nông dân không trả), kèm hợp đồng bảo hiểm thiên tai.
-- **Có thể chia nhỏ**: 1 invoice 12 triệu có thể chia thành 1.000 token 12 nghìn để nhiều ngân hàng cùng mua, phân tán rủi ro.
+#### Timeline cải thiện
+
+| Mốc | Truyền thống | Track 1 (hộ cũ) | Track 2 (hộ mới) |
+| --- | --- | --- | --- |
+| Giao vật tư + invoice | T+0 | T+0 | T+0 |
+| Token + chào bán | — | T+0 (auto) | Senior T+0 (auto) · Junior chờ verify |
+| Bank duyệt + giải ngân | — | T+1 đến T+3 | Senior T+1-3 · Junior T+45-60 (sau verify) |
+| **Tiền về Lộc Trời** | **T+120 đến T+180** | **T+1 đến T+3** (full amount) | **T+1 đến T+3** (70%) + **T+45-60** (30% còn lại) |
+
+Track 1 rút 95% thời gian. Track 2 đưa được 70% tiền về sớm dù hộ chưa có lịch sử — sau khi inspect xong, 30% còn lại về tiếp.
 
 ### 9.4 Marketplace SCF nhiều ngân hàng
 
@@ -290,7 +333,28 @@ Toàn bộ vấn đề "khai khống diện tích" trong mục 8 được dập 
 
 Đối với SCF, fraud detection chính là *risk pricing*. Ngân hàng không sợ rủi ro cao, họ sợ rủi ro **không đo được**. AgriChain biến biến số mờ này thành chỉ số có thể tính.
 
-### 9.6 Bảo hiểm tham số tích hợp
+### 9.6 Insurance Pool — đệm rủi ro hệ thống
+
+Mỗi invoice phát hành đều bị trích **5% face value** chảy vào một quỹ chung gọi là Insurance Pool, ghi log `INSURANCE_FEE_COLLECTED` lên blockchain. Quỹ này do Lộc Trời quản lý chung với liên minh ngân hàng, không thuộc về một invoice cụ thể nào.
+
+Mục đích sử dụng:
+
+- **Đệm vỡ nợ tập trung**: khi 1 vùng vài trăm hộ cùng vỡ nợ vì thiên tai (correlation risk), quỹ này cover phần thiếu sau khi bảo hiểm parametric đã chi trả, trước khi đẩy recourse sang Lộc Trời.
+- **Risk pricing động**: nếu pool đầy → bank có thể discount lãi suất xuống. Nếu pool cạn → bank tăng lãi để bù.
+- **Bảo vệ Junior tranche**: phần Junior tranche mà Lộc Trời giữ trong Track 2 được pool back-stop một phần — giảm áp lực vốn của LT.
+
+Số dư pool hiển thị real-time trên trang chủ Giám đốc Vùng, là một KPI sức khỏe tài chính của toàn portfolio.
+
+### 9.7 Continuous re-scoring
+
+Mỗi lần drone bay quét hoặc 3 Cùng inspect xong, Farming Score của hộ cập nhật ngay. Hệ thống đối chiếu Tier trước/sau, nếu Tier thay đổi:
+
+- **Tier UP** (vd C → B): ghi blockchain `TIER_UPGRADED`, hộ đủ điều kiện SCF Track 1 cho vụ tới, vật tư trả chậm % cao hơn, lãi suất ưu đãi.
+- **Tier DOWN** (vd B → C): ghi `TIER_DOWNGRADED`, vụ tới có thể phải qua tranching, hạn mức bị siết.
+
+Cơ chế này biến Tier thành **dynamic credit rating** thay vì xếp loại đầu vụ rồi giữ nguyên. Bank nhìn vào dòng `TIER_UPGRADED` mới nhất để re-pricing token AR đang giữ.
+
+### 9.8 Bảo hiểm tham số tích hợp
 
 Modal **Disaster** trong app mô phỏng nhánh xử lý khi xảy ra bão/hạn mặn:
 

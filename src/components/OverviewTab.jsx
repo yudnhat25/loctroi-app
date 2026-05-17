@@ -4,11 +4,7 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
   const totalReceivables = invoices.reduce((s, i) => s + (i.totalValue || i.amount), 0) || 12400000000;
   const avgFarmingScore = Math.round(farmers.reduce((s, f) => s + (f.farmingScore || 0), 0) / (farmers.length || 1));
 
-  const formatBillion = (val) => (
-    <>
-      <span className="text-lg sm:text-2xl">đ</span>{(val / 1e9).toFixed(1)} <span className="text-lg sm:text-2xl">tỷ</span>
-    </>
-  );
+  const formatBillion = (val) => "đ" + (val / 1e9).toFixed(1) + " tỷ";
 
   // Calculate Tier distribution
   const tierCounts = { A: 0, B: 0, C: 0, D: 0 };
@@ -24,8 +20,8 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
     tierCounts.C = Math.floor(farmers.length * 0.2) || 15;
     tierCounts.D = Math.floor(farmers.length * 0.1) || 5;
   }
-  
-  const totalTiered = Object.values(tierCounts).reduce((a,b) => a+b, 0);
+
+  const totalTiered = Object.values(tierCounts).reduce((a, b) => a + b, 0);
 
   // Calculate top HTX
   const htxMap = {};
@@ -39,7 +35,7 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
     .map(([name, data]) => ({ name, avg: Math.round(data.sum / data.count) }))
     .sort((a, b) => b.avg - a.avg)
     .slice(0, 3);
-  
+
   if (topHtx.length === 0) {
     topHtx = [
       { name: "HTX Thoại Sơn", avg: 612 },
@@ -89,7 +85,7 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
 
   return (
     <div className="fade-in pb-12" style={{ fontFamily: "'Inter', sans-serif" }}>
-      
+
       {/* ─── ROW 1: 4 Metrics Cards ────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-5 sm:mb-6">
         {/* Card 1 */}
@@ -198,7 +194,7 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
                     <div className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-extrabold uppercase tracking-widest rounded mb-1.5 border border-emerald-100">
                       {log.action}
                     </div>
-                    <div className="text-[11px] font-mono font-medium text-slate-400 mb-1.5">#{log.hash} • {new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • {new Date(log.timestamp).toLocaleDateString("vi-VN")}</div>
+                    <div className="text-[11px] font-mono font-medium text-slate-400 mb-1.5">#{log.hash} • {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(log.timestamp).toLocaleDateString("vi-VN")}</div>
                     <div className="text-[13px] text-slate-700 font-medium line-clamp-3 leading-relaxed">
                       {log.data}
                     </div>
@@ -275,19 +271,19 @@ const OverviewTab = ({ farmers, invoices, blockchainLog, totalArea }) => {
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {[1,2,3,4,5,6].map(i => (
+            {[1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="bg-cyan-50/40 border border-cyan-100/50 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center hover:bg-cyan-50 transition-colors">
                 <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 drop-shadow-md">🛸</div>
-                <div className="font-semibold text-slate-700 text-[13px] sm:text-[14px]">DR-014{i-1}</div>
+                <div className="font-semibold text-slate-700 text-[13px] sm:text-[14px]">DR-014{i - 1}</div>
                 <div className="text-[10px] font-bold text-cyan-600 uppercase tracking-widest mt-1.5 flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-full shadow-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span> BAY
                 </div>
               </div>
             ))}
-            {[7,8].map(i => (
+            {[7, 8].map(i => (
               <div key={i} className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center text-center opacity-60">
                 <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 drop-shadow-sm grayscale">🛸</div>
-                <div className="font-semibold text-slate-500 text-[13px] sm:text-[14px]">DR-014{i-1}</div>
+                <div className="font-semibold text-slate-500 text-[13px] sm:text-[14px]">DR-014{i - 1}</div>
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-full shadow-sm">
                   <span className="w-1.5 h-1.5 rounded-full border-2 border-slate-300"></span> SẠC
                 </div>

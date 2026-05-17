@@ -26,7 +26,7 @@ const emptyRegForm = {
   htx: HTX_OPTIONS[0], dienTich: "5", giong: GIONG_OPTIONS[0],
 };
 
-const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin, onSubmitRegistration, onLookupApplication }) => {
+const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin, onSubmitRegistration, onLookupApplication, onResetDemoData }) => {
   const [tab, setTab] = useState("farmer");
   const [farmerMode, setFarmerMode] = useState("login"); // login | register | lookup
   const [accountCode, setAccountCode] = useState("");  // Mã đăng nhập (LT001 / LT-MGR-001)
@@ -443,10 +443,23 @@ const GlobalLogin = ({ farmers, staff, blockchainLog = [], onLogin, onSubmitRegi
         </div>
 
         {/* Footer */}
-        <div className="mt-auto pt-8">
+        <div className="mt-auto pt-8 space-y-3">
           <a href="#" onClick={e => e.preventDefault()} className="text-[10px] font-bold text-slate-500 tracking-[0.2em] hover:text-emerald-700 block text-center lg:text-left">
             QUẢN LÝ TÀI KHOẢN LỘC TRỜI <span className="text-slate-300">/</span> ACCOUNT MANAGEMENT
           </a>
+          {/* Reset Firestore — tiện cho demo, ẩn dưới cùng để tránh bấm nhầm */}
+          {onResetDemoData && (
+            <button
+              onClick={() => {
+                if (window.confirm("Xóa TOÀN BỘ dữ liệu demo trên Firebase (farmers, invoices, buyer-SCF, blockchain log…) và reload? Hành động này KHÔNG hoàn tác được.")) {
+                  onResetDemoData();
+                }
+              }}
+              className="text-[11px] font-semibold text-slate-400 hover:text-rose-700 hover:underline block text-center lg:text-left transition-colors"
+            >
+              ⚠ Reset toàn bộ dữ liệu demo (Firebase)
+            </button>
+          )}
         </div>
         </div>
       </div>

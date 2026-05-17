@@ -147,6 +147,30 @@ export const TIER_RANK = { A: 4, B: 3, C: 2, D: 1 };
 export const canPickTier = (currentTierCode, targetTierCode) =>
   TIER_RANK[targetTierCode] <= TIER_RANK[currentTierCode];
 
+// ─── SCF Track: phân luồng cấp vốn dựa trên track record ─────────────────────
+//   FAST    — Hộ cũ (≥ 1 vụ) + Tier A/B  → token hóa & chào bán bank NGAY sau giao
+//             vì bank đã tin track record, không cần đợi drone/inspect vụ này.
+//   TRANCHED — Hộ mới (0 vụ) hoặc Tier C/D
+//              → bán Senior tranche 70% face ngay (LT có recourse + insurance wrap)
+//              → giữ Junior tranche 30%, chờ drone+inspect verify → mới bán bank.
+//
+// Tỷ lệ tranche & insurance fee có thể tinh chỉnh theo deal thực tế.
+export const SCF_TRACK = {
+  FAST:     { code: "FAST",     label: "Track 1 — Auto-SCF",  desc: "Hộ cũ Tier A/B · chào bán bank ngay" },
+  TRANCHED: { code: "TRANCHED", label: "Track 2 — Tranching", desc: "Hộ mới hoặc Tier C/D · Senior 70% bán ngay, Junior 30% chờ verify" },
+};
+
+export const SENIOR_PCT = 70;   // % face value bán Senior tranche ngay
+export const JUNIOR_PCT = 30;   // % face value giữ Junior chờ verify
+export const INSURANCE_FEE_PCT = 5; // % face value trích vào insurance pool mỗi invoice
+
+export const getScfTrack = (farmer) => {
+  const completedSeasons = farmer?.vuMuaHoanThanh ?? 0;
+  const tier = getTier(farmer).code;
+  if (completedSeasons >= 1 && (tier === "A" || tier === "B")) return SCF_TRACK.FAST;
+  return SCF_TRACK.TRANCHED;
+};
+
 // ─── AI gợi ý gói vật tư đầu vụ theo diện tích ──────────────────────────────
 // Định mức bình quân ĐBSCL: 100kg giống/ha · 200kg NPK/ha · 2 chai BVTV/ha · 3 bao hữu cơ/ha
 // AI chỉ gợi ý — nông dân vẫn có quyền sửa số lượng & chọn vật tư khác.
@@ -182,4 +206,53 @@ export const calcHarvestRevenue = (farmer, basePrice) => {
     pricePerKg,
     grossPay: yieldKg * pricePerKg,
   };
+};
+
+// ─── BUYER RECEIVABLES FACTORING (Buyer-SCF) ────────────────────────────────
+// Lộc Trời bán lúa cho buyer (Vinafood/Cargill/HSBC). Buyer trả T+30/60/90.
+// LT token hóa khoản phải thu, bán cho liên minh ngân hàng để có tiền NGAY
+// trả nông dân. Đây là điểm CỐT LÕI giải quyết tắc nghẽn dòng tiền.
+
+// Giá xuất khẩu (đ/kg) — buyer trả cao hơn giá nội địa vì đã chuẩn SRP
+export const BUYER_EXPORT_PRICE = 11500; // VNĐ/kg (giá benchmark FOB ĐBSCL)
+
+// Chiết khấu bank áp lên face value khi factoring — phụ thuộc payment term
+// Công thức ước lượng: discount = annualRate × (days / 365)
+// Annual rate ngầm 4-8% tùy credit rating của buyer
+export const BANK_FACTORING_RATE_BY_RATING = {
+  "A+":  0.04,  // 4%/năm — buyer hạng A+ (HSBC, JPM, …)
+  "A":   0.05,
+  "BBB+":0.06,
+  "BBB": 0.07,
+  "BB":  0.085,
+};
+
+export const calcBankDiscount = (faceValue, paymentTermDays, creditRating) => {
+  const annualRate = BANK_FACTORING_RATE_BY_RATING[creditRating] ?? 0.07;
+  const discountPct = annualRate * (paymentTermDays / 365);
+  const discountAmount = Math.round(faceValue * discountPct);
+  const disbursedAmount = faceValue - discountAmount;
+  return { annualRate, discountPct, discountAmount, disbursedAmount };
+};
+
+// Ước lượng giá trị buyer invoice từ 1 batch lô lúa (nhiều farmer gom 1 lot)
+export const estimateBuyerInvoiceFromLots = (lots, exportPrice = BUYER_EXPORT_PRICE) => {
+  const totalKg = lots.reduce((s, l) => s + (l.yieldKg ?? 0), 0);
+  return {
+    totalKg,
+    faceValue: totalKg * exportPrice,
+    lotCount: lots.length,
+  };
+};
+
+// Status enum cho BuyerInvoice
+export const BUYER_INV_STATUS = {
+  DRAFT:        "Hợp đồng nháp",
+  SIGNED:       "Buyer đã ký",
+  TOKENIZED:    "Đã token hóa",
+  OFFERED:      "Chào bán ngân hàng",
+  DISBURSED:    "Đã giải ngân",
+  BUYER_PAID:   "Buyer đã thanh toán",
+  OVERDUE:      "Buyer trễ hạn",
+  RECOURSED:    "LT đã recourse",
 };

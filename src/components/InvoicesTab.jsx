@@ -1,5 +1,6 @@
 const STATUS_CONFIG = {
   "Chờ xác nhận":       { dot: "bg-amber-500",  label: "Chờ xác nhận",       cls: "text-amber-800 bg-amber-50 ring-amber-200" },
+  "Junior chờ verify":  { dot: "bg-violet-500", label: "Junior · chờ verify", cls: "text-violet-800 bg-violet-50 ring-violet-200" },
   "Đã token hóa":       { dot: "bg-sky-500",    label: "Đã token hóa",        cls: "text-sky-800 bg-sky-50 ring-sky-200" },
   "Chào bán ngân hàng": { dot: "bg-amber-600",  label: "Chào bán ngân hàng",  cls: "text-amber-900 bg-amber-50 ring-amber-200" },
   "Đã giải ngân":       { dot: "bg-brand-600",  label: "Đã giải ngân",        cls: "text-brand-800 bg-brand-50 ring-brand-200" },
@@ -14,19 +15,31 @@ const RISK_CONFIG = {
   HIGH:   { label: "Cao",    cls: "text-rose-800 bg-rose-50 ring-rose-200" },
 };
 
+const TRANCHE_BADGE = {
+  Senior: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+  Junior: "bg-violet-50 text-violet-800 ring-violet-200",
+};
+
+const TRACK_BADGE = {
+  FAST:     { label: "⚡ Track 1", cls: "bg-amber-50 text-amber-800 ring-amber-200" },
+  TRANCHED: { label: "🔀 Track 2", cls: "bg-violet-50 text-violet-800 ring-violet-200" },
+};
+
 const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, formatVND, onVerifyField, onSubmitSCF, onSettleInvoice, blockchainLog }) => {
   const getAction = (inv, farmer) => {
     switch (inv.trangThai) {
-      case "Chờ xác nhận": {
+      case "Chờ xác nhận":
+      case "Junior chờ verify": {
         const hasInspection = blockchainLog?.some(l => l.action === "FIELD_INSPECTION" && l.data.includes(farmer?.hoTen));
+        const labelPrefix = inv.tranche === "Junior" ? "Verify Junior" : "Xác nhận thực địa";
         return hasInspection ? (
-          <button onClick={() => onVerifyField(inv)} className="bg-brand-700 hover:bg-brand-800 text-white px-3 py-1.5 rounded-lg text-[14px] font-semibold transition-colors whitespace-nowrap">Xác nhận thực địa</button>
+          <button onClick={() => onVerifyField(inv)} className="bg-brand-700 hover:bg-brand-800 text-white px-3 py-1.5 rounded-lg text-[14px] font-semibold transition-colors whitespace-nowrap">{labelPrefix}</button>
         ) : (
           <button disabled className="bg-surface-200 text-slate-400 px-3 py-1.5 rounded-lg text-[14px] font-semibold cursor-not-allowed whitespace-nowrap" title="Chờ lực lượng 3 Cùng xuống đồng kiểm tra và chụp ảnh trước">Chờ 3 Cùng kiểm tra</button>
         );
       }
       case "Đã token hóa":
-        return <span className="text-sky-700 text-[12px] font-semibold whitespace-nowrap">Chờ hộ nông dân ký SCF…</span>;
+        return <button onClick={() => onSubmitSCF(inv)} className="bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded-lg text-[14px] font-semibold transition-colors whitespace-nowrap">Chào bán bank</button>;
       case "Chào bán ngân hàng":
         return <span className="text-slate-500 text-[12px] font-medium whitespace-nowrap">(chờ ngân hàng duyệt)</span>;
       case "Đã giải ngân":
@@ -83,6 +96,8 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-mono font-semibold text-slate-700 text-[13px]">{inv.id}</span>
                         {inv.tokenId && <span className="text-[10px] bg-sky-50 text-sky-800 ring-1 ring-sky-200 px-1.5 py-0.5 rounded-md font-semibold font-mono">{inv.tokenId}</span>}
+                        {inv.tranche && <span className={`text-[10px] ring-1 px-1.5 py-0.5 rounded-md font-semibold ${TRANCHE_BADGE[inv.tranche]}`}>{inv.tranche} {inv.tranchePct}%</span>}
+                        {inv.scfTrack && TRACK_BADGE[inv.scfTrack] && <span className={`text-[10px] ring-1 px-1.5 py-0.5 rounded-md font-semibold ${TRACK_BADGE[inv.scfTrack].cls}`}>{TRACK_BADGE[inv.scfTrack].label}</span>}
                       </div>
                       <div className="font-semibold text-slate-900 text-[14px] mt-1 truncate">{farmer?.hoTen ?? inv.nongHoId}</div>
                       <div className="text-[11px] text-slate-500 mt-0.5 truncate">{inv.vuMua || "—"}</div>
@@ -129,7 +144,11 @@ const InvoicesTab = ({ farmers, invoices, pendingAmount, disbursedAmount, format
                     <tr key={inv.id} className="border-b border-surface-200 last:border-0 hover:bg-surface-50/60 transition-colors">
                       <td className="px-5 py-3.5">
                         <div className="font-mono font-semibold text-slate-700 text-[14px]">{inv.id}</div>
-                        {inv.tokenId && <div className="text-[11px] bg-sky-50 text-sky-800 ring-1 ring-sky-200 px-1.5 py-0.5 rounded-md mt-1 font-semibold inline-block font-mono">{inv.tokenId}</div>}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {inv.tokenId && <span className="text-[11px] bg-sky-50 text-sky-800 ring-1 ring-sky-200 px-1.5 py-0.5 rounded-md font-semibold font-mono">{inv.tokenId}</span>}
+                          {inv.tranche && <span className={`text-[10px] ring-1 px-1.5 py-0.5 rounded-md font-semibold ${TRANCHE_BADGE[inv.tranche]}`}>{inv.tranche} {inv.tranchePct}%</span>}
+                          {inv.scfTrack && TRACK_BADGE[inv.scfTrack] && <span className={`text-[10px] ring-1 px-1.5 py-0.5 rounded-md font-semibold ${TRACK_BADGE[inv.scfTrack].cls}`}>{TRACK_BADGE[inv.scfTrack].label}</span>}
+                        </div>
                       </td>
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         <div className="font-semibold text-slate-900">{farmer?.hoTen ?? inv.nongHoId}</div>

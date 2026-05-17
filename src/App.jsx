@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -22,35 +22,37 @@ import SCFModal from "./components/SCFModal";
 import DisasterModal from "./components/DisasterModal";
 import LedgerPanel from "./components/LedgerPanel";
 import Toast from "./components/Toast";
-import { getTier, getPremiumPerKg, MAX_FARMING, TIERS } from "./lib/scoring";
+import BuyerSalesTab from "./components/BuyerSalesTab";
+import { getTier, getPremiumPerKg, getScfTrack, MAX_FARMING, TIERS, SENIOR_PCT, JUNIOR_PCT, INSURANCE_FEE_PCT, SCF_TRACK, BUYER_EXPORT_PRICE, calcBankDiscount, BUYER_INV_STATUS } from "./lib/scoring";
 import { initialStaff } from "./lib/staff";
+import { initialBuyers } from "./lib/buyers";
 
 export const generateHash = () => Math.random().toString(16).substring(2, 10);
 export const generateId = (prefix) => prefix + Math.random().toString(36).substring(2, 6).toUpperCase();
 export const formatVND = (n) => (n || 0).toLocaleString("vi-VN") + " VNĐ";
 
 export const initialFarmers = [
-  { id: "LT001", digitalId: "LT001", htx: "HTX Thoại Sơn",  hoTen: "Nguyễn Văn An",  diaChi: "Thoại Sơn, An Giang",   dienTich: 12.5, creditScore: 280, farmingScore: 480, hanMucTinDung: 120000000, trangThai: "Đang canh tác" },
-  { id: "LT002", digitalId: "LT002", htx: "HTX Châu Phú",   hoTen: "Trần Thị Bích",  diaChi: "Châu Phú, An Giang",    dienTich:  6.2, creditScore: 320, farmingScore: 520, hanMucTinDung:  80000000, trangThai: "Đang canh tác" },
-  { id: "LT003", digitalId: "LT003", htx: "HTX Tri Tôn",    hoTen: "Lê Văn Cường",   diaChi: "Tri Tôn, An Giang",     dienTich: 15.0, creditScore: 200, farmingScore: 280, hanMucTinDung: 150000000, trangThai: "Đang canh tác" },
-  { id: "LT004", digitalId: "LT004", htx: "HTX Vĩnh Thạnh", hoTen: "Phạm Văn Dũng",  diaChi: "Vĩnh Thạnh, Cần Thơ",   dienTich:  2.5, creditScore:  80, farmingScore: 160, hanMucTinDung:  40000000, trangThai: "Cảnh báo" },
-  { id: "LT005", digitalId: "LT005", htx: "HTX Cờ Đỏ",      hoTen: "Hoàng Thị Em",   diaChi: "Cờ Đỏ, Cần Thơ",        dienTich:  8.8, creditScore: 300, farmingScore: 460, hanMucTinDung:  95000000, trangThai: "Đang canh tác" },
-  { id: "LT006", digitalId: "LT006", htx: "HTX Tân Hiệp",   hoTen: "Đinh Văn Phúc",  diaChi: "Tân Hiệp, Kiên Giang",  dienTich: 10.5, creditScore: 180, farmingScore: 320, hanMucTinDung: 110000000, trangThai: "Đang canh tác" },
-  { id: "LT007", digitalId: "LT007", htx: "HTX Châu Thành", hoTen: "Vũ Thị Giang",   diaChi: "Châu Thành, Đồng Tháp", dienTich:  4.2, creditScore: 350, farmingScore: 500, hanMucTinDung:  65000000, trangThai: "Đang canh tác" },
-  { id: "LT008", digitalId: "LT008", htx: "HTX Thanh Bình", hoTen: "Bùi Văn Hải",    diaChi: "Thanh Bình, Đồng Tháp", dienTich:  1.8, creditScore:  60, farmingScore: 140, hanMucTinDung:  20000000, trangThai: "Cảnh báo" },
-  { id: "LT009", digitalId: "LT009", htx: "HTX Thoại Sơn",  hoTen: "Ngô Thị Thu",    diaChi: "Thoại Sơn, An Giang",   dienTich:  7.5, creditScore: 240, farmingScore: 380, hanMucTinDung:  85000000, trangThai: "Đang canh tác" },
-  { id: "LT010", digitalId: "LT010", htx: "HTX Hòn Đất",    hoTen: "Lý Văn Tám",     diaChi: "Hòn Đất, Kiên Giang",   dienTich: 20.0, creditScore: 200, farmingScore: 280, hanMucTinDung: 220000000, trangThai: "Đang canh tác" },
+  { id: "LT001", digitalId: "LT001", htx: "HTX Thoại Sơn", hoTen: "Nguyễn Văn An", diaChi: "Thoại Sơn, An Giang", dienTich: 12.5, creditScore: 280, farmingScore: 480, hanMucTinDung: 120000000, vuMuaHoanThanh: 4, trangThai: "Đang canh tác" },
+  { id: "LT002", digitalId: "LT002", htx: "HTX Châu Phú", hoTen: "Trần Thị Bích", diaChi: "Châu Phú, An Giang", dienTich: 6.2, creditScore: 320, farmingScore: 520, hanMucTinDung: 80000000, vuMuaHoanThanh: 3, trangThai: "Đang canh tác" },
+  { id: "LT003", digitalId: "LT003", htx: "HTX Tri Tôn", hoTen: "Lê Văn Cường", diaChi: "Tri Tôn, An Giang", dienTich: 15.0, creditScore: 200, farmingScore: 280, hanMucTinDung: 150000000, vuMuaHoanThanh: 2, trangThai: "Đang canh tác" },
+  { id: "LT004", digitalId: "LT004", htx: "HTX Vĩnh Thạnh", hoTen: "Phạm Văn Dũng", diaChi: "Vĩnh Thạnh, Cần Thơ", dienTich: 2.5, creditScore: 80, farmingScore: 160, hanMucTinDung: 40000000, vuMuaHoanThanh: 1, trangThai: "Cảnh báo" },
+  { id: "LT005", digitalId: "LT005", htx: "HTX Cờ Đỏ", hoTen: "Hoàng Thị Em", diaChi: "Cờ Đỏ, Cần Thơ", dienTich: 8.8, creditScore: 300, farmingScore: 460, hanMucTinDung: 95000000, vuMuaHoanThanh: 3, trangThai: "Đang canh tác" },
+  { id: "LT006", digitalId: "LT006", htx: "HTX Tân Hiệp", hoTen: "Đinh Văn Phúc", diaChi: "Tân Hiệp, Kiên Giang", dienTich: 10.5, creditScore: 180, farmingScore: 320, hanMucTinDung: 110000000, vuMuaHoanThanh: 2, trangThai: "Đang canh tác" },
+  { id: "LT007", digitalId: "LT007", htx: "HTX Châu Thành", hoTen: "Vũ Thị Giang", diaChi: "Châu Thành, Đồng Tháp", dienTich: 4.2, creditScore: 350, farmingScore: 500, hanMucTinDung: 65000000, vuMuaHoanThanh: 5, trangThai: "Đang canh tác" },
+  { id: "LT008", digitalId: "LT008", htx: "HTX Thanh Bình", hoTen: "Bùi Văn Hải", diaChi: "Thanh Bình, Đồng Tháp", dienTich: 1.8, creditScore: 60, farmingScore: 140, hanMucTinDung: 20000000, vuMuaHoanThanh: 1, trangThai: "Cảnh báo" },
+  { id: "LT009", digitalId: "LT009", htx: "HTX Thoại Sơn", hoTen: "Ngô Thị Thu", diaChi: "Thoại Sơn, An Giang", dienTich: 7.5, creditScore: 240, farmingScore: 380, hanMucTinDung: 85000000, vuMuaHoanThanh: 2, trangThai: "Đang canh tác" },
+  { id: "LT010", digitalId: "LT010", htx: "HTX Hòn Đất", hoTen: "Lý Văn Tám", diaChi: "Hòn Đất, Kiên Giang", dienTich: 20.0, creditScore: 200, farmingScore: 280, hanMucTinDung: 220000000, vuMuaHoanThanh: 3, trangThai: "Đang canh tác" },
 ];
 
 export const initialSupplies = [
-  { id: "S001", ten: "Giống lúa OM5451",          donVi: "kg",   donGia: 45000 },
-  { id: "S002", ten: "Phân NPK 20-20-15",         donVi: "kg",   donGia: 12000 },
-  { id: "S003", ten: "Thuốc BVTV sinh học",       donVi: "chai", donGia: 85000 },
-  { id: "S004", ten: "Thuốc trừ sâu rầy",         donVi: "chai", donGia: 120000 },
-  { id: "S005", ten: "Giống lúa Đài Thơm 8",      donVi: "kg",   donGia: 50000 },
-  { id: "S006", ten: "Phân hữu cơ vi sinh",       donVi: "bao",  donGia: 250000 },
-  { id: "S007", ten: "Thuốc rải diệt cỏ mầm",     donVi: "gói",  donGia: 95000 },
-  { id: "S008", ten: "Phân Ure Cà Mau",           donVi: "kg",   donGia: 15000 },
+  { id: "S001", ten: "Giống lúa OM5451", donVi: "kg", donGia: 45000 },
+  { id: "S002", ten: "Phân NPK 20-20-15", donVi: "kg", donGia: 12000 },
+  { id: "S003", ten: "Thuốc BVTV sinh học", donVi: "chai", donGia: 85000 },
+  { id: "S004", ten: "Thuốc trừ sâu rầy", donVi: "chai", donGia: 120000 },
+  { id: "S005", ten: "Giống lúa Đài Thơm 8", donVi: "kg", donGia: 50000 },
+  { id: "S006", ten: "Phân hữu cơ vi sinh", donVi: "bao", donGia: 250000 },
+  { id: "S007", ten: "Thuốc rải diệt cỏ mầm", donVi: "gói", donGia: 95000 },
+  { id: "S008", ten: "Phân Ure Cà Mau", donVi: "kg", donGia: 15000 },
 ];
 
 export const GIA_LUA = 8500; // VNĐ/kg cơ sở bao tiêu
@@ -68,6 +70,15 @@ const App = () => {
   const [deliveryQueue, setDeliveryQueueLocal] = useState([]);
   const [droneReports, setDroneReportsLocal] = useState([]);
   const [farmerApplications, setFarmerApplicationsLocal] = useState([]);
+  const [insurancePool, setInsurancePoolLocal] = useState(0);
+
+  // ─── V3: Buyer Receivables ─────────────────────────────────────────────────
+  // BuyerInvoice = khoản phải thu của LT với Buyer xuất khẩu (Vinafood, Cargill…).
+  // Đây là tài sản đảm bảo CHÍNH cho factoring với bank — giải quyết tắc nghẽn dòng tiền.
+  // harvestLots = các lô lúa đã thu mua từ farmer, sẵn sàng gom thành buyer invoice.
+  const [buyerInvoices, setBuyerInvoicesLocal] = useState([]);
+  const [harvestLots, setHarvestLotsLocal] = useState([]);
+  const [buyers] = useState(initialBuyers);
   const [blockchainLog, setBlockchainLogLocal] = useState([
     { timestamp: new Date().toISOString(), hash: generateHash(), action: "GENESIS_BLOCK", data: "Khởi tạo hệ thống LocTroi AgriChain v2.0" }
   ]);
@@ -84,6 +95,9 @@ const App = () => {
         if (data.droneReports) setDroneReportsLocal(data.droneReports);
         if (data.blockchainLog) setBlockchainLogLocal(data.blockchainLog);
         if (data.farmerApplications) setFarmerApplicationsLocal(data.farmerApplications);
+        if (typeof data.insurancePool === "number") setInsurancePoolLocal(data.insurancePool);
+        if (data.buyerInvoices) setBuyerInvoicesLocal(data.buyerInvoices);
+        if (data.harvestLots) setHarvestLotsLocal(data.harvestLots);
       } else {
         setDoc(doc(db, "agrichain", "globalState"), {
           farmers: initialFarmers,
@@ -93,6 +107,9 @@ const App = () => {
           deliveryQueue: [],
           droneReports: [],
           farmerApplications: [],
+          insurancePool: 0,
+          buyerInvoices: [],
+          harvestLots: [],
           blockchainLog: [{ timestamp: new Date().toISOString(), hash: generateHash(), action: "GENESIS_BLOCK", data: "Khởi tạo hệ thống LocTroi AgriChain v2.0" }]
         });
       }
@@ -108,6 +125,9 @@ const App = () => {
   const setDroneReports = (val) => setDroneReportsLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { droneReports: n }, { merge: true }); return n; });
   const setBlockchainLog = (val) => setBlockchainLogLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { blockchainLog: n }, { merge: true }); return n; });
   const setFarmerApplications = (val) => setFarmerApplicationsLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { farmerApplications: n }, { merge: true }); return n; });
+  const setInsurancePool = (val) => setInsurancePoolLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { insurancePool: n }, { merge: true }); return n; });
+  const setBuyerInvoices = (val) => setBuyerInvoicesLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { buyerInvoices: n }, { merge: true }); return n; });
+  const setHarvestLots = (val) => setHarvestLotsLocal(prev => { const n = typeof val === "function" ? val(prev) : val; setDoc(doc(db, "agrichain", "globalState"), { harvestLots: n }, { merge: true }); return n; });
 
   // Modals
   const [supplyModal, setSupplyModal] = useState({ isOpen: false, farmer: null, season: "Vụ Đông Xuân 2026-2027" });
@@ -142,6 +162,7 @@ const App = () => {
       creditScore: 0,
       farmingScore: 0,
       hanMucTinDung: 0,
+      vuMuaHoanThanh: 0,            // hộ mới chưa có vụ → SCF Track 2 (tranching) vụ đầu
       trangThai: "Đang canh tác",
     };
     setFarmers(prev => [...prev, newFarmer]);
@@ -320,25 +341,94 @@ const App = () => {
     }));
 
     if (credit > 0) {
-      const newInvoice = {
-        id: generateId("INV-"),
+      // ─── SCF Routing: Track 1 (fast) vs Track 2 (tranching) ──────────────
+      const farmerObj = farmers.find(f => f.id === delivery.farmer.id) || delivery.farmer;
+      const track = getScfTrack(farmerObj);
+      const completedSeasons = farmerObj.vuMuaHoanThanh ?? 0;
+      const insuranceFee = Math.round(credit * INSURANCE_FEE_PCT / 100);
+
+      // Trích phí bảo hiểm 5% face value vào Insurance Pool dùng đệm vỡ nợ
+      setInsurancePool(prev => prev + insuranceFee);
+      logBlockchain(
+        "INSURANCE_FEE_COLLECTED",
+        `[Insurance Pool] Trích ${formatVND(insuranceFee)} (5% face) từ HĐ ${delivery.farmer.hoTen} → Pool đệm rủi ro hệ thống.`
+      );
+
+      const baseInvoice = {
         nongHoId: delivery.farmer.id,
         vuMua: delivery.season,
-        amount: credit,
+        faceValue: credit,
         totalValue: total,
         depositAmount: deposit,
         tier: tier.code,
         vatTuId: delivery.supplyId,
-        trangThai: "Chờ xác nhận",
         date: new Date().toISOString(),
         guarantorId: "LOC-TROI-CORP",
         riskLevel,
         insurancePolicyId: generateId("INS-"),
         maturityDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
         recourseStatus: null,
+        scfTrack: track.code,
       };
-      setInvoices(prev => [newInvoice, ...prev]);
-      showToast(`🚛 Đã giao + ghi nợ ${formatVND(credit)} (Tier ${tier.code})`);
+
+      if (track.code === "FAST") {
+        // ─── TRACK 1: Auto-tokenize + chào bán bank NGAY ───────────────────
+        const tokenHash = generateHash();
+        const tokenId = `TKN-${tokenHash.substring(0, 6).toUpperCase()}`;
+        const fastInvoice = {
+          ...baseInvoice,
+          id: generateId("INV-"),
+          amount: credit,
+          tokenId,
+          trangThai: "Chào bán ngân hàng",
+          insuranceFee,
+          tranche: null,
+        };
+        setInvoices(prev => [fastInvoice, ...prev]);
+        logBlockchain(
+          "SCF_FAST_TRACK",
+          `[Track 1 · Auto-SCF] HĐ ${fastInvoice.id} (${tokenId}) chào bán bank NGAY: ${delivery.farmer.hoTen} đã ${completedSeasons} vụ, Tier ${tier.code} — không cần đợi drone/inspect vụ này.`,
+          tokenHash
+        );
+        showToast(`⚡ Track 1: Auto-SCF cho hộ Tier ${tier.code} (${completedSeasons} vụ) — bank duyệt trong 24h`);
+      } else {
+        // ─── TRACK 2: Tranching — Senior bán ngay, Junior giữ chờ verify ────
+        const seniorAmount = Math.round(credit * SENIOR_PCT / 100);
+        const juniorAmount = credit - seniorAmount;
+        const seniorHash = generateHash();
+        const seniorTokenId = `TKN-SR-${seniorHash.substring(0, 5).toUpperCase()}`;
+
+        const seniorInvoice = {
+          ...baseInvoice,
+          id: generateId("INV-SR-"),
+          amount: seniorAmount,
+          tokenId: seniorTokenId,
+          trangThai: "Chào bán ngân hàng",
+          insuranceFee: Math.round(insuranceFee * SENIOR_PCT / 100),
+          tranche: "Senior",
+          tranchePct: SENIOR_PCT,
+        };
+        const juniorInvoice = {
+          ...baseInvoice,
+          id: generateId("INV-JR-"),
+          amount: juniorAmount,
+          tokenId: null,
+          trangThai: "Junior chờ verify",
+          insuranceFee: Math.round(insuranceFee * JUNIOR_PCT / 100),
+          tranche: "Junior",
+          tranchePct: JUNIOR_PCT,
+          pairedSeniorId: seniorInvoice.id,
+        };
+
+        setInvoices(prev => [seniorInvoice, juniorInvoice, ...prev]);
+        logBlockchain(
+          "SCF_TRANCHED",
+          `[Track 2 · Tranching] HĐ ${formatVND(credit)} chia 2: Senior ${seniorInvoice.id} (${seniorTokenId}, ${SENIOR_PCT}% = ${formatVND(seniorAmount)}) chào bank NGAY · Junior ${juniorInvoice.id} (${JUNIOR_PCT}% = ${formatVND(juniorAmount)}) LT giữ — đợi drone+inspect verify.`,
+          seniorHash
+        );
+        const reason = completedSeasons === 0 ? "hộ mới (chưa có vụ)" : `Tier ${tier.code}`;
+        showToast(`🔀 Track 2: Tranching cho ${reason} — Senior ${SENIOR_PCT}% chào bank, Junior ${JUNIOR_PCT}% chờ verify`);
+      }
     } else {
       logBlockchain("CASH_PAYMENT", `[Tier C] ${delivery.farmer.hoTen} thanh toán tiền mặt ${formatVND(total)} — không tạo AR`);
       showToast(`🚛 Đã giao + thu tiền mặt ${formatVND(total)}`);
@@ -360,6 +450,11 @@ const App = () => {
   // ─── 3 Cùng tick checklist + AI phân tích ảnh thực địa ───────────────────
   const handleFieldInspection = ({ farmer, checked, newFarmingScore, droneReportHash, fieldImageHash, operator, analysis }) => {
     const hash = generateHash();
+
+    // Continuous re-scoring: so sánh tier trước/sau để báo "leo bậc" hoặc "tụt bậc"
+    const tierBefore = getTier(farmer).code;
+    const updatedFarmer = { ...farmer, farmingScore: newFarmingScore };
+    const tierAfter = getTier(updatedFarmer).code;
     setFarmers(prev => prev.map(f => f.id === farmer.id ? { ...f, farmingScore: newFarmingScore } : f));
 
     const passed = Object.values(checked).filter(Boolean).length;
@@ -374,7 +469,18 @@ const App = () => {
       `[Oracle 3 Cùng] ${operator.id} (${operator.hoTen}) kiểm tra ${farmer.hoTen}: ${passed}/${total} SRP → Farming Score ${newFarmingScore}/${MAX_FARMING}. Bằng chứng: ${evid}`,
       hash
     );
-    showToast(`🧑‍🌾 SRP đã ghi chain: ${passed}/${total} đạt · FS ${newFarmingScore}`);
+
+    // Re-scoring liên tục: nếu tier thay đổi → log + show
+    if (tierBefore !== tierAfter) {
+      const up = TIERS[tierAfter].range[0] > TIERS[tierBefore].range[0];
+      logBlockchain(
+        up ? "TIER_UPGRADED" : "TIER_DOWNGRADED",
+        `[Re-scoring] ${farmer.hoTen} ${up ? "LÊN" : "XUỐNG"} Tier ${tierBefore} → ${tierAfter} sau inspect SRP. ${up ? "Vụ tới đủ điều kiện SCF Track 1 ưu đãi hơn." : "Vụ tới có thể phải qua Track 2 tranching."}`
+      );
+      showToast(`${up ? "📈" : "📉"} ${farmer.hoTen}: Tier ${tierBefore} → ${tierAfter}`);
+    } else {
+      showToast(`🧑‍🌾 SRP đã ghi chain: ${passed}/${total} đạt · FS ${newFarmingScore}`);
+    }
   };
 
   // ─── B5: Tất toán thu hoạch ──────────────────────────────────────────────
@@ -385,33 +491,144 @@ const App = () => {
       relatedInvoices.includes(inv.id) ? { ...inv, trangThai: "Đã tất toán" } : inv
     ));
 
+    // V3: Mỗi lần cân lúa → tạo 1 harvestLot, sẵn sàng gom vào BuyerInvoice
+    const lotId = generateId("LOT-");
+    const newLot = {
+      id: lotId,
+      farmerId: farmer.id,
+      farmerName: farmer.hoTen,
+      yieldKg,
+      pricePerKg,
+      premium,
+      grossPay,
+      netPaid: netPay,
+      operator: operator.id,
+      season: farmer.giong || "—",
+      tier: getTier(farmer).code,
+      farmingScore: farmer.farmingScore ?? 0,
+      moisture,
+      impurity,
+      date: new Date().toISOString(),
+      buyerInvoiceId: null, // chưa gom vào buyer invoice nào
+    };
+    setHarvestLots(prev => [newLot, ...prev]);
+
     logBlockchain(
       "HARVEST_SETTLED",
-      `[B5 harvestSettlement()] ${operator.id} (${operator.hoTen}) thu mua ${farmer.hoTen}: ${(yieldKg/1000).toFixed(2)} tấn × ${pricePerKg.toLocaleString("vi-VN")}đ (premium +${premium}đ) = ${formatVND(grossPay)}. Trừ nợ ${formatVND(debt)} → ròng ${formatVND(netPay)}. Độ ẩm ${moisture}% · tạp ${impurity}%.`,
+      `[B5 harvestSettlement()] ${operator.id} (${operator.hoTen}) thu mua ${farmer.hoTen}: ${(yieldKg / 1000).toFixed(2)} tấn × ${pricePerKg.toLocaleString("vi-VN")}đ (premium +${premium}đ) = ${formatVND(grossPay)}. Trừ nợ ${formatVND(debt)} → ròng ${formatVND(netPay)}. Độ ẩm ${moisture}% · tạp ${impurity}%. Lô ${lotId} sẵn sàng gom vào hợp đồng xuất khẩu.`,
       hash
     );
 
     // +200 (giao đủ SL) + +100 (trả nợ đúng hạn) = +300
+    // Đồng thời +1 vụ hoàn thành → mở quyền SCF Track 1 cho vụ sau nếu Tier ≥ B
     setFarmers(prev => prev.map(f => {
       if (f.id !== farmer.id) return f;
       const newCredit = Math.min(400, (f.creditScore ?? 0) + 300);
       const newLimit = (f.hanMucTinDung || 0) + 5000000;
+      const newSeasons = (f.vuMuaHoanThanh ?? 0) + 1;
       const oldTier = getTier(f).code;
-      const newTier = getTier({ ...f, creditScore: newCredit }).code;
-      logBlockchain("CREDIT_HARVEST", `[+300 Credit] ${f.hoTen}: +200 đủ SL + +100 trả nợ đúng hạn → ${newCredit}/400. Hạn mức ${(newLimit/1e6).toFixed(0)}Tr.`);
+      const updatedFarmer = { ...f, creditScore: newCredit, vuMuaHoanThanh: newSeasons };
+      const newTier = getTier(updatedFarmer).code;
+      const newTrack = getScfTrack(updatedFarmer).code;
+      logBlockchain("CREDIT_HARVEST", `[+300 Credit] ${f.hoTen}: +200 đủ SL + +100 trả nợ đúng hạn → ${newCredit}/400. Hạn mức ${(newLimit / 1e6).toFixed(0)}Tr. Hoàn thành vụ thứ ${newSeasons}.`);
       if (oldTier !== newTier) {
-        logBlockchain("TIER_UPGRADE", `🎉 ${f.hoTen} thăng hạng Tier ${oldTier} → Tier ${newTier}!`);
+        logBlockchain("TIER_UPGRADE", `🎉 ${f.hoTen} thăng hạng Tier ${oldTier} → Tier ${newTier}! Vụ sau SCF Track ${newTrack === "FAST" ? "1 (Auto-SCF)" : "2 (Tranching)"}.`);
       }
-      return { ...f, creditScore: newCredit, hanMucTinDung: newLimit };
+      return { ...f, creditScore: newCredit, hanMucTinDung: newLimit, vuMuaHoanThanh: newSeasons };
     }));
 
-    showToast(`🌾 Đã tất toán cho ${farmer.hoTen}: ròng ${formatVND(netPay)} · +300 Credit`);
+    showToast(`🌾 Đã tất toán cho ${farmer.hoTen}: ròng ${formatVND(netPay)} · +300 Credit · +1 vụ`);
   };
 
   // ─── Farmer self-report harvest (notify procurement) ─────────────────────
   const handleReportHarvest = (farmer) => {
-    logBlockchain("HARVEST_REPORTED", `${farmer.hoTen} báo sắp thu hoạch — notification gửi cán bộ thu mua chuẩn bị xe.`);
-    showToast(`📞 Đã báo Lộc Trời. Cán bộ thu mua sẽ liên hệ xếp lịch cân lúa.`);
+    logBlockchain("HARVEST_REPORTED", `${farmer.hoTen} báo sắp thu hoạch — notification gửi Giám đốc Vùng chuẩn bị xe cân.`);
+    showToast(`📞 Đã báo Lộc Trời. Giám đốc Vùng sẽ điều phối phiên cân lúa.`);
+  };
+
+  // ─── V3 BUYER-SCF HANDLERS ────────────────────────────────────────────────
+  // 1) Manager gom các lô lúa đã thu hoạch → tạo BuyerInvoice + token hóa ngay
+  const handleCreateBuyerInvoice = ({ buyer, lotIds, manager, contractRef }) => {
+    const lots = harvestLots.filter(l => lotIds.includes(l.id));
+    if (lots.length === 0) return;
+    const totalKg = lots.reduce((s, l) => s + l.yieldKg, 0);
+    const faceValue = totalKg * BUYER_EXPORT_PRICE;
+    const tokenHash = generateHash();
+    const tokenId = `TKN-BR-${tokenHash.substring(0, 5).toUpperCase()}`;
+    const invoiceId = generateId("BINV-");
+    const issuedAt = new Date();
+    const maturityAt = new Date(issuedAt.getTime() + buyer.paymentTermDays * 24 * 60 * 60 * 1000);
+    const discount = calcBankDiscount(faceValue, buyer.paymentTermDays, buyer.creditRating);
+
+    const newBuyerInv = {
+      id: invoiceId,
+      buyerId: buyer.id,
+      buyerName: buyer.hoTen,
+      buyerRating: buyer.creditRating,
+      lotIds,
+      lotCount: lots.length,
+      totalKg,
+      exportPrice: BUYER_EXPORT_PRICE,
+      faceValue,
+      paymentTermDays: buyer.paymentTermDays,
+      maturityAt: maturityAt.toISOString(),
+      issuedAt: issuedAt.toISOString(),
+      contractRef: contractRef || `LT-${buyer.id}-${Date.now().toString().slice(-6)}`,
+      tokenId,
+      tokenHash,
+      bankDiscount: discount,
+      trangThai: BUYER_INV_STATUS.TOKENIZED,
+      managerId: manager.id,
+      disbursedAt: null,
+      buyerPaidAt: null,
+    };
+    setBuyerInvoices(prev => [newBuyerInv, ...prev]);
+    setHarvestLots(prev => prev.map(l => lotIds.includes(l.id) ? { ...l, buyerInvoiceId: invoiceId } : l));
+
+    logBlockchain(
+      "BUYER_INVOICE_TOKENIZED",
+      `[Buyer-SCF] Giám đốc ${manager.hoTen} ký HĐ xuất khẩu ${newBuyerInv.contractRef}: ${(totalKg / 1000).toFixed(2)} tấn × ${BUYER_EXPORT_PRICE.toLocaleString("vi-VN")}đ = ${formatVND(faceValue)} cho ${buyer.hoTen} (${buyer.creditRating}, T+${buyer.paymentTermDays}). Token ${tokenId} chào liên minh bank — chiết khấu dự kiến ${formatVND(discount.discountAmount)} (${(discount.discountPct * 100).toFixed(2)}%).`,
+      tokenHash
+    );
+    showToast(`🪙 Đã token hóa HĐ xuất khẩu ${formatVND(faceValue)} → chào bank`);
+    return newBuyerInv;
+  };
+
+  // 2) Bank duyệt + giải ngân BuyerInvoice (chiết khấu face value)
+  const handleDisburseBuyerInvoice = (invoice) => {
+    const hash = generateHash();
+    const now = new Date().toISOString();
+    setBuyerInvoices(prev => prev.map(inv => inv.id === invoice.id
+      ? { ...inv, trangThai: BUYER_INV_STATUS.DISBURSED, disbursedAt: now, disburseHash: hash }
+      : inv));
+    logBlockchain(
+      "BUYER_INVOICE_DISBURSED",
+      `[Bank-SCF] Liên minh bank giải ngân ${formatVND(invoice.bankDiscount.disbursedAmount)} cho LT trên HĐ ${invoice.contractRef} (face ${formatVND(invoice.faceValue)}, chiết khấu ${formatVND(invoice.bankDiscount.discountAmount)}). LT có tiền NGAY để trả nông dân — dòng tiền không còn tắc nghẽn.`,
+      hash
+    );
+    showToast(`💰 Bank giải ngân ${formatVND(invoice.bankDiscount.disbursedAmount)} — LT có tiền trả nông dân`);
+  };
+
+  // 3) Bank từ chối
+  const handleRejectBuyerInvoice = (invoice) => {
+    setBuyerInvoices(prev => prev.map(inv => inv.id === invoice.id
+      ? { ...inv, trangThai: "Bank từ chối" } : inv));
+    logBlockchain("BUYER_INVOICE_REJECTED", `[Bank-SCF] Bank từ chối token ${invoice.tokenId} (HĐ ${invoice.contractRef}). LT có thể chào bank khác hoặc giữ HĐ đến hạn.`);
+    showToast("❌ Bank đã từ chối token");
+  };
+
+  // 4) Buyer thanh toán đến hạn — bank thu tiền, token đốt
+  const handleBuyerPayoff = (invoice) => {
+    const hash = generateHash();
+    const now = new Date().toISOString();
+    setBuyerInvoices(prev => prev.map(inv => inv.id === invoice.id
+      ? { ...inv, trangThai: BUYER_INV_STATUS.BUYER_PAID, buyerPaidAt: now, payoffHash: hash } : inv));
+    logBlockchain(
+      "BUYER_PAYOFF",
+      `[Buyer-Payoff] ${invoice.buyerName} thanh toán ${formatVND(invoice.faceValue)} cho liên minh bank trên HĐ ${invoice.contractRef}. Token ${invoice.tokenId} đã đốt. Đóng deal — vòng vốn hoàn tất.`,
+      hash
+    );
+    showToast(`✅ ${invoice.buyerName} đã trả ${formatVND(invoice.faceValue)} — token đốt`);
   };
 
   // ─── SCF / Insurance handlers (giữ logic cũ) ─────────────────────────────
@@ -419,16 +636,18 @@ const App = () => {
     const farmer = farmers.find(f => f.id === invoice.nongHoId);
     const currentScore = farmer?.farmingScore || 0;
     const isPassing = currentScore >= 250; // Ngưỡng đạt chuẩn SRP để đúc Token
+    const isJunior = invoice.tranche === "Junior";
+    const trancheTag = isJunior ? "[Junior tranche] " : "";
 
     setOracleModal({ isOpen: true, status: "loading", invoiceId: invoice.id, nongHoId: invoice.nongHoId });
     setTimeout(() => {
-      // Đánh giá dựa trên dữ liệu THỰC TẾ từ đội 3 Cùng ghi nhận
+      // Đánh giá dựa trên dữ liệu THỰC TẾ từ đội 3 Cùng & drone scan
       if (!isPassing) {
         setOracleModal(m => ({ ...m, status: "failed" }));
         setTimeout(() => {
           const hash = generateHash();
           setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Từ chối duyệt vay" } : inv));
-          logBlockchain("ORACLE_REJECTED", `Oracle: HĐ ${invoice.id} bị từ chối do Farming Score (${currentScore}/${MAX_FARMING}) không đạt chuẩn thế chấp`, hash);
+          logBlockchain("ORACLE_REJECTED", `${trancheTag}Oracle: HĐ ${invoice.id} bị từ chối do Farming Score (${currentScore}/${MAX_FARMING}) không đạt chuẩn thế chấp`, hash);
           showToast(`❌ Từ chối Token hóa: Vi phạm thực địa (Score: ${currentScore})`);
           setOracleModal({ isOpen: false, status: "idle", invoiceId: null, nongHoId: null });
         }, 3000);
@@ -436,10 +655,10 @@ const App = () => {
         setOracleModal(m => ({ ...m, status: "success" }));
         setTimeout(() => {
           const hash = generateHash();
-          const tokenId = `TKN-${hash.substring(0, 6).toUpperCase()}`;
+          const tokenId = isJunior ? `TKN-JR-${hash.substring(0, 5).toUpperCase()}` : `TKN-${hash.substring(0, 6).toUpperCase()}`;
           setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, trangThai: "Đã token hóa", tokenId } : inv));
-          logBlockchain("INVOICE_TOKENIZED", `Mã HĐ: ${invoice.id} → Token: ${tokenId}. Farming Score: ${currentScore}/${MAX_FARMING} (Đạt)`, hash);
-          showToast(`✅ Phát hành ${tokenId} thành công`);
+          logBlockchain("INVOICE_TOKENIZED", `${trancheTag}Mã HĐ: ${invoice.id} → Token: ${tokenId}. Farming Score: ${currentScore}/${MAX_FARMING} (Đạt). Sẵn sàng chào bank.`, hash);
+          showToast(`✅ Phát hành ${tokenId} ${isJunior ? "(Junior)" : ""} thành công`);
           setOracleModal({ isOpen: false, status: "idle", invoiceId: null, nongHoId: null });
         }, 1500);
       }
@@ -479,7 +698,7 @@ const App = () => {
       if (f.id !== invoice.nongHoId) return f;
       const newCredit = Math.min(400, (f.creditScore ?? 0) + 300);
       const newLimit = f.hanMucTinDung + 5000000;
-      logBlockchain("CREDIT_UPDATED", `[+300 Credit] ${f.hoTen} đủ SL + trả nợ đúng hạn → ${newCredit}/400. HM ${(newLimit/1e6).toFixed(0)}Tr.`);
+      logBlockchain("CREDIT_UPDATED", `[+300 Credit] ${f.hoTen} đủ SL + trả nợ đúng hạn → ${newCredit}/400. HM ${(newLimit / 1e6).toFixed(0)}Tr.`);
       return { ...f, creditScore: newCredit, hanMucTinDung: newLimit };
     }));
     showToast(`💵 Tất toán! +300 Credit · ${premium > 0 ? `+${premium}đ/kg premium` : "không premium"}`);
@@ -520,13 +739,14 @@ const App = () => {
 
   const sharedProps = {
     farmers, supplies, invoices, supplyRequests, blockchainLog, transactions, droneReports, deliveryQueue, staff,
-    disbursedAmount, pendingAmount, totalArea, stateCounts, formatVND, GIA_LUA,
+    disbursedAmount, pendingAmount, totalArea, stateCounts, formatVND, GIA_LUA, insurancePool,
+    buyerInvoices, buyers, harvestLots,
   };
 
   // ─── Login & default tab ──────────────────────────────────────────────────
   const defaultTabFor = (user) => {
     if (user.role === "loctroi") {
-      const map = { manager: "managerHome", fieldOfficer: "officerHome", droneOperator: "droneHome", driver: "driverHome", procurement: "procurementHome" };
+      const map = { manager: "managerHome", fieldOfficer: "officerHome", driver: "driverHome" };
       return map[user.subrole] ?? "managerHome";
     }
     if (user.role === "bank") return "scf";
@@ -540,6 +760,17 @@ const App = () => {
   };
   const handleLogout = () => { setCurrentUser(null); setActiveTab(""); setIsSidebarOpen(false); };
 
+  // ─── DEMO: Reset toàn bộ Firestore + reload (chỉ dùng để test lại từ đầu) ──
+  const handleResetDemoData = async () => {
+    try {
+      await deleteDoc(doc(db, "agrichain", "globalState"));
+    } catch (err) {
+      console.error("Reset failed:", err);
+    }
+    // Reload để re-init Firestore document từ initialFarmers
+    window.location.reload();
+  };
+
   if (!currentUser) {
     return (
       <GlobalLogin
@@ -549,9 +780,26 @@ const App = () => {
         onLogin={handleLogin}
         onSubmitRegistration={handleSubmitRegistration}
         onLookupApplication={lookupApplication}
+        onResetDemoData={handleResetDemoData}
       />
     );
   }
+
+  // ─── Tab whitelist (V3) — tránh trắng màn hình nếu activeTab không match ───
+  const tabsForRole = (() => {
+    if (currentUser.role === "loctroi") {
+      const map = {
+        manager:      ["managerHome", "registrations", "overview", "farmers", "harvest", "buyerSales", "invoices"],
+        fieldOfficer: ["officerHome", "onboarding", "droneUpload", "inspection"],
+        driver:       ["driverHome", "delivery"],
+      };
+      return map[currentUser.subrole] ?? [];
+    }
+    if (currentUser.role === "bank")   return ["scf"];
+    if (currentUser.role === "farmer") return ["farmerPortal"];
+    return [];
+  })();
+  const hasAnyTab = tabsForRole.includes(activeTab);
 
   // Filter blockchain log for farmer (private view)
   const visibleBlockchainLog = currentUser.role === "farmer"
@@ -582,6 +830,7 @@ const App = () => {
         setActiveTab={(id) => { setActiveTab(id); setIsSidebarOpen(false); }}
         blockchainLog={blockchainLog}
         invoices={invoices}
+        buyerInvoices={buyerInvoices}
         farmerApplications={farmerApplications}
         role={currentUser.role}
         subrole={currentUser.subrole}
@@ -616,23 +865,35 @@ const App = () => {
               <InvoicesTab {...sharedProps} onVerifyField={handleVerifyField} onSubmitSCF={handleSubmitSCF} onSettleInvoice={handleSettleInvoice} />
             )}
 
-            {/* Field Officer subrole tabs */}
+            {/* Manager V3: kiêm Procurement (harvest) + Buyer Sales */}
+            {currentUser.role === "loctroi" && currentUser.subrole === "manager" && activeTab === "harvest" && (
+              <HarvestTab staff={currentUser.profile} farmers={farmers} transactions={transactions} invoices={invoices} blockchainLog={blockchainLog} onSettleHarvest={handleSettleHarvest} formatVND={formatVND} basePrice={GIA_LUA} />
+            )}
+            {currentUser.role === "loctroi" && currentUser.subrole === "manager" && activeTab === "buyerSales" && (
+              <BuyerSalesTab
+                staff={currentUser.profile}
+                harvestLots={harvestLots}
+                buyerInvoices={buyerInvoices}
+                buyers={buyers}
+                blockchainLog={blockchainLog}
+                formatVND={formatVND}
+                onCreateBuyerInvoice={handleCreateBuyerInvoice}
+                onBuyerPayoff={handleBuyerPayoff}
+              />
+            )}
+
+            {/* Field Officer V3: kiêm Drone Operator + 3 Cùng */}
             {currentUser.role === "loctroi" && currentUser.subrole === "fieldOfficer" && activeTab === "officerHome" && (
               <StaffHome {...sharedProps} staff={currentUser.profile} />
             )}
             {currentUser.role === "loctroi" && currentUser.subrole === "fieldOfficer" && activeTab === "onboarding" && (
               <OnboardingTab staff={currentUser.profile} farmers={farmers} blockchainLog={blockchainLog} onCreateFarmer={handleCreateFarmer} />
             )}
+            {currentUser.role === "loctroi" && currentUser.subrole === "fieldOfficer" && activeTab === "droneUpload" && (
+              <DroneOperatorTab staff={currentUser.profile} farmers={farmers} droneReports={droneReports} blockchainLog={blockchainLog} onSubmitDroneReport={handleSubmitDroneReport} />
+            )}
             {currentUser.role === "loctroi" && currentUser.subrole === "fieldOfficer" && activeTab === "inspection" && (
               <InspectionTab staff={currentUser.profile} farmers={farmers} droneReports={droneReports} blockchainLog={blockchainLog} onInspect={handleFieldInspection} />
-            )}
-
-            {/* Drone Operator tabs */}
-            {currentUser.role === "loctroi" && currentUser.subrole === "droneOperator" && activeTab === "droneHome" && (
-              <StaffHome {...sharedProps} staff={currentUser.profile} />
-            )}
-            {currentUser.role === "loctroi" && currentUser.subrole === "droneOperator" && activeTab === "droneUpload" && (
-              <DroneOperatorTab staff={currentUser.profile} farmers={farmers} droneReports={droneReports} blockchainLog={blockchainLog} onSubmitDroneReport={handleSubmitDroneReport} />
             )}
 
             {/* Driver tabs */}
@@ -643,17 +904,17 @@ const App = () => {
               <DeliveryTab staff={currentUser.profile} deliveryQueue={deliveryQueue} farmers={farmers} supplies={supplies} blockchainLog={blockchainLog} onConfirmDelivery={handleConfirmDelivery} formatVND={formatVND} />
             )}
 
-            {/* Procurement tabs */}
-            {currentUser.role === "loctroi" && currentUser.subrole === "procurement" && activeTab === "procurementHome" && (
-              <StaffHome {...sharedProps} staff={currentUser.profile} />
-            )}
-            {currentUser.role === "loctroi" && currentUser.subrole === "procurement" && activeTab === "harvest" && (
-              <HarvestTab staff={currentUser.profile} farmers={farmers} transactions={transactions} invoices={invoices} blockchainLog={blockchainLog} onSettleHarvest={handleSettleHarvest} formatVND={formatVND} basePrice={GIA_LUA} />
-            )}
-
-            {/* Bank */}
+            {/* Bank — duyệt cả Farmer Invoice cũ + Buyer Invoice mới (V3) */}
             {currentUser.role === "bank" && activeTab === "scf" && (
-              <SCFTab {...sharedProps} onDisburse={handleDisburse} onReject={handleRejectSCF} onDeclareDefault={handleDeclareDefault} />
+              <SCFTab
+                {...sharedProps}
+                onDisburse={handleDisburse}
+                onReject={handleRejectSCF}
+                onDeclareDefault={handleDeclareDefault}
+                onDisburseBuyer={handleDisburseBuyerInvoice}
+                onRejectBuyer={handleRejectBuyerInvoice}
+                onBuyerPayoff={handleBuyerPayoff}
+              />
             )}
 
             {/* Farmer */}
@@ -665,6 +926,27 @@ const App = () => {
                 onRequestSupply={(farmer) => setSupplyModal(m => ({ ...m, isOpen: true, farmer }))}
                 onReportHarvest={handleReportHarvest}
               />
+            )}
+
+            {/* Fallback: nếu activeTab không match bất kỳ route nào (vai trò cũ đã bỏ
+                hoặc tab id sai), hiện thông báo + nút logout — tránh trắng màn hình */}
+            {!hasAnyTab && (
+              <div className="bg-white rounded-2xl border border-amber-200 p-8 text-center max-w-2xl mx-auto mt-8">
+                <div className="text-4xl mb-3">⚠️</div>
+                <h2 className="text-xl font-display font-semibold text-slate-900">Vai trò hoặc tab không khả dụng</h2>
+                <p className="text-[14px] text-slate-600 mt-2 leading-relaxed">
+                  Vai trò <b className="font-mono">{currentUser.subrole || currentUser.role}</b> không có tab <b className="font-mono">{activeTab || "(empty)"}</b> trong phiên bản V3.
+                  Có thể bạn đăng nhập với tài khoản đã được gộp (Drone Operator → Field Officer, Procurement → Manager).
+                </p>
+                <div className="mt-5 flex gap-3 justify-center">
+                  <button onClick={handleLogout} className="px-5 py-2.5 rounded-lg bg-slate-900 text-white font-semibold hover:bg-slate-800 text-[14px]">
+                    Đăng xuất & chọn lại tài khoản
+                  </button>
+                </div>
+                <div className="mt-4 text-[12px] text-slate-500">
+                  Mã được phép: <span className="font-mono">LT-MGR-001</span>, <span className="font-mono">LT-FO-002</span>, <span className="font-mono">LT-FO-003</span>, <span className="font-mono">LT-DR-005</span>, <span className="font-mono">LT001-LT010</span>
+                </div>
+              </div>
             )}
           </div>
         </div>

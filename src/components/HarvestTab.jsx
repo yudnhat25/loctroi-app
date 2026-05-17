@@ -62,14 +62,14 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
       <section className="relative overflow-hidden rounded-2xl bg-slate-900 text-white">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-rose-700" />
         <div className="px-5 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6">
-          <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Cán bộ thu mua</div>
+          <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Giám đốc Vùng · điều phối thu mua (V3)</div>
           <h2 className="text-[22px] sm:text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">
             Thu hoạch và tất toán bao tiêu
           </h2>
           <p className="text-[13px] sm:text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
             Cuối vụ: cân lúa, tính tiền theo công thức <b className="text-white">Sản lượng × (Giá bao tiêu + Premium SRP)</b>,
             trừ công nợ vật tư, chuyển khoản, cập nhật
-            <b className="text-white"> +200/+100 Credit Score</b>.
+            <b className="text-white"> +200/+100 Credit Score</b>. Mỗi phiên cân tạo 1 lô lúa sẵn sàng gom vào HĐ buyer xuất khẩu ở tab <b className="text-white">HĐ Buyer & Factoring</b>.
           </p>
           <div className="mt-5 sm:mt-6 grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 rounded-xl overflow-hidden">
             <Stat label="Hộ đủ điều kiện" value={eligibleCount} />

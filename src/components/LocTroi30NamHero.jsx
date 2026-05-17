@@ -143,34 +143,19 @@ const LocTroi30NamHero = () => (
         50%      { box-shadow: 0 0 0 8px rgba(245, 197, 24, 0); }
       }
 
-      /* base hero illustration — ảnh vuông 1200x1200, dùng cover để lấp đầy container tall */
+      /* base hero illustration */
       .lt-hero-base {
         position: absolute; inset: 0;
         width: 100%; height: 100%;
         object-fit: cover;
-        object-position: center 30%;
+        object-position: center top;
         z-index: 1;
         transform-origin: center center;
         animation: ltPan 60s alternate infinite ease-in-out;
       }
       @keyframes ltPan {
-        0% { transform: scale(1.02) translate(0, 0); }
-        100% { transform: scale(1.08) translate(-1%, 1%); }
-      }
-
-      /* Fade từ bottom ảnh xuống caption panel — chống abrupt seam */
-      .lt-stage::after {
-        content: "";
-        position: absolute;
-        left: 0; right: 0; bottom: 0;
-        height: 35%;
-        background: linear-gradient(to bottom,
-          rgba(10, 61, 28, 0) 0%,
-          rgba(10, 61, 28, 0.55) 40%,
-          rgba(2, 44, 34, 0.92) 80%,
-          rgba(2, 44, 34, 1) 100%);
-        pointer-events: none;
-        z-index: 7;
+        0% { transform: scale(1) translate(0, 0); }
+        100% { transform: scale(1.05) translate(-1%, 1%); }
       }
     `}</style>
 
@@ -234,17 +219,17 @@ const LocTroi30NamHero = () => (
 // ─── UAV SVG (3 biến thể: lead red, green, tiny) ────────────────────────────
 const UavSvg = ({ variant }) => {
   const colors = {
-    lead:  { body1: "#d9342b", body2: "#ef4a3f", led: "#5ac8fa", accent: "#fff" },
+    lead: { body1: "#d9342b", body2: "#ef4a3f", led: "#5ac8fa", accent: "#fff" },
     green: { body1: "#0c5a2c", body2: "#1f8a3d", led: "#f5c518", accent: "#f5c518" },
-    tiny:  { body1: "#d9342b", body2: "#d9342b", led: "#fff", accent: "#fff" },
+    tiny: { body1: "#d9342b", body2: "#d9342b", led: "#fff", accent: "#fff" },
   }[variant] || { body1: "#d9342b", body2: "#ef4a3f", led: "#5ac8fa", accent: "#fff" };
 
   return (
     <svg viewBox="0 0 260 120" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
       {/* arms */}
       <g stroke="#1a1a1a" strokeWidth="6" strokeLinecap="round">
-        <line x1="60"  y1="60" x2="20"  y2="30" />
-        <line x1="60"  y1="60" x2="20"  y2="90" />
+        <line x1="60" y1="60" x2="20" y2="30" />
+        <line x1="60" y1="60" x2="20" y2="90" />
         <line x1="200" y1="60" x2="240" y2="30" />
         <line x1="200" y1="60" x2="240" y2="90" />
       </g>
@@ -271,8 +256,8 @@ const UavSvg = ({ variant }) => {
       {variant === "green" && <rect x="108" y="76" width="44" height="12" rx="4" fill="#fff" opacity="0.9" />}
 
       {/* rotor hubs */}
-      <circle cx="20"  cy="30" r="6" fill="#1a1a1a" />
-      <circle cx="20"  cy="90" r="6" fill="#1a1a1a" />
+      <circle cx="20" cy="30" r="6" fill="#1a1a1a" />
+      <circle cx="20" cy="90" r="6" fill="#1a1a1a" />
       <circle cx="240" cy="30" r="6" fill="#1a1a1a" />
       <circle cx="240" cy="90" r="6" fill="#1a1a1a" />
 
@@ -297,7 +282,7 @@ const UavSvg = ({ variant }) => {
       {/* nav lights */}
       {variant !== "tiny" && (
         <>
-          <circle className="lt-nav-light" cx="60"  cy="60" r="3" fill="#ff3b30" />
+          <circle className="lt-nav-light" cx="60" cy="60" r="3" fill="#ff3b30" />
           <circle className="lt-nav-light lt-green" cx="200" cy="60" r="3" fill={variant === "green" ? "#f5c518" : "#34c759"} />
         </>
       )}

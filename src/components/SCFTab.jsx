@@ -6,14 +6,24 @@ const RISK_CONFIG = {
   HIGH:   { label: "Rủi ro Cao",   cls: "text-rose-800 bg-rose-50 ring-rose-200",     dot: "bg-rose-600" },
 };
 
-const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onReject, onDeclareDefault, blockchainLog, droneReports }) => {
+const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onReject, onDeclareDefault, blockchainLog, droneReports, buyerInvoices = [], onDisburseBuyer, onRejectBuyer, onBuyerPayoff }) => {
   const [viewingInvoice, setViewingInvoice] = useState(null);
 
   const pending   = invoices.filter(i => i.trangThai === "Chào bán ngân hàng");
   const disbursed = invoices.filter(i => i.trangThai === "Đã giải ngân" || i.trangThai === "Nợ xấu" || i.trangThai === "Đã tất toán" || i.trangThai === "Từ chối duyệt vay");
 
+  // V3: Buyer Receivables — đối tượng factoring chính (rủi ro = pháp nhân buyer, không phải farmer)
+  const pendingBuyer    = buyerInvoices.filter(i => i.trangThai === "Đã token hóa" || i.trangThai === "Chào bán ngân hàng");
+  const disbursedBuyer  = buyerInvoices.filter(i => i.trangThai === "Đã giải ngân" || i.trangThai === "Buyer đã thanh toán" || i.trangThai === "Buyer trễ hạn" || i.trangThai === "Bank từ chối");
+
   const getRate = (kpi) => kpi > 80 ? "5.5%/năm" : kpi >= 60 ? "7%/năm" : "9%/năm";
   const rateInk = (kpi) => kpi > 80 ? "text-brand-700" : kpi >= 60 ? "text-amber-700" : "text-rose-700";
+
+  const ratingTone = (r) => {
+    if (r === "A+" || r === "A") return "text-emerald-700 bg-emerald-50 ring-emerald-200";
+    if (r === "BBB+" || r === "BBB") return "text-sky-700 bg-sky-50 ring-sky-200";
+    return "text-amber-700 bg-amber-50 ring-amber-200";
+  };
 
   return (
     <div className="space-y-6 sm:space-y-8 fade-in pb-10">
@@ -50,10 +60,101 @@ const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onR
         </div>
       </section>
 
-      {/* Pending Queue */}
+      {/* ─── V3: BUYER RECEIVABLES — ưu tiên cao, rủi ro thấp ──────────── */}
+      <section>
+        <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+          <div>
+            <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">
+              ⚡ Token AR Buyer xuất khẩu <span className="ml-2 text-[11px] font-mono text-indigo-700 bg-indigo-50 ring-1 ring-indigo-200 px-1.5 py-0.5 rounded">FAST · low risk</span>
+            </h3>
+            <p className="text-[12px] text-slate-500 mt-0.5">Khoản phải thu từ Vinafood / Cargill / HSBC — credit rating của pháp nhân buyer, không phải hộ nông dân. Bank duyệt T+1.</p>
+          </div>
+          {pendingBuyer.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200 text-[12px] px-2 py-1 rounded-md font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+              {pendingBuyer.length} hồ sơ buyer
+            </span>
+          )}
+        </div>
+        {pendingBuyer.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-dashed border-surface-300 p-8 text-center text-[14px] text-slate-500">
+            Chưa có token buyer nào chào bán. Giám đốc Vùng cần ký HĐ với buyer và token hóa ở tab <b>HĐ Buyer & Factoring</b>.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {pendingBuyer.map(inv => (
+              <div key={inv.id} className="bg-white rounded-2xl border-2 border-indigo-200 overflow-hidden hover:border-indigo-300 transition-colors flex flex-col">
+                <div className="px-5 py-4 border-b border-surface-200 bg-indigo-50/40">
+                  <div className="flex justify-between items-start mb-2 gap-2">
+                    <span className="font-mono text-[12px] bg-sky-50 text-sky-800 ring-1 ring-sky-200 px-1.5 py-0.5 rounded-md font-semibold truncate">{inv.tokenId}</span>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-semibold ring-1 ${ratingTone(inv.buyerRating)}`}>{inv.buyerRating}</span>
+                  </div>
+                  <h4 className="font-display font-semibold text-slate-900 text-[16px] tracking-tight">{inv.buyerName}</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">HĐ <span className="font-mono">{inv.contractRef}</span> · T+{inv.paymentTermDays} · đáo hạn {new Date(inv.maturityAt).toLocaleDateString("vi-VN")}</p>
+                  <p className="font-display text-[24px] font-semibold tabular text-slate-900 mt-2 leading-none">{formatVND(inv.faceValue)}</p>
+                  <p className="text-[11px] text-slate-500 mt-1">{inv.lotCount} lô · {(inv.totalKg/1000).toFixed(2)} tấn FOB</p>
+                </div>
+                <div className="px-5 py-4 space-y-3 flex-1 flex flex-col">
+                  <div className="flex items-center justify-between text-[13px]">
+                    <span className="font-medium text-slate-600">Bank giải ngân (T+1)</span>
+                    <span className="font-display font-semibold tabular text-brand-700">{formatVND(inv.bankDiscount.disbursedAmount)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[12px]">
+                    <span className="text-slate-500">Chiết khấu ({(inv.bankDiscount.annualRate*100).toFixed(1)}%/năm × {inv.paymentTermDays}d)</span>
+                    <span className="text-amber-700 tabular">− {formatVND(inv.bankDiscount.discountAmount)}</span>
+                  </div>
+                  <div className="flex gap-2 pt-1 mt-auto">
+                    <button onClick={() => onRejectBuyer(inv)} className="flex-1 border border-rose-200 text-rose-700 hover:bg-rose-50 font-semibold py-2 rounded-lg transition-colors text-[13px]">Từ chối</button>
+                    <button onClick={() => onDisburseBuyer(inv)} className="flex-[1.5] bg-indigo-700 hover:bg-indigo-800 text-white font-semibold py-2 rounded-lg transition-colors text-[13px] shadow-sm">Giải ngân T+1</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Buyer disbursed history */}
+        {disbursedBuyer.length > 0 && (
+          <div className="mt-6">
+            <h4 className="text-[14px] font-display font-semibold text-slate-700 tracking-tight mb-3">Buyer-SCF · lịch sử & chờ payoff</h4>
+            <div className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
+              <ul className="divide-y divide-surface-200">
+                {disbursedBuyer.map(inv => (
+                  <li key={inv.id} className="px-4 py-3.5 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-[12px] font-semibold text-sky-700">{inv.tokenId}</span>
+                        <span className="text-[14px] font-semibold text-slate-900">{inv.buyerName}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ring-1 ${ratingTone(inv.buyerRating)}`}>{inv.buyerRating}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">Face {formatVND(inv.faceValue)} · giải ngân {formatVND(inv.bankDiscount.disbursedAmount)}{inv.disbursedAt ? ` · ${new Date(inv.disbursedAt).toLocaleDateString("vi-VN")}` : ""}</div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {inv.trangThai === "Đã giải ngân" && (
+                        <button onClick={() => onBuyerPayoff(inv)} className="text-[12px] bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3 py-1.5 rounded-md">Buyer thanh toán</button>
+                      )}
+                      {inv.trangThai === "Buyer đã thanh toán" && (
+                        <span className="text-[11px] bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200 px-2 py-0.5 rounded-md font-semibold">✓ Đã đóng deal</span>
+                      )}
+                      {inv.trangThai === "Bank từ chối" && (
+                        <span className="text-[11px] bg-surface-100 text-slate-600 ring-1 ring-surface-200 px-2 py-0.5 rounded-md font-semibold">Đã từ chối</span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Pending Queue (Farmer Invoice cũ — vẫn giữ cho hộ nội bộ) */}
       <section>
         <div className="flex items-baseline justify-between mb-4">
-          <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Chờ duyệt giải ngân</h3>
+          <div>
+            <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Hồ sơ AR nội bộ Lộc Trời <span className="ml-1.5 text-[11px] font-mono text-slate-400">(legacy)</span></h3>
+            <p className="text-[12px] text-slate-500 mt-0.5">Cấp vốn vật tư đầu vụ cho hộ nông dân — phạm vi nhỏ, đã chuyển sang Buyer-SCF V3.</p>
+          </div>
           {pending.length > 0 && (
             <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 ring-1 ring-amber-200 text-[12px] px-2 py-1 rounded-md font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
@@ -76,10 +177,26 @@ const SCFTab = ({ farmers, invoices, disbursedAmount, formatVND, onDisburse, onR
               return (
                 <div key={inv.id} className="bg-white rounded-2xl border border-surface-200 overflow-hidden hover:border-surface-300 transition-colors flex flex-col">
                   <div className="px-5 py-4 border-b border-surface-200">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="font-mono text-[12px] bg-sky-50 text-sky-800 ring-1 ring-sky-200 px-1.5 py-0.5 rounded-md font-semibold">{inv.tokenId}</span>
-                      <span className="font-mono text-[12px] text-slate-500">{inv.id}</span>
+                    <div className="flex justify-between items-start mb-2 gap-2">
+                      <span className="font-mono text-[12px] bg-sky-50 text-sky-800 ring-1 ring-sky-200 px-1.5 py-0.5 rounded-md font-semibold truncate">{inv.tokenId}</span>
+                      <span className="font-mono text-[12px] text-slate-500 truncate">{inv.id}</span>
                     </div>
+                    {(inv.tranche || inv.scfTrack) && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {inv.scfTrack === "FAST" && (
+                          <span className="text-[10px] bg-amber-50 text-amber-800 ring-1 ring-amber-200 px-1.5 py-0.5 rounded-md font-semibold">⚡ Track 1 · Auto-SCF</span>
+                        )}
+                        {inv.tranche === "Senior" && (
+                          <span className="text-[10px] bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200 px-1.5 py-0.5 rounded-md font-semibold">SENIOR {inv.tranchePct}% · low risk</span>
+                        )}
+                        {inv.tranche === "Junior" && (
+                          <span className="text-[10px] bg-violet-50 text-violet-800 ring-1 ring-violet-200 px-1.5 py-0.5 rounded-md font-semibold">JUNIOR {inv.tranchePct}% · verified</span>
+                        )}
+                        {inv.faceValue && inv.tranche && (
+                          <span className="text-[10px] text-slate-500 font-mono">/ face {formatVND(inv.faceValue)}</span>
+                        )}
+                      </div>
+                    )}
                     <h4 className="font-display font-semibold text-slate-900 text-[17px] tracking-tight">{farmer?.hoTen ?? inv.nongHoId}</h4>
                     <p className="font-display text-[26px] font-semibold tabular text-slate-900 mt-2 leading-none">{formatVND(inv.amount)}</p>
                   </div>
