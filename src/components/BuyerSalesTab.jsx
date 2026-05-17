@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BUYER_EXPORT_PRICE, calcBankDiscount, BUYER_INV_STATUS } from "../lib/scoring";
+import { BUYER_EXPORT_PRICE, calcBankDiscount, BUYER_INV_STATUS, countDocsComplete, DOC_TOTAL } from "../lib/scoring";
 
 // Tab dành cho Giám đốc Vùng (Manager) — quản lý vòng đời Buyer Invoice:
 //   1. Gom các harvestLots (lúa đã thu mua từ farmer) chưa được gán buyer
@@ -241,6 +241,32 @@ const BuyerSalesTab = ({ staff, harvestLots = [], buyerInvoices = [], buyers = [
                     </div>
                   )}
 
+                  {/* Chứng từ trade finance — back-office đã chuẩn bị đủ 9/9 */}
+                  {inv.shippingDocs && (() => {
+                    const done = countDocsComplete(inv);
+                    const complete = done === DOC_TOTAL;
+                    return (
+                      <div className={`mt-3 rounded-lg p-3 ${complete ? "bg-emerald-50/60 ring-1 ring-emerald-200" : "bg-amber-50/60 ring-1 ring-amber-200"}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`text-[12px] font-bold ${complete ? "text-emerald-800" : "text-amber-800"}`}>
+                            📋 Chứng từ Trade Finance: {done}/{DOC_TOTAL} {complete ? "✅ Đủ điều kiện bank" : "⚠ Còn thiếu"}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1 text-[11px] text-slate-700">
+                          <DocLine ok={!!inv.shippingDocs.blNumber}        label={`B/L ${inv.shippingDocs.blNumber}`} />
+                          <DocLine ok={!!inv.shippingDocs.inspectionCert}  label={`Vinacontrol (ẩm ${inv.shippingDocs.moisturePct}%)`} />
+                          <DocLine ok={!!inv.shippingDocs.phytoCert}       label={`Phyto Cert`} />
+                          <DocLine ok={!!inv.shippingDocs.coNumber}        label={`C/O ${inv.shippingDocs.coForm}`} />
+                          <DocLine ok={inv.legalDocs.assignmentClauseInContract} label="Assignment Clause" />
+                          <DocLine ok={!!inv.legalDocs.buyerAcknowledgedAt}      label="Buyer Acknowledgment" />
+                          <DocLine ok={!!inv.legalDocs.escrowAccount}            label={`Escrow ${inv.legalDocs.escrowAccount}`} />
+                          <DocLine ok={!!inv.insurance.recourseType}              label={`Recourse: ${inv.insurance.recourseType}`} />
+                          <DocLine ok={!!inv.insurance.tradeCreditInsurer}        label={`${inv.insurance.tradeCreditInsurer} ${inv.insurance.coveragePct}%`} />
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {isDisbursed && (
                     <div className="mt-3 flex justify-end">
                       <button onClick={() => onBuyerPayoff(inv)}
@@ -279,6 +305,13 @@ const Mini = ({ label, value, tone }) => (
   <div className="bg-surface-50 rounded-lg px-3 py-2 ring-1 ring-surface-200">
     <div className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">{label}</div>
     <div className={`text-[13px] font-semibold tabular mt-0.5 ${tone}`}>{value}</div>
+  </div>
+);
+
+const DocLine = ({ ok, label }) => (
+  <div className="flex items-center gap-1.5 truncate">
+    <span className={ok ? "text-emerald-600" : "text-slate-300"}>{ok ? "✓" : "○"}</span>
+    <span className="truncate">{label}</span>
   </div>
 );
 

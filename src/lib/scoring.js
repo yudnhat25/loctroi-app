@@ -260,6 +260,91 @@ export const calcBankDiscount = (faceValue, paymentTermDays, creditRating) => {
   return { annualRate, discountPct, discountAmount, disbursedAmount };
 };
 
+// ─── BỘ CHỨNG TỪ TRADE FINANCE — bank dùng để verify trước khi giải ngân ────
+// Để demo gọn, ta mock đủ 9 chứng từ tự động khi token hóa thay vì bắt Manager
+// nhập tay. Bank thấy checklist 9/9 → enable nút giải ngân. Trong production
+// thật, form đính kèm PDF + verify hash on-chain sẽ thay phần mock này.
+export const DOC_CHECKLIST = [
+  { key: "bl",          group: "shipping", label: "Bill of Lading (B/L)",      issuer: "Hãng tàu" },
+  { key: "inspection",  group: "shipping", label: "Inspection Certificate",    issuer: "Vinacontrol / SGS" },
+  { key: "phyto",       group: "shipping", label: "Phytosanitary Certificate", issuer: "Cục BVTV" },
+  { key: "co",          group: "shipping", label: "Certificate of Origin",     issuer: "VCCI" },
+  { key: "assignment",  group: "legal",    label: "Assignment Clause trong HĐ",issuer: "LT + Buyer" },
+  { key: "ack",         group: "legal",    label: "Buyer Acknowledgment",      issuer: "Buyer ký" },
+  { key: "escrow",      group: "legal",    label: "Escrow Account",            issuer: "Bank" },
+  { key: "recourse",    group: "insurance",label: "Recourse Agreement",        issuer: "LT bảo lãnh" },
+  { key: "credit_ins",  group: "insurance",label: "Trade Credit Insurance",    issuer: "Atradius / Coface" },
+];
+
+const VESSELS = ["MSC GAYANE V.2415", "MAERSK LIMA V.118E", "CMA CGM JACQUES SAADE V.512S", "EVERGREEN EVER GIVEN V.0931"];
+const INSURERS = ["Atradius VN", "Coface VN", "Euler Hermes APAC"];
+const randPick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const randCode = (prefix, len = 6) =>
+  prefix + "-" + Math.random().toString(36).substring(2, 2 + len).toUpperCase();
+
+// Sinh mock chứng từ đầy đủ 9/9 cho 1 BuyerInvoice. Tất cả số liệu mang tính
+// minh họa cho demo — trong production sẽ là metadata hash của PDF thực.
+export const generateMockDocs = (buyer, issueDate, totalKg) => {
+  const issued = issueDate ? new Date(issueDate) : new Date();
+  const blDate = issued.toISOString().split("T")[0];
+  const moisture = (13.5 + Math.random() * 1.5).toFixed(1); // 13.5-15.0
+  const broken = (3 + Math.random() * 3).toFixed(1);         // 3-6
+  const impurity = (0.2 + Math.random() * 0.5).toFixed(2);   // 0.2-0.7
+  return {
+    shippingDocs: {
+      blNumber:        randCode("MAEU", 7),
+      blDate,
+      vessel:          randPick(VESSELS),
+      portLoading:     "Sài Gòn (VNSGN)",
+      portDischarge:   buyer.quocGia === "Việt Nam" ? "Cát Lái (VNCLI)"
+                      : buyer.quocGia === "Singapore" ? "PSA Singapore (SGSIN)"
+                      : "Hong Kong Kwai Chung (HKHKG)",
+      inspectionCert:  randCode("VNC", 7),
+      inspectionAgent: randPick(["Vinacontrol", "SGS Vietnam"]),
+      moisturePct:     moisture,
+      brokenPct:       broken,
+      impurityPct:     impurity,
+      phytoCert:       randCode("PPD-AG", 6),
+      coNumber:        randCode("VN-EU1", 6),
+      coForm:          buyer.quocGia === "Singapore" ? "Form D (ATIGA)"
+                      : buyer.quocGia === "Hong Kong" ? "Form AHK"
+                      : "Form B",
+    },
+    legalDocs: {
+      assignmentClauseInContract: true,
+      buyerAcknowledgedAt: blDate,
+      buyerAckRef: randCode("ACK", 5),
+      escrowAccount: randCode("VCB", 9),
+      escrowBank: "Vietcombank — chi nhánh Hồ Chí Minh",
+    },
+    insurance: {
+      recourseType: "with-recourse",
+      recourseClause: "LT cam kết mua lại 100% face value nếu buyer default trong 90 ngày sau đáo hạn.",
+      tradeCreditInsurer: randPick(INSURERS),
+      coveragePct: 85,
+      policyNumber: randCode("ATR", 8),
+    },
+  };
+};
+
+// Đếm số doc đã có trong BuyerInvoice (luôn 9 khi mock đủ, dùng helper này
+// để code SCFTab/BuyerSalesTab kiểm tra completeness mà không phải hard-code)
+export const countDocsComplete = (invoice) => {
+  if (!invoice?.shippingDocs || !invoice?.legalDocs || !invoice?.insurance) return 0;
+  let count = 0;
+  if (invoice.shippingDocs.blNumber) count++;
+  if (invoice.shippingDocs.inspectionCert) count++;
+  if (invoice.shippingDocs.phytoCert) count++;
+  if (invoice.shippingDocs.coNumber) count++;
+  if (invoice.legalDocs.assignmentClauseInContract) count++;
+  if (invoice.legalDocs.buyerAcknowledgedAt) count++;
+  if (invoice.legalDocs.escrowAccount) count++;
+  if (invoice.insurance.recourseType) count++;
+  if (invoice.insurance.tradeCreditInsurer) count++;
+  return count;
+};
+export const DOC_TOTAL = 9;
+
 // Ước lượng giá trị buyer invoice từ 1 batch lô lúa (nhiều farmer gom 1 lot)
 export const estimateBuyerInvoiceFromLots = (lots, exportPrice = BUYER_EXPORT_PRICE) => {
   const totalKg = lots.reduce((s, l) => s + (l.yieldKg ?? 0), 0);

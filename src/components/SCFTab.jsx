@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { countDocsComplete, DOC_TOTAL } from "../lib/scoring";
 
 // V3 SCFTab — Bank CHỈ duyệt Buyer Receivables (factoring khoản phải thu xuất khẩu)
 // từ Lộc Trời. KHÔNG còn duyệt từng khoản nhỏ lẻ của hộ nông dân — vì rủi ro hộ nhỏ
@@ -86,7 +87,10 @@ const SCFTab = ({ farmers, formatVND, blockchainLog, droneReports, buyerInvoices
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {pendingBuyer.map(inv => (
+            {pendingBuyer.map(inv => {
+              const docDone = countDocsComplete(inv);
+              const docComplete = docDone === DOC_TOTAL;
+              return (
               <div key={inv.id} className="bg-white rounded-2xl border-2 border-indigo-200 overflow-hidden hover:border-indigo-300 transition-colors flex flex-col">
                 <div className="px-5 py-4 border-b border-surface-200 bg-indigo-50/40">
                   <div className="flex justify-between items-start mb-2 gap-2">
@@ -107,14 +111,33 @@ const SCFTab = ({ farmers, formatVND, blockchainLog, droneReports, buyerInvoices
                     <span className="text-slate-500">Chiết khấu ({(inv.bankDiscount.annualRate*100).toFixed(1)}%/năm × {inv.paymentTermDays}d)</span>
                     <span className="text-amber-700 tabular">− {formatVND(inv.bankDiscount.discountAmount)}</span>
                   </div>
+
+                  {/* Checklist 9/9 trade finance docs */}
+                  <div className={`rounded-lg px-3 py-2 ring-1 text-[12px] font-semibold flex items-center justify-between ${
+                    docComplete ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+                                : "bg-amber-50 text-amber-800 ring-amber-200"
+                  }`}>
+                    <span>📋 Chứng từ trade finance</span>
+                    <span className="tabular">{docDone}/{DOC_TOTAL} {docComplete ? "✅" : "⚠"}</span>
+                  </div>
+
                   <div className="flex gap-2 pt-1 mt-auto">
                     <button onClick={() => setViewing(inv)} className="flex-1 border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold py-2 rounded-lg transition-colors text-[13px]">Hồ sơ</button>
                     <button onClick={() => onRejectBuyer(inv)} className="flex-[0.8] border border-rose-200 text-rose-700 hover:bg-rose-50 font-semibold py-2 rounded-lg transition-colors text-[13px]">Từ chối</button>
-                    <button onClick={() => onDisburseBuyer(inv)} className="flex-[1.2] bg-indigo-700 hover:bg-indigo-800 text-white font-semibold py-2 rounded-lg transition-colors text-[13px] shadow-sm">Giải ngân T+1</button>
+                    <button
+                      onClick={() => docComplete && onDisburseBuyer(inv)}
+                      disabled={!docComplete}
+                      title={docComplete ? "Giải ngân T+1" : "Cần đủ 9/9 chứng từ mới giải ngân được"}
+                      className={`flex-[1.2] font-semibold py-2 rounded-lg transition-colors text-[13px] shadow-sm ${
+                        docComplete ? "bg-indigo-700 hover:bg-indigo-800 text-white cursor-pointer"
+                                    : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                      }`}
+                    >Giải ngân T+1</button>
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </section>
@@ -213,6 +236,42 @@ const SCFTab = ({ farmers, formatVND, blockchainLog, droneReports, buyerInvoices
                   </div>
                 </div>
 
+                {/* 9/9 Trade finance docs — bank dùng để verify trước khi giải ngân */}
+                {viewing.shippingDocs && (
+                  <div className="bg-white p-5 rounded-xl border-2 border-emerald-200">
+                    <h4 className="text-[13px] font-bold text-emerald-800 uppercase tracking-wider mb-3">📋 Checklist Trade Finance (9/9) ✅</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[12px]">
+                      {/* Shipping */}
+                      <div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase mb-2">🚢 Shipping Docs</div>
+                        <ul className="space-y-1.5">
+                          <DocRow label="Bill of Lading" value={viewing.shippingDocs.blNumber} sub={viewing.shippingDocs.vessel} />
+                          <DocRow label="Inspection Cert" value={viewing.shippingDocs.inspectionCert} sub={`${viewing.shippingDocs.inspectionAgent} · ẩm ${viewing.shippingDocs.moisturePct}% · tấm ${viewing.shippingDocs.brokenPct}%`} />
+                          <DocRow label="Phytosanitary" value={viewing.shippingDocs.phytoCert} sub="Cục Bảo vệ Thực vật" />
+                          <DocRow label="Certificate of Origin" value={viewing.shippingDocs.coNumber} sub={viewing.shippingDocs.coForm} />
+                        </ul>
+                      </div>
+                      {/* Legal */}
+                      <div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase mb-2">⚖️ Legal Docs</div>
+                        <ul className="space-y-1.5">
+                          <DocRow label="Assignment Clause" value="✓ Có trong HĐ" sub="LT được chuyển nhượng AR" />
+                          <DocRow label="Buyer Acknowledgment" value={viewing.legalDocs.buyerAckRef} sub={`Buyer ký ${new Date(viewing.legalDocs.buyerAcknowledgedAt).toLocaleDateString("vi-VN")}`} />
+                          <DocRow label="Escrow Account" value={viewing.legalDocs.escrowAccount} sub={viewing.legalDocs.escrowBank} />
+                        </ul>
+                      </div>
+                      {/* Insurance */}
+                      <div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase mb-2">🛡 Insurance</div>
+                        <ul className="space-y-1.5">
+                          <DocRow label="Recourse" value={viewing.insurance.recourseType} sub="LT bảo lãnh mua lại nếu default" />
+                          <DocRow label="Trade Credit Ins" value={viewing.insurance.tradeCreditInsurer} sub={`Cover ${viewing.insurance.coveragePct}% · ${viewing.insurance.policyNumber}`} />
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Source lots */}
                 <div className="bg-white p-5 rounded-xl border border-surface-200">
                   <h4 className="text-[13px] font-bold text-slate-800 uppercase tracking-wider mb-3">🌾 {lots.length} lô lúa nguồn ({relatedFarmers.length} hộ)</h4>
@@ -271,6 +330,17 @@ const Cell = ({ label, value, tone }) => (
     <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">{label}</div>
     <div className={`text-[15px] font-semibold tabular mt-1 ${tone}`}>{value}</div>
   </div>
+);
+
+const DocRow = ({ label, value, sub }) => (
+  <li className="bg-surface-50 rounded-md p-2 ring-1 ring-surface-200">
+    <div className="flex items-baseline justify-between gap-2">
+      <span className="text-[11px] text-slate-500 font-semibold">{label}</span>
+      <span className="text-emerald-600 text-[11px]">✓</span>
+    </div>
+    <div className="text-[12px] font-bold text-slate-900 font-mono mt-0.5 truncate">{value}</div>
+    {sub && <div className="text-[10px] text-slate-500 mt-0.5 truncate">{sub}</div>}
+  </li>
 );
 
 export default SCFTab;

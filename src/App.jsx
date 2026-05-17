@@ -23,7 +23,7 @@ import DisasterModal from "./components/DisasterModal";
 import LedgerPanel from "./components/LedgerPanel";
 import Toast from "./components/Toast";
 import BuyerSalesTab from "./components/BuyerSalesTab";
-import { getTier, getPremiumPerKg, getScfTrack, MAX_FARMING, TIERS, SENIOR_PCT, JUNIOR_PCT, INSURANCE_FEE_PCT, SCF_TRACK, BUYER_EXPORT_PRICE, calcBankDiscount, BUYER_INV_STATUS, CREDIT_EVENTS, STABILITY_BONUS_INTERVAL, clampCredit } from "./lib/scoring";
+import { getTier, getPremiumPerKg, getScfTrack, MAX_FARMING, TIERS, SENIOR_PCT, JUNIOR_PCT, INSURANCE_FEE_PCT, SCF_TRACK, BUYER_EXPORT_PRICE, calcBankDiscount, BUYER_INV_STATUS, CREDIT_EVENTS, STABILITY_BONUS_INTERVAL, clampCredit, generateMockDocs } from "./lib/scoring";
 import { initialStaff } from "./lib/staff";
 import { initialBuyers } from "./lib/buyers";
 
@@ -530,6 +530,11 @@ const App = () => {
     const maturityAt = new Date(issuedAt.getTime() + buyer.paymentTermDays * 24 * 60 * 60 * 1000);
     const discount = calcBankDiscount(faceValue, buyer.paymentTermDays, buyer.creditRating);
 
+    // Mock đủ 9 chứng từ trade finance (B/L, Inspection, Phyto, C/O, Assignment,
+    // Buyer Ack, Escrow, Recourse, Trade Credit Insurance) — back-office xử lý
+    // sẵn, hash PDF commit on-chain trong tokenHash. Bank verify checklist 9/9.
+    const docs = generateMockDocs(buyer, issuedAt, totalKg);
+
     const newBuyerInv = {
       id: invoiceId,
       buyerId: buyer.id,
@@ -551,16 +556,17 @@ const App = () => {
       managerId: manager.id,
       disbursedAt: null,
       buyerPaidAt: null,
+      ...docs,  // shippingDocs, legalDocs, insurance — 9/9 đầy đủ
     };
     setBuyerInvoices(prev => [newBuyerInv, ...prev]);
     setHarvestLots(prev => prev.map(l => lotIds.includes(l.id) ? { ...l, buyerInvoiceId: invoiceId } : l));
 
     logBlockchain(
       "BUYER_INVOICE_TOKENIZED",
-      `[Buyer-SCF] Giám đốc ${manager.hoTen} ký HĐ xuất khẩu ${newBuyerInv.contractRef}: ${(totalKg / 1000).toFixed(2)} tấn × ${BUYER_EXPORT_PRICE.toLocaleString("vi-VN")}đ = ${formatVND(faceValue)} cho ${buyer.hoTen} (${buyer.creditRating}, T+${buyer.paymentTermDays}). Token ${tokenId} chào liên minh bank — chiết khấu dự kiến ${formatVND(discount.discountAmount)} (${(discount.discountPct * 100).toFixed(2)}%).`,
+      `[Buyer-SCF] Giám đốc ${manager.hoTen} ký HĐ xuất khẩu ${newBuyerInv.contractRef}: ${(totalKg / 1000).toFixed(2)} tấn × ${BUYER_EXPORT_PRICE.toLocaleString("vi-VN")}đ = ${formatVND(faceValue)} cho ${buyer.hoTen} (${buyer.creditRating}, T+${buyer.paymentTermDays}). Đính kèm B/L ${docs.shippingDocs.blNumber} · Vinacontrol ${docs.shippingDocs.inspectionCert} (ẩm ${docs.shippingDocs.moisturePct}%) · Phyto ${docs.shippingDocs.phytoCert} · ${docs.insurance.tradeCreditInsurer} cover ${docs.insurance.coveragePct}%. Token ${tokenId} chào bank — chiết khấu ${formatVND(discount.discountAmount)} (${(discount.discountPct * 100).toFixed(2)}%).`,
       tokenHash
     );
-    showToast(`🪙 Đã token hóa HĐ xuất khẩu ${formatVND(faceValue)} → chào bank`);
+    showToast(`🪙 Token hóa + đính 9/9 chứng từ → chào bank ${formatVND(faceValue)}`);
     return newBuyerInv;
   };
 
