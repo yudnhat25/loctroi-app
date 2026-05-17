@@ -42,6 +42,17 @@ function computeProgress(farmer, blockchainLog, supplyRequests, transactions, in
   const inspectionLog      = getLog("FIELD_INSPECTION");
   const harvestLog         = getLog("HARVEST_SETTLED");
 
+  // Nếu đã tất toán vụ mới nhất, reset lại tiến độ về 0 để chờ vụ mới
+  if (harvestLog) {
+    return [
+      { key: "supply",     label: "Đăng ký vật tư",            done: false, date: null },
+      { key: "contract",   label: "HĐ smart contract duyệt",   done: false, date: null },
+      { key: "delivery",   label: "Giao vật tư và ký số",      done: false, date: null },
+      { key: "inspection", label: "Kiểm tra SRP thực địa",     done: false, date: null },
+      { key: "harvest",    label: "Thu hoạch và tất toán",     done: false, date: null },
+    ];
+  }
+
   const step1Date = pendingReq?.date ?? supplyRequestedLog?.timestamp;
   const step2Date = supplyApprovedLog?.timestamp;
   const step3Date = deliveryLog?.timestamp;
@@ -89,7 +100,7 @@ function deriveCurrentSeason(farmer, supplyRequests, invoices, blockchainLog) {
 }
 
 // Status badge cho vụ hiện tại (theo trạng thái farmer + tiến độ)
-function deriveSeasonStatus(farmer, progress) {
+function deriveSeasonStatus(farmer, progress, invoices) {
   const harvested = progress.find(p => p.key === "harvest")?.done;
   const inspected = progress.find(p => p.key === "inspection")?.done;
   const delivered = progress.find(p => p.key === "delivery")?.done;
@@ -100,6 +111,10 @@ function deriveSeasonStatus(farmer, progress) {
   if (delivered && inspected)             return { label: "Sẵn sàng thu hoạch", dot: "bg-brand-500", cls: "text-brand-800 bg-brand-50 ring-brand-200" };
   if (delivered)                          return { label: "Đang canh tác",      dot: "bg-brand-500", cls: "text-brand-800 bg-brand-50 ring-brand-200" };
   if (requested)                          return { label: "Chờ giao vật tư",    dot: "bg-amber-500", cls: "text-amber-800 bg-amber-50 ring-amber-200" };
+  
+  const hasHistory = invoices && invoices.some(i => i.nongHoId === farmer.id);
+  if (hasHistory)                         return { label: "Chờ vụ mùa mới", dot: "bg-slate-400", cls: "text-slate-600 bg-surface-100 ring-surface-200" };
+
   return { label: "Chưa khởi động vụ", dot: "bg-slate-400", cls: "text-slate-600 bg-surface-100 ring-surface-200" };
 }
 
@@ -133,7 +148,7 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
     () => deriveCurrentSeason(farmer, supplyRequests, invoices, blockchainLog),
     [farmer, supplyRequests, invoices, blockchainLog]
   );
-  const seasonStatus = useMemo(() => deriveSeasonStatus(farmer, progress), [farmer, progress]);
+  const seasonStatus = useMemo(() => deriveSeasonStatus(farmer, progress, invoices), [farmer, progress, invoices]);
 
   const tierLabel = (tier.label.split("—")[1] ?? tier.label).trim();
 
