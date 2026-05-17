@@ -143,19 +143,34 @@ const LocTroi30NamHero = () => (
         50%      { box-shadow: 0 0 0 8px rgba(245, 197, 24, 0); }
       }
 
-      /* base hero illustration */
+      /* base hero illustration — ảnh vuông 1200x1200, dùng cover để lấp đầy container tall */
       .lt-hero-base {
         position: absolute; inset: 0;
         width: 100%; height: 100%;
-        object-fit: contain;
-        object-position: center top;
+        object-fit: cover;
+        object-position: center 30%;
         z-index: 1;
         transform-origin: center center;
         animation: ltPan 60s alternate infinite ease-in-out;
       }
       @keyframes ltPan {
-        0% { transform: scale(1) translate(0, 0); }
-        100% { transform: scale(1.05) translate(-1%, 1%); }
+        0% { transform: scale(1.02) translate(0, 0); }
+        100% { transform: scale(1.08) translate(-1%, 1%); }
+      }
+
+      /* Fade từ bottom ảnh xuống caption panel — chống abrupt seam */
+      .lt-stage::after {
+        content: "";
+        position: absolute;
+        left: 0; right: 0; bottom: 0;
+        height: 35%;
+        background: linear-gradient(to bottom,
+          rgba(10, 61, 28, 0) 0%,
+          rgba(10, 61, 28, 0.55) 40%,
+          rgba(2, 44, 34, 0.92) 80%,
+          rgba(2, 44, 34, 1) 100%);
+        pointer-events: none;
+        z-index: 7;
       }
     `}</style>
 

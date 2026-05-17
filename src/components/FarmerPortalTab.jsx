@@ -29,18 +29,22 @@ const STATUS_STYLE = {
 // ─── Tính 5 bước tiến độ vụ mùa từ on-chain events ──────────────────────────
 function computeProgress(farmer, blockchainLog, supplyRequests, transactions, invoices) {
   const isMine = (l) => l?.data?.includes(farmer.hoTen) || l?.data?.includes(farmer.id);
-  const firstLog = (action) => blockchainLog.slice().reverse().find(l => l.action === action && isMine(l));
+  const myLogs = blockchainLog.filter(isMine);
+  const latestReqIdx = myLogs.findIndex(l => l.action === "SUPPLY_REQUESTED");
+  const currentSeasonLogs = latestReqIdx >= 0 ? myLogs.slice(0, latestReqIdx + 1) : myLogs;
+
+  const getLog = (action) => currentSeasonLogs.find(l => l.action === action);
 
   const pendingReq = supplyRequests.find(r => r.farmer.id === farmer.id);
-  const supplyRequestedLog = firstLog("SUPPLY_REQUESTED");
-  const supplyApprovedLog  = firstLog("SUPPLY_APPROVED");
-  const deliveryLog        = firstLog("DELIVERY_CONFIRMED");
-  const inspectionLog      = firstLog("FIELD_INSPECTION");
-  const harvestLog         = firstLog("HARVEST_SETTLED");
+  const supplyRequestedLog = getLog("SUPPLY_REQUESTED");
+  const supplyApprovedLog  = getLog("SUPPLY_APPROVED");
+  const deliveryLog        = getLog("DELIVERY_CONFIRMED");
+  const inspectionLog      = getLog("FIELD_INSPECTION");
+  const harvestLog         = getLog("HARVEST_SETTLED");
 
   const step1Date = pendingReq?.date ?? supplyRequestedLog?.timestamp;
   const step2Date = supplyApprovedLog?.timestamp;
-  const step3Date = deliveryLog?.timestamp ?? transactions.find(t => t.nongHoId === farmer.id)?.ngay;
+  const step3Date = deliveryLog?.timestamp;
   const step4Date = inspectionLog?.timestamp;
   const step5Date = harvestLog?.timestamp;
 
@@ -56,8 +60,9 @@ function computeProgress(farmer, blockchainLog, supplyRequests, transactions, in
 // Xác định vụ mùa hiện tại + giống lúa + ngày thứ X/110 từ activity
 function deriveCurrentSeason(farmer, supplyRequests, invoices, blockchainLog) {
   const mySupplyReq = supplyRequests.find(r => r.farmer.id === farmer.id);
-  const myInvoice   = invoices.find(i => i.nongHoId === farmer.id && i.trangThai !== "Đã tất toán");
-  const season = mySupplyReq?.season ?? myInvoice?.vuMua ?? "Vụ Đông Xuân 2026-2027";
+  const myInvoices = invoices.filter(i => i.nongHoId === farmer.id).sort((a, b) => new Date(b.date) - new Date(a.date));
+  const latestInvoice = myInvoices[0];
+  const season = mySupplyReq?.season ?? latestInvoice?.vuMua ?? "Vụ Đông Xuân 2026-2027";
 
   // Giống: ưu tiên field giong, nếu không có thì parse từ supplyRequest items
   let giong = farmer.giong;
@@ -68,15 +73,19 @@ function deriveCurrentSeason(farmer, supplyRequests, invoices, blockchainLog) {
   giong = giong ?? "OM 5451";
 
   // Ngày thứ X/110: tính từ ngày Đăng ký vật tư (step 1)
-  const startLog = blockchainLog.slice().reverse().find(l =>
-    l.action === "SUPPLY_REQUESTED" && (l.data?.includes(farmer.hoTen) || l.data?.includes(farmer.id))
-  );
+  const isMine = (l) => l?.data?.includes(farmer.hoTen) || l?.data?.includes(farmer.id);
+  const startLog = blockchainLog.find(l => l.action === "SUPPLY_REQUESTED" && isMine(l));
+  
   const startISO = mySupplyReq?.date ?? startLog?.timestamp;
+  
+  const harvestLog = blockchainLog.find(l => l.action === "HARVEST_SETTLED" && isMine(l));
+  const isCompleted = harvestLog && startLog && new Date(harvestLog.timestamp) > new Date(startLog.timestamp);
+
   const day = startISO
     ? Math.min(110, Math.max(0, Math.floor((Date.now() - new Date(startISO).getTime()) / 86_400_000)))
     : 0;
 
-  return { season: season.replace(/^Vụ\s+/i, ""), giong, day, totalDays: 110 };
+  return { season: season.replace(/^Vụ\s+/i, ""), giong, day: isCompleted ? 110 : day, totalDays: 110 };
 }
 
 // Status badge cho vụ hiện tại (theo trạng thái farmer + tiến độ)
