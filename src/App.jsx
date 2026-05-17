@@ -23,7 +23,7 @@ import DisasterModal from "./components/DisasterModal";
 import LedgerPanel from "./components/LedgerPanel";
 import Toast from "./components/Toast";
 import BuyerSalesTab from "./components/BuyerSalesTab";
-import { getTier, getPremiumPerKg, getScfTrack, MAX_FARMING, TIERS, SENIOR_PCT, JUNIOR_PCT, INSURANCE_FEE_PCT, SCF_TRACK, BUYER_EXPORT_PRICE, calcBankDiscount, BUYER_INV_STATUS } from "./lib/scoring";
+import { getTier, getPremiumPerKg, getScfTrack, MAX_FARMING, TIERS, SENIOR_PCT, JUNIOR_PCT, INSURANCE_FEE_PCT, SCF_TRACK, BUYER_EXPORT_PRICE, calcBankDiscount, BUYER_INV_STATUS, CREDIT_EVENTS, STABILITY_BONUS_INTERVAL, clampCredit } from "./lib/scoring";
 import { initialStaff } from "./lib/staff";
 import { initialBuyers } from "./lib/buyers";
 
@@ -299,15 +299,17 @@ const App = () => {
     showToast(`❌ Đã từ chối yêu cầu của ${req.farmer.hoTen}`);
   };
 
-  // ─── B3: Tài xế confirm giao → +10 Credit, tạo invoice nếu có nợ ─────────
+  // ─── B3: Tài xế confirm giao → +10 Credit, ghi nợ vật tư (KHÔNG tokenize) ─
+  // V3: Bỏ hẳn luồng SCF cho farmer. Mỗi lần giao chỉ tạo 1 SupplyDebt đơn giản,
+  // sẽ tự trừ vào tiền lúa khi Manager tất toán thu hoạch. Bank KHÔNG còn duyệt
+  // từng khoản nhỏ lẻ của farmer — bank chỉ duyệt Buyer Receivables qua Buyer-SCF.
   const handleConfirmDelivery = (delivery, driver) => {
     const supply = supplies.find(s => s.id === delivery.supplyId);
     const tier = TIERS[delivery.tier] ?? TIERS.D;
     const hash = generateHash();
     const total = delivery.total;
     const deposit = Math.round(total * tier.deposit / 100);
-    const credit = total - deposit;
-    const riskLevel = tier.code === "A" ? "LOW" : tier.code === "B" ? "MEDIUM" : tier.code === "C" ? "MEDIUM" : "HIGH";
+    const credit = total - deposit; // phần còn nợ sau cọc
 
     setDeliveryQueue(prev => prev.filter(d => d.id !== delivery.id));
 
@@ -341,96 +343,31 @@ const App = () => {
     }));
 
     if (credit > 0) {
-      // ─── SCF Routing: Track 1 (fast) vs Track 2 (tranching) ──────────────
-      const farmerObj = farmers.find(f => f.id === delivery.farmer.id) || delivery.farmer;
-      const track = getScfTrack(farmerObj);
-      const completedSeasons = farmerObj.vuMuaHoanThanh ?? 0;
-      const insuranceFee = Math.round(credit * INSURANCE_FEE_PCT / 100);
-
-      // Trích phí bảo hiểm 5% face value vào Insurance Pool dùng đệm vỡ nợ
-      setInsurancePool(prev => prev + insuranceFee);
-      logBlockchain(
-        "INSURANCE_FEE_COLLECTED",
-        `[Insurance Pool] Trích ${formatVND(insuranceFee)} (5% face) từ HĐ ${delivery.farmer.hoTen} → Pool đệm rủi ro hệ thống.`
-      );
-
-      const baseInvoice = {
+      // V3: Ghi nợ vật tư đơn giản — LT tự cấp vốn (lãi 0%), trừ vào tiền lúa cuối vụ.
+      const debtInvoice = {
+        id: generateId("DEBT-"),
         nongHoId: delivery.farmer.id,
         vuMua: delivery.season,
-        faceValue: credit,
+        amount: credit,
         totalValue: total,
         depositAmount: deposit,
         tier: tier.code,
         vatTuId: delivery.supplyId,
+        vatTu: supply.ten,
+        soLuong: delivery.quantity,
+        donVi: supply.donVi,
         date: new Date().toISOString(),
-        guarantorId: "LOC-TROI-CORP",
-        riskLevel,
-        insurancePolicyId: generateId("INS-"),
-        maturityDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
+        trangThai: "Nợ vật tư",            // sẽ chuyển sang "Đã tất toán" khi harvest
         recourseStatus: null,
-        scfTrack: track.code,
       };
-
-      if (track.code === "FAST") {
-        // ─── TRACK 1: Auto-tokenize + chào bán bank NGAY ───────────────────
-        const tokenHash = generateHash();
-        const tokenId = `TKN-${tokenHash.substring(0, 6).toUpperCase()}`;
-        const fastInvoice = {
-          ...baseInvoice,
-          id: generateId("INV-"),
-          amount: credit,
-          tokenId,
-          trangThai: "Chào bán ngân hàng",
-          insuranceFee,
-          tranche: null,
-        };
-        setInvoices(prev => [fastInvoice, ...prev]);
-        logBlockchain(
-          "SCF_FAST_TRACK",
-          `[Track 1 · Auto-SCF] HĐ ${fastInvoice.id} (${tokenId}) chào bán bank NGAY: ${delivery.farmer.hoTen} đã ${completedSeasons} vụ, Tier ${tier.code} — không cần đợi drone/inspect vụ này.`,
-          tokenHash
-        );
-        showToast(`⚡ Track 1: Auto-SCF cho hộ Tier ${tier.code} (${completedSeasons} vụ) — bank duyệt trong 24h`);
-      } else {
-        // ─── TRACK 2: Tranching — Senior bán ngay, Junior giữ chờ verify ────
-        const seniorAmount = Math.round(credit * SENIOR_PCT / 100);
-        const juniorAmount = credit - seniorAmount;
-        const seniorHash = generateHash();
-        const seniorTokenId = `TKN-SR-${seniorHash.substring(0, 5).toUpperCase()}`;
-
-        const seniorInvoice = {
-          ...baseInvoice,
-          id: generateId("INV-SR-"),
-          amount: seniorAmount,
-          tokenId: seniorTokenId,
-          trangThai: "Chào bán ngân hàng",
-          insuranceFee: Math.round(insuranceFee * SENIOR_PCT / 100),
-          tranche: "Senior",
-          tranchePct: SENIOR_PCT,
-        };
-        const juniorInvoice = {
-          ...baseInvoice,
-          id: generateId("INV-JR-"),
-          amount: juniorAmount,
-          tokenId: null,
-          trangThai: "Junior chờ verify",
-          insuranceFee: Math.round(insuranceFee * JUNIOR_PCT / 100),
-          tranche: "Junior",
-          tranchePct: JUNIOR_PCT,
-          pairedSeniorId: seniorInvoice.id,
-        };
-
-        setInvoices(prev => [seniorInvoice, juniorInvoice, ...prev]);
-        logBlockchain(
-          "SCF_TRANCHED",
-          `[Track 2 · Tranching] HĐ ${formatVND(credit)} chia 2: Senior ${seniorInvoice.id} (${seniorTokenId}, ${SENIOR_PCT}% = ${formatVND(seniorAmount)}) chào bank NGAY · Junior ${juniorInvoice.id} (${JUNIOR_PCT}% = ${formatVND(juniorAmount)}) LT giữ — đợi drone+inspect verify.`,
-          seniorHash
-        );
-        const reason = completedSeasons === 0 ? "hộ mới (chưa có vụ)" : `Tier ${tier.code}`;
-        showToast(`🔀 Track 2: Tranching cho ${reason} — Senior ${SENIOR_PCT}% chào bank, Junior ${JUNIOR_PCT}% chờ verify`);
-      }
+      setInvoices(prev => [debtInvoice, ...prev]);
+      logBlockchain(
+        "SUPPLY_DEBT_RECORDED",
+        `[V3 Nợ vật tư] LT ghi sổ ${formatVND(credit)} cho ${delivery.farmer.hoTen} (Tier ${tier.code}, lãi 0%) — sẽ cấn trừ vào tiền lúa cuối vụ.`
+      );
+      showToast(`📒 Đã ghi nợ ${formatVND(credit)} vào sổ LT (sẽ trừ cuối vụ)`);
     } else {
-      logBlockchain("CASH_PAYMENT", `[Tier C] ${delivery.farmer.hoTen} thanh toán tiền mặt ${formatVND(total)} — không tạo AR`);
+      logBlockchain("CASH_PAYMENT", `[Tier C] ${delivery.farmer.hoTen} thanh toán tiền mặt ${formatVND(total)} — không tạo nợ.`);
       showToast(`🚛 Đã giao + thu tiền mặt ${formatVND(total)}`);
     }
   };
@@ -519,25 +456,58 @@ const App = () => {
       hash
     );
 
-    // +200 (giao đủ SL) + +100 (trả nợ đúng hạn) = +300
-    // Đồng thời +1 vụ hoàn thành → mở quyền SCF Track 1 cho vụ sau nếu Tier ≥ B
+    // PDF Credit events: +200 (bán đủ SL cam kết) + +100 (trả nợ đúng hạn) = +300
+    // BONUS +50 mỗi STABILITY_BONUS_INTERVAL vụ (PDF: "giao dịch ổn định 1 năm liên tục")
     setFarmers(prev => prev.map(f => {
       if (f.id !== farmer.id) return f;
-      const newCredit = Math.min(400, (f.creditScore ?? 0) + 300);
-      const newLimit = (f.hanMucTinDung || 0) + 5000000;
+      const baseBonus = CREDIT_EVENTS.SELL_FULL_QUOTA.delta + CREDIT_EVENTS.REPAY_ON_TIME.delta;
       const newSeasons = (f.vuMuaHoanThanh ?? 0) + 1;
+      const stabilityBonus = newSeasons > 0 && newSeasons % STABILITY_BONUS_INTERVAL === 0
+        ? CREDIT_EVENTS.STABLE_1_YEAR.delta
+        : 0;
+      const totalBonus = baseBonus + stabilityBonus;
+      const newCredit = clampCredit((f.creditScore ?? 0) + totalBonus);
+      const newLimit = (f.hanMucTinDung || 0) + 5000000;
       const oldTier = getTier(f).code;
       const updatedFarmer = { ...f, creditScore: newCredit, vuMuaHoanThanh: newSeasons };
       const newTier = getTier(updatedFarmer).code;
-      const newTrack = getScfTrack(updatedFarmer).code;
-      logBlockchain("CREDIT_HARVEST", `[+300 Credit] ${f.hoTen}: +200 đủ SL + +100 trả nợ đúng hạn → ${newCredit}/400. Hạn mức ${(newLimit / 1e6).toFixed(0)}Tr. Hoàn thành vụ thứ ${newSeasons}.`);
+      logBlockchain(
+        "CREDIT_HARVEST",
+        `[+${totalBonus} Credit] ${f.hoTen}: +${CREDIT_EVENTS.SELL_FULL_QUOTA.delta} đủ SL + +${CREDIT_EVENTS.REPAY_ON_TIME.delta} trả đúng hạn${stabilityBonus ? ` + ${stabilityBonus} ổn định ${newSeasons} vụ` : ""} → ${newCredit}/400. Vụ thứ ${newSeasons}.`
+      );
+      if (stabilityBonus > 0) {
+        logBlockchain("CREDIT_STABILITY_BONUS", `🏅 [+${stabilityBonus} Credit · PDF: ổn định 1 năm] ${f.hoTen} đã giao dịch ổn định ${newSeasons} vụ liên tục.`);
+      }
       if (oldTier !== newTier) {
-        logBlockchain("TIER_UPGRADE", `🎉 ${f.hoTen} thăng hạng Tier ${oldTier} → Tier ${newTier}! Vụ sau SCF Track ${newTrack === "FAST" ? "1 (Auto-SCF)" : "2 (Tranching)"}.`);
+        logBlockchain("TIER_UPGRADE", `🎉 ${f.hoTen} thăng hạng Tier ${oldTier} → Tier ${newTier}!`);
       }
       return { ...f, creditScore: newCredit, hanMucTinDung: newLimit, vuMuaHoanThanh: newSeasons };
     }));
 
-    showToast(`🌾 Đã tất toán cho ${farmer.hoTen}: ròng ${formatVND(netPay)} · +300 Credit · +1 vụ`);
+    showToast(`🌾 Tất toán ${farmer.hoTen}: ròng ${formatVND(netPay)} · +300 Credit · +1 vụ`);
+  };
+
+  // ─── V3: Vi phạm bao tiêu — bán lúa ra ngoài (PDF: −500 Credit) ──────────
+  // Manager gọi khi phát hiện farmer bán lúa cho thương lái ngoài thay vì giao đủ
+  // cho LT theo hợp đồng bao tiêu. Penalty cứng theo PDF.
+  const handleViolateOfftake = (farmer, manager, evidence) => {
+    const delta = CREDIT_EVENTS.VIOLATE_OFFTAKE.delta; // -500
+    setFarmers(prev => prev.map(f => {
+      if (f.id !== farmer.id) return f;
+      const oldTier = getTier(f).code;
+      const newCredit = clampCredit((f.creditScore ?? 0) + delta);
+      const updated = { ...f, creditScore: newCredit, trangThai: "Cảnh báo" };
+      const newTier = getTier(updated).code;
+      logBlockchain(
+        "CREDIT_VIOLATE_OFFTAKE",
+        `[${delta} Credit · VI PHẠM] Giám đốc ${manager.hoTen} ghi nhận ${f.hoTen} bán lúa RA NGOÀI — vi phạm bao tiêu. ${evidence ? `Bằng chứng: ${evidence}. ` : ""}Credit ${newCredit}/400.`
+      );
+      if (oldTier !== newTier) {
+        logBlockchain("TIER_DOWNGRADE", `📉 ${f.hoTen} tụt hạng Tier ${oldTier} → Tier ${newTier} do vi phạm bao tiêu.`);
+      }
+      return updated;
+    }));
+    showToast(`⚠ Đã ghi vi phạm bao tiêu cho ${farmer.hoTen} (−500 Credit)`);
   };
 
   // ─── Farmer self-report harvest (notify procurement) ─────────────────────
@@ -789,8 +759,8 @@ const App = () => {
   const tabsForRole = (() => {
     if (currentUser.role === "loctroi") {
       const map = {
-        manager:      ["managerHome", "registrations", "overview", "farmers", "harvest", "buyerSales", "invoices"],
-        fieldOfficer: ["officerHome", "onboarding", "droneUpload", "inspection"],
+        manager:      ["managerHome", "registrations", "overview", "farmers", "harvest", "buyerSales"],
+        fieldOfficer: ["officerHome", "onboarding", "inspection"],
         driver:       ["driverHome", "delivery"],
       };
       return map[currentUser.subrole] ?? [];
@@ -867,7 +837,17 @@ const App = () => {
 
             {/* Manager V3: kiêm Procurement (harvest) + Buyer Sales */}
             {currentUser.role === "loctroi" && currentUser.subrole === "manager" && activeTab === "harvest" && (
-              <HarvestTab staff={currentUser.profile} farmers={farmers} transactions={transactions} invoices={invoices} blockchainLog={blockchainLog} onSettleHarvest={handleSettleHarvest} formatVND={formatVND} basePrice={GIA_LUA} />
+              <HarvestTab
+                staff={currentUser.profile}
+                farmers={farmers}
+                transactions={transactions}
+                invoices={invoices}
+                blockchainLog={blockchainLog}
+                onSettleHarvest={handleSettleHarvest}
+                onViolateOfftake={handleViolateOfftake}
+                formatVND={formatVND}
+                basePrice={GIA_LUA}
+              />
             )}
             {currentUser.role === "loctroi" && currentUser.subrole === "manager" && activeTab === "buyerSales" && (
               <BuyerSalesTab
@@ -889,11 +869,15 @@ const App = () => {
             {currentUser.role === "loctroi" && currentUser.subrole === "fieldOfficer" && activeTab === "onboarding" && (
               <OnboardingTab staff={currentUser.profile} farmers={farmers} blockchainLog={blockchainLog} onCreateFarmer={handleCreateFarmer} />
             )}
-            {currentUser.role === "loctroi" && currentUser.subrole === "fieldOfficer" && activeTab === "droneUpload" && (
-              <DroneOperatorTab staff={currentUser.profile} farmers={farmers} droneReports={droneReports} blockchainLog={blockchainLog} onSubmitDroneReport={handleSubmitDroneReport} />
-            )}
             {currentUser.role === "loctroi" && currentUser.subrole === "fieldOfficer" && activeTab === "inspection" && (
-              <InspectionTab staff={currentUser.profile} farmers={farmers} droneReports={droneReports} blockchainLog={blockchainLog} onInspect={handleFieldInspection} />
+              <InspectionTab
+                staff={currentUser.profile}
+                farmers={farmers}
+                droneReports={droneReports}
+                blockchainLog={blockchainLog}
+                onInspect={handleFieldInspection}
+                onSubmitDroneReport={handleSubmitDroneReport}
+              />
             )}
 
             {/* Driver tabs */}

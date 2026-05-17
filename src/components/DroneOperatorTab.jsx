@@ -4,7 +4,7 @@ import { isGeminiConfigured } from "../lib/geminiClient";
 import { pickLowCreditFarmer, pickAutoPhotos, fetchAsFile, sleep } from "../lib/anhluaPicker";
 import UavScanScene from "./UavScanScene";
 
-const DroneOperatorTab = ({ staff, farmers, droneReports, onSubmitDroneReport, blockchainLog }) => {
+const DroneOperatorTab = ({ staff, farmers, droneReports, onSubmitDroneReport, blockchainLog, embedded = false }) => {
   const [selectedFarmer, setSelectedFarmer] = useState(farmers[0] ?? null);
 
   // Auto-pilot state
@@ -94,8 +94,9 @@ const DroneOperatorTab = ({ staff, farmers, droneReports, onSubmitDroneReport, b
 
 
   return (
-    <div className="space-y-5 sm:space-y-6 fade-in pb-10">
-      {/* Hero */}
+    <div className={embedded ? "space-y-5 sm:space-y-6" : "space-y-5 sm:space-y-6 fade-in pb-10"}>
+      {/* Hero — ẩn khi embedded để khỏi đụng hero của InspectionTab */}
+      {!embedded && (
       <section className="relative overflow-hidden rounded-2xl bg-slate-900 text-white">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-sky-700" />
         <div className="px-5 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6">
@@ -123,6 +124,7 @@ const DroneOperatorTab = ({ staff, farmers, droneReports, onSubmitDroneReport, b
           </div>
         </div>
       </section>
+      )}
 
       {/* FARMER SELECTOR — dùng chung cho auto + manual */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">

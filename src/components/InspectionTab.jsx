@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   SRP_CRITERIA, SRP_MAX, MAX_FARMING,
   getTier, getOverallScore,
 } from "../lib/scoring";
 import { analyzeDroneImage, aiSuggestChecklist } from "../lib/imageAnalysis";
 import { isGeminiConfigured } from "../lib/geminiClient";
+import DroneOperatorTab from "./DroneOperatorTab";
 
 // Aggregate kết quả AI từ N ảnh (drone + field) — AND nghiêm cho SRP, avg cho metric
 const aggregateAnalyses = (analyses) => {
@@ -24,11 +25,23 @@ const aggregateAnalyses = (analyses) => {
   };
 };
 
-// 3 Cùng: xem TẤT CẢ drone reports + upload nhiều ảnh thực địa → AI tổng hợp tự tick SRP
-const InspectionTab = ({ staff, farmers, droneReports, blockchainLog, onInspect }) => {
+// V3: Cán bộ Đồng ruộng gộp 3 Cùng + Drone. UI có 2 mode trong cùng 1 trang:
+//   • "drone"      — bay drone, upload ảnh đa phổ, AI tự chấm NDVI/phủ xanh
+//   • "inspection" — chọn hộ, xem ảnh drone + thực địa, tick SRP, ký số ghi chain
+// Cả 2 mode đều dùng chung danh sách droneReports — bay xong là tick checklist được luôn.
+const InspectionTab = ({ staff, farmers, droneReports, blockchainLog, onInspect, onSubmitDroneReport }) => {
+  const [mode, setMode] = useState("inspection"); // "drone" | "inspection"
   const fileInputRef = useRef(null);
   const [selectedFarmer, setSelectedFarmer] = useState(null);
   const [phase, setPhase] = useState("idle"); // idle | review | analyzing | checklist | done
+
+  // Khi switch sang mode "inspection" mà không có modal đang mở, đảm bảo phase = idle
+  // → tránh trường hợp state phase còn dính từ session trước làm khóa toàn bộ nút.
+  useEffect(() => {
+    if (mode === "inspection" && !selectedFarmer && phase !== "idle") {
+      setPhase("idle");
+    }
+  }, [mode, selectedFarmer, phase]);
   const [checked, setChecked] = useState({});
   const [fieldAnalyses, setFieldAnalyses] = useState([]);  // mảng — multiple field photos
   const [scanProgress, setScanProgress] = useState(0);
@@ -121,30 +134,65 @@ const InspectionTab = ({ staff, farmers, droneReports, blockchainLog, onInspect 
     <div className="space-y-5 sm:space-y-6 fade-in pb-10">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl bg-slate-900 text-white">
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-brand-700" />
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-emerald-700" />
         <div className="px-5 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6">
           <div className="flex items-start justify-between gap-3 sm:gap-4 flex-wrap">
             <div className="min-w-0">
-              <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Đội 3 Cùng</div>
-              <h2 className="text-[22px] sm:text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">Kiểm tra SRP thực địa</h2>
+              <div className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">Cán bộ Đồng ruộng · Drone + 3 Cùng (V3 gộp)</div>
+              <h2 className="text-[22px] sm:text-[28px] font-display font-semibold tracking-tight mt-1.5 leading-tight">Đánh giá đồng ruộng</h2>
               <p className="text-[13px] sm:text-[14px] text-slate-300 mt-2 max-w-2xl leading-relaxed">
-                Drone bay phát hiện vấn đề → xuống đồng chụp ảnh → Gemini AI tự chấm checklist SRP → ký số ghi blockchain.
+                1 chuyến xuống đồng: bay drone đa phổ → AI Gemini chấm phủ xanh/NDVI → tick checklist SRP → ký số ghi blockchain → tự re-tier nông dân.
               </p>
             </div>
             {isGeminiConfigured() && (
-              <span className="inline-flex items-center gap-1.5 bg-white/5 text-brand-300 text-[10px] sm:text-[11px] font-semibold tracking-[0.12em] px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md ring-1 ring-white/10 uppercase shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-400"></span>
+              <span className="inline-flex items-center gap-1.5 bg-white/5 text-emerald-300 text-[10px] sm:text-[11px] font-semibold tracking-[0.12em] px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md ring-1 ring-white/10 uppercase shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                 Gemini 2.5
               </span>
             )}
           </div>
           <div className="mt-5 sm:mt-6 grid grid-cols-3 gap-px bg-white/10 rounded-xl overflow-hidden">
-            <Stat label="Drone chờ" value={totalDroneReports} />
-            <Stat label="Đã ghi chain" value={blockchainLog.filter(l => l.action === "FIELD_INSPECTION").length} />
+            <Stat label="Drone reports" value={totalDroneReports} />
+            <Stat label="SRP đã ghi chain" value={blockchainLog.filter(l => l.action === "FIELD_INSPECTION").length} />
             <Stat label="Tiêu chí SRP" value={`${SRP_CRITERIA.length}/41`} />
           </div>
         </div>
       </section>
+
+      {/* Sub-tab switcher — 2 chế độ trong cùng 1 trang */}
+      <div className="bg-white rounded-xl border border-surface-200 p-1 grid grid-cols-2 gap-1">
+        <button
+          onClick={() => setMode("drone")}
+          className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-[13px] font-semibold transition-all ${
+            mode === "drone" ? "bg-sky-700 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          🚁 Bước 1 · Bay drone & AI scan
+        </button>
+        <button
+          onClick={() => setMode("inspection")}
+          className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-[13px] font-semibold transition-all ${
+            mode === "inspection" ? "bg-emerald-700 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          ✅ Bước 2 · Tick SRP & ký số
+        </button>
+      </div>
+
+      {/* Mode 1: Drone — reuse DroneOperatorTab inline (ẩn hero của nó vì đã có hero phía trên) */}
+      {mode === "drone" && (
+        <DroneOperatorTab
+          staff={staff}
+          farmers={farmers}
+          droneReports={droneReports}
+          blockchainLog={blockchainLog}
+          onSubmitDroneReport={onSubmitDroneReport}
+          embedded
+        />
+      )}
+
+      {/* Mode 2: Inspection — UI cũ giữ nguyên ở dưới */}
+      {mode === "inspection" && (<>
 
       <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => onFiles(Array.from(e.target.files || []))} />
 
@@ -201,16 +249,16 @@ const InspectionTab = ({ staff, farmers, droneReports, blockchainLog, onInspect 
                 </div>
 
                 <div
-                  onClick={() => !isInspected && phase === "idle" && startInspection(f)}
+                  onClick={() => phase === "idle" && startInspection(f)}
                   className={`text-[12px] font-bold rounded-lg py-2 text-center transition-colors select-none ${
-                    isInspected 
-                      ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200" 
-                      : phase === "idle" 
-                        ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm cursor-pointer" 
-                        : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    phase !== "idle"
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : isInspected
+                        ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 cursor-pointer"
+                        : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm cursor-pointer"
                   }`}
                 >
-                  {isInspected ? "🔒 Đã ký số & Ghi chuỗi" : "✅ Kiểm tra SRP thực địa"}
+                  {isInspected ? "🔄 Xem lại + kiểm tra bổ sung" : "✅ Kiểm tra SRP thực địa"}
                 </div>
                     </>
                   );
@@ -399,6 +447,8 @@ const InspectionTab = ({ staff, farmers, droneReports, blockchainLog, onInspect 
           </div>
         )}
       </div>
+
+      </>)}
     </div>
   );
 };

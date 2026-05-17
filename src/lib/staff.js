@@ -14,7 +14,7 @@ export const LT_SUBROLES = {
     color: "from-blue-500 to-indigo-600",
     bg: "bg-blue-50",
     text: "text-blue-700",
-    tabs: ["managerHome", "registrations", "overview", "farmers", "harvest", "buyerSales", "invoices"],
+    tabs: ["managerHome", "registrations", "overview", "farmers", "harvest", "buyerSales"],
   },
   fieldOfficer: {
     code: "fieldOfficer",
@@ -24,7 +24,7 @@ export const LT_SUBROLES = {
     color: "from-emerald-500 to-green-600",
     bg: "bg-emerald-50",
     text: "text-emerald-700",
-    tabs: ["officerHome", "onboarding", "droneUpload", "inspection"],
+    tabs: ["officerHome", "onboarding", "inspection"],
   },
   driver: {
     code: "driver",

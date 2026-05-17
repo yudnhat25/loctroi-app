@@ -6,6 +6,9 @@ import {
   getPremiumPerKg,
   MAX_FARMING,
   MAX_CREDIT,
+  TIERS,
+  TIER_ORDER,
+  YIELD_PER_HA,
 } from "../lib/scoring";
 
 // ─── Tokens cho mỗi Tier (hero solid + chip) ──────────────────────────────────
@@ -17,13 +20,10 @@ const TIER_TOKENS = {
 };
 
 const STATUS_STYLE = {
-  "Chờ xác nhận": { dot: "bg-amber-500", label: "Chờ xác nhận", cls: "text-amber-800 bg-amber-50 ring-amber-200" },
-  "Đã token hóa": { dot: "bg-sky-500", label: "Đã token hóa", cls: "text-sky-800 bg-sky-50 ring-sky-200" },
-  "Chào bán ngân hàng": { dot: "bg-amber-600", label: "Chào bán ngân hàng", cls: "text-amber-900 bg-amber-50 ring-amber-200" },
-  "Đã giải ngân": { dot: "bg-brand-600", label: "Đã giải ngân", cls: "text-brand-800 bg-brand-50 ring-brand-200" },
-  "Nợ xấu": { dot: "bg-rose-600", label: "Nợ xấu", cls: "text-rose-800 bg-rose-50 ring-rose-200" },
-  "Đã tất toán": { dot: "bg-slate-400", label: "Đã tất toán", cls: "text-slate-600 bg-surface-100 ring-surface-200" },
-  "Từ chối duyệt vay": { dot: "bg-slate-500", label: "Bị từ chối", cls: "text-slate-700 bg-surface-100 ring-surface-200" },
+  "Nợ vật tư":          { dot: "bg-amber-500", label: "Đang nợ · trừ cuối vụ", cls: "text-amber-800 bg-amber-50 ring-amber-200" },
+  "Chờ xác nhận":       { dot: "bg-amber-500", label: "Chờ xác nhận",          cls: "text-amber-800 bg-amber-50 ring-amber-200" },
+  "Đã tất toán":        { dot: "bg-emerald-500", label: "Đã trừ vào tiền lúa",  cls: "text-emerald-800 bg-emerald-50 ring-emerald-200" },
+  "Nợ xấu":             { dot: "bg-rose-600", label: "Nợ xấu",                 cls: "text-rose-800 bg-rose-50 ring-rose-200" },
 };
 
 // ─── Tính 5 bước tiến độ vụ mùa từ on-chain events ──────────────────────────
@@ -213,6 +213,18 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
         />
       </section>
 
+      {/* ─── LỢI ÍCH TIER — SRP tốt = thu nhập rõ ràng ─────────────────────── */}
+      <TierBenefitsSection
+        farmer={farmer}
+        tier={tier}
+        farming={farming}
+        premium={premium}
+        formatVND={formatVND}
+      />
+
+      {/* ─── SO SÁNH 4 TIER — lộ trình thăng hạng ──────────────────────────── */}
+      <TierLadderSection currentTierCode={tier.code} formatVND={formatVND} farmer={farmer} />
+
       {/* ─── CURRENT SEASON ─────────────────────────────────────────────────── */}
       <section className="bg-white rounded-2xl border border-surface-200 px-4 sm:px-6 py-4 sm:py-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -393,84 +405,96 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
         </div>
       )}
 
-      {/* ─── INVOICES + SCF ACTIONS ─────────────────────────────────────────── */}
-      <section className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-surface-200 flex items-baseline justify-between gap-3 sm:gap-4 flex-wrap">
-          <div className="flex items-baseline gap-3">
-            <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Hóa đơn và khoản phải thu</h3>
-            <span className="text-[12px] font-mono text-slate-400">{myInvoices.length} hoá đơn</span>
-          </div>
-          <div className="flex items-center gap-3 text-[12px]">
-            <span className="text-slate-500">Đã nhận <b className="text-brand-700 font-display tabular text-[14px] ml-1">{formatVND(myInvoices.filter(i => i.trangThai === "Đã giải ngân").reduce((s, i) => s + i.amount, 0))}</b></span>
-            <span className="text-slate-300">·</span>
-            <span className="text-slate-500">Đang chờ <b className="text-amber-700 font-display tabular text-[14px] ml-1">{formatVND(myInvoices.filter(i => !["Đã giải ngân", "Đã tất toán"].includes(i.trangThai)).reduce((s, i) => s + i.amount, 0))}</b></span>
-          </div>
-        </div>
-        {myInvoices.length === 0 ? (
-          <div className="py-14 text-center">
-            <div className="w-12 h-12 mx-auto rounded-full bg-surface-100 flex items-center justify-center text-slate-400 mb-3">
-              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 12h6M9 16h6M5 20V6a2 2 0 012-2h8l4 4v12a2 2 0 01-2 2H7a2 2 0 01-2-2z" /></svg>
+      {/* ─── NỢ VẬT TƯ ĐẦU VỤ (V3: LT ứng vốn lãi 0%, trừ vào tiền lúa cuối vụ) ── */}
+      {(() => {
+        const myPendingReqs = supplyRequests.filter(r => r.farmer.id === farmer.id);
+        const totalDebt = myInvoices.filter(i => i.trangThai === "Nợ vật tư").reduce((s,i) => s + i.amount, 0);
+        const totalSettled = myInvoices.filter(i => i.trangThai === "Đã tất toán").reduce((s,i) => s + i.amount, 0);
+        const isEmpty = myPendingReqs.length === 0 && myInvoices.length === 0;
+        return (
+          <section className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-surface-200 flex items-baseline justify-between gap-3 sm:gap-4 flex-wrap">
+              <div className="flex items-baseline gap-3">
+                <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">Nợ vật tư đầu vụ</h3>
+                <span className="text-[12px] font-mono text-slate-400">{myInvoices.length + myPendingReqs.length} đơn</span>
+              </div>
+              <div className="flex items-center gap-3 text-[12px] flex-wrap">
+                <span className="text-slate-500">Đang nợ <b className="text-amber-700 font-display tabular text-[14px] ml-1">{formatVND(totalDebt)}</b></span>
+                <span className="text-slate-300">·</span>
+                <span className="text-slate-500">Đã trừ <b className="text-emerald-700 font-display tabular text-[14px] ml-1">{formatVND(totalSettled)}</b></span>
+              </div>
             </div>
-            <p className="text-[14px] text-slate-600">Chưa có hóa đơn cho vụ mùa này.</p>
-            <button onClick={() => onRequestSupply(farmer)} className="mt-3 inline-flex items-center gap-2 text-[13px] font-semibold text-brand-700 hover:text-brand-800">
-              Đặt vật tư đầu vụ ngay
-              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-            </button>
-          </div>
-        ) : (
-          <ul className="divide-y divide-surface-200">
-            {myInvoices.map(inv => {
-              const cfg = STATUS_STYLE[inv.trangThai] ?? STATUS_STYLE["Chờ xác nhận"];
-              return (
-                <li key={inv.id} className="px-4 sm:px-6 py-3.5 sm:py-4 hover:bg-surface-50/60 transition-colors">
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="font-mono text-[13px] font-semibold text-slate-700">{inv.id}</span>
-                        {inv.tokenId && (
-                          <span className="text-[11px] bg-sky-50 text-sky-800 ring-1 ring-sky-200 px-1.5 py-0.5 rounded-md font-semibold font-mono">{inv.tokenId}</span>
-                        )}
+
+            {isEmpty ? (
+              <div className="py-14 text-center">
+                <div className="w-12 h-12 mx-auto rounded-full bg-surface-100 flex items-center justify-center text-slate-400 mb-3">
+                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 12h6M9 16h6M5 20V6a2 2 0 012-2h8l4 4v12a2 2 0 01-2 2H7a2 2 0 01-2-2z" /></svg>
+                </div>
+                <p className="text-[14px] text-slate-600">Chưa có yêu cầu vật tư cho vụ này.</p>
+                <button onClick={() => onRequestSupply(farmer)} className="mt-3 inline-flex items-center gap-2 text-[13px] font-semibold text-brand-700 hover:text-brand-800">
+                  Đặt vật tư đầu vụ ngay
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                </button>
+              </div>
+            ) : (
+              <ul className="divide-y divide-surface-200">
+                {/* Pending supply requests — chưa duyệt, chưa giao */}
+                {myPendingReqs.map(req => (
+                  <li key={req.id} className="px-4 sm:px-6 py-3.5 sm:py-4 bg-amber-50/30">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-mono text-[13px] font-semibold text-amber-800">{req.id}</span>
+                          <span className="text-[11px] bg-amber-100 text-amber-800 ring-1 ring-amber-200 px-1.5 py-0.5 rounded-md font-semibold">Yêu cầu vật tư · {req.chosenTier}</span>
+                        </div>
+                        <div className="text-[13px] text-slate-500">{req.season} · {new Date(req.date).toLocaleDateString("vi-VN")} · {req.items.length} loại</div>
                       </div>
-                      <div className="text-[13px] text-slate-500">{inv.vuMua} · {new Date(inv.date).toLocaleDateString("vi-VN")}</div>
+                      <div className="text-right">
+                        <div className="font-display text-[19px] font-semibold tabular text-slate-900">{formatVND(req.total)}</div>
+                        <span className="mt-1 inline-flex items-center gap-1.5 text-[12px] px-2 py-0.5 rounded-md font-semibold ring-1 text-amber-800 bg-amber-50 ring-amber-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                          Chờ Giám đốc duyệt
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-display text-[19px] font-semibold tabular text-slate-900">{formatVND(inv.amount)}</div>
-                      <span className={`mt-1 inline-flex items-center gap-1.5 text-[12px] px-2 py-0.5 rounded-md font-semibold ring-1 ${cfg.cls}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}></span>
-                        {cfg.label}
-                      </span>
-                    </div>
-                  </div>
-                  {inv.trangThai === "Đã token hóa" && (
-                    <div className="mt-3 pt-3 border-t border-surface-200 flex justify-end">
-                      <button
-                        onClick={() => onSubmitSCF(inv)}
-                        className="bg-sky-700 hover:bg-sky-800 text-white px-4 py-2 rounded-lg text-[13px] font-semibold transition-colors"
-                      >
-                        Ký yêu cầu vay vốn SCF
-                      </button>
-                    </div>
-                  )}
-                  {inv.trangThai === "Chào bán ngân hàng" && (
-                    <div className="mt-3 pt-3 border-t border-surface-200 text-right">
-                      <span className="text-[12px] text-amber-700 font-semibold">
-                        Đang chờ ngân hàng duyệt hợp đồng…
-                      </span>
-                    </div>
-                  )}
-                  {inv.recourseStatus && (
-                    <div className="mt-3 px-3 py-2 rounded-lg bg-rose-50 ring-1 ring-rose-200 text-[12px] text-rose-800">
-                      {inv.recourseStatus === "DEFAULTED" && "Đã khai báo thiên tai, chờ Oracle xác minh"}
-                      {inv.recourseStatus === "INSURANCE_CLAIMED" && `Bảo hiểm đang xử lý: ${formatVND(inv.insurancePayout ?? 0)}`}
-                      {inv.recourseStatus === "RECOURSE_SETTLED" && "Đã tất toán, Lộc Trời đã bảo lãnh cho bạn"}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+                  </li>
+                ))}
+                {/* Supply debts — đã giao, đang ghi nợ */}
+                {myInvoices.map(inv => {
+                  const cfg = STATUS_STYLE[inv.trangThai] ?? STATUS_STYLE["Nợ vật tư"];
+                  return (
+                    <li key={inv.id} className="px-4 sm:px-6 py-3.5 sm:py-4 hover:bg-surface-50/60 transition-colors">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="font-mono text-[13px] font-semibold text-slate-700">{inv.id}</span>
+                            {inv.vatTu && <span className="text-[12px] text-slate-700 truncate">{inv.soLuong} {inv.donVi} {inv.vatTu}</span>}
+                          </div>
+                          <div className="text-[13px] text-slate-500">{inv.vuMua} · {new Date(inv.date).toLocaleDateString("vi-VN")}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-display text-[19px] font-semibold tabular text-slate-900">{formatVND(inv.amount)}</div>
+                          <span className={`mt-1 inline-flex items-center gap-1.5 text-[12px] px-2 py-0.5 rounded-md font-semibold ring-1 ${cfg.cls}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}></span>
+                            {cfg.label}
+                          </span>
+                        </div>
+                      </div>
+                      {inv.recourseStatus && (
+                        <div className="mt-3 px-3 py-2 rounded-lg bg-rose-50 ring-1 ring-rose-200 text-[12px] text-rose-800">
+                          {inv.recourseStatus === "DEFAULTED" && "Đã khai báo thiên tai, chờ Oracle xác minh"}
+                          {inv.recourseStatus === "INSURANCE_CLAIMED" && `Bảo hiểm đang xử lý: ${formatVND(inv.insurancePayout ?? 0)}`}
+                          {inv.recourseStatus === "RECOURSE_SETTLED" && "Lộc Trời đã bảo lãnh thiên tai cho bạn"}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        );
+      })()}
 
       {/* ─── BLOCKCHAIN TIMELINE (compact) ──────────────────────────────────── */}
       <section className="bg-white rounded-2xl border border-surface-200 px-4 sm:px-6 py-4 sm:py-5">
@@ -623,5 +647,184 @@ const SeedlingIcon = ({ className }) => (
     <path d="M12 11c3 0 5-2 5-5h-1c-3 0-5 2-5 5z" />
   </svg>
 );
+
+// ─── TIER BENEFITS SECTION ──────────────────────────────────────────────────
+// Hiển thị RÕ RÀNG lợi ích farmer đang được hưởng + mô phỏng số tiền cụ thể
+// dựa trên Tier + Farming Score hiện tại. Theo PDF đề bài FinTech cuối kỳ:
+//   FS < 60% → 0đ/kg ; 60-80% → +200đ/kg ; ≥ 80% → +500đ/kg premium SRP
+const TIER_TONES = {
+  A: { card: "bg-emerald-50 border-emerald-200", text: "text-emerald-800", chip: "bg-emerald-700 text-white",   accent: "text-emerald-700" },
+  B: { card: "bg-sky-50 border-sky-200",         text: "text-sky-800",     chip: "bg-sky-700 text-white",       accent: "text-sky-700" },
+  C: { card: "bg-amber-50 border-amber-200",     text: "text-amber-800",   chip: "bg-amber-600 text-white",     accent: "text-amber-700" },
+  D: { card: "bg-rose-50 border-rose-200",       text: "text-rose-800",    chip: "bg-rose-700 text-white",      accent: "text-rose-700" },
+};
+
+const TierBenefitsSection = ({ farmer, tier, farming, premium, formatVND }) => {
+  const tone = TIER_TONES[tier.code];
+  const dienTich = farmer.dienTich ?? 0;
+  const estYieldKg = Math.round(dienTich * YIELD_PER_HA); // 6 tấn/ha trung bình ĐBSCL
+  const premiumIncome = estYieldKg * premium;
+  const fsPct = Math.round((farming / MAX_FARMING) * 100);
+
+  // Roadmap Premium dựa theo PDF
+  const premiumTier =
+    fsPct >= 80 ? { label: "Cao nhất (+500đ/kg)",      tone: "text-emerald-700", bonus: 500 } :
+    fsPct >= 60 ? { label: "Chuẩn (+200đ/kg)",         tone: "text-sky-700",     bonus: 200 } :
+                  { label: "Chưa đạt (0đ/kg)",         tone: "text-rose-700",    bonus: 0 };
+
+  return (
+    <section className={`rounded-2xl border-2 ${tone.card} px-4 sm:px-6 py-4 sm:py-5`}>
+      <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+        <div>
+          <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">🎁 Quyền lợi Tier {tier.code} của bạn</h3>
+          <p className="text-[12px] text-slate-600 mt-0.5">SRP tốt = thu nhập rõ ràng. Đây là những gì bạn được hưởng ngay.</p>
+        </div>
+        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${tone.chip}`}>{tier.label}</span>
+      </div>
+
+      {/* 4 perks chính từ PDF */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4">
+        {tier.perks.map((perk, i) => (
+          <div key={i} className="bg-white/80 rounded-lg px-3 py-2.5 flex items-start gap-2 ring-1 ring-white/40">
+            <svg viewBox="0 0 24 24" className={`w-4 h-4 mt-0.5 shrink-0 ${tone.accent}`} fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <span className={`text-[13px] font-medium ${tone.text}`}>{perk}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Mô phỏng thu nhập cụ thể */}
+      <div className="bg-white rounded-xl ring-1 ring-surface-200 p-4">
+        <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500 mb-3">
+          💰 Mô phỏng thu nhập vụ này ({dienTich} ha)
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+          <SimCell label="Sản lượng dự kiến" value={`${(estYieldKg/1000).toFixed(1)} tấn`} sub="6 tấn/ha ĐBSCL TB" tone="text-slate-900" />
+          <SimCell
+            label={`Premium SRP (FS ${fsPct}%)`}
+            value={premiumTier.label.split(" ")[0] + (premiumTier.bonus > 0 ? ` +${premiumTier.bonus}đ` : "")}
+            sub={premiumTier.bonus === 0
+              ? "Cần FS ≥ 60% để có premium"
+              : premiumTier.bonus === 200
+                ? "Cần FS ≥ 80% để lên +500đ/kg"
+                : "Đã đạt mức cao nhất"}
+            tone={premiumTier.tone}
+          />
+          <SimCell
+            label="Tiền premium nhận thêm"
+            value={formatVND(premiumIncome)}
+            sub={`= ${estYieldKg.toLocaleString("vi-VN")}kg × ${premium}đ`}
+            tone={premium > 0 ? "text-emerald-700" : "text-slate-400"}
+            big
+          />
+        </div>
+
+        {/* Roadmap premium 3 mức */}
+        <div className="mt-4 pt-3 border-t border-surface-200">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 mb-2">Lộ trình Premium SRP (theo Farming Score)</div>
+          <div className="grid grid-cols-3 gap-2">
+            <RoadStep label="FS < 60%" amount="0đ/kg" active={fsPct < 60} tone="rose" />
+            <RoadStep label="FS 60-80%" amount="+200đ/kg" active={fsPct >= 60 && fsPct < 80} tone="sky" />
+            <RoadStep label="FS ≥ 80%" amount="+500đ/kg" active={fsPct >= 80} tone="emerald" />
+          </div>
+        </div>
+
+        {/* Điều kiện vật tư */}
+        <div className="mt-3 pt-3 border-t border-surface-200 grid grid-cols-2 gap-3 text-[12px]">
+          <div>
+            <div className="text-slate-500">Điều kiện mua vật tư đầu vụ</div>
+            <div className={`font-semibold ${tone.accent} mt-0.5`}>{tier.payment}</div>
+          </div>
+          <div>
+            <div className="text-slate-500">Bao tiêu đầu ra cuối vụ</div>
+            <div className={`font-semibold ${tone.accent} mt-0.5`}>{tier.bonusBaoTieu ? `Có · ${tier.premiumLabel}` : "Chưa có"}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const SimCell = ({ label, value, sub, tone, big }) => (
+  <div className="bg-surface-50 rounded-lg p-3 ring-1 ring-surface-200">
+    <div className="text-[11px] text-slate-500 font-semibold">{label}</div>
+    <div className={`font-display ${big ? "text-[20px]" : "text-[16px]"} font-bold tabular mt-1 ${tone}`}>{value}</div>
+    <div className="text-[10px] text-slate-400 mt-0.5">{sub}</div>
+  </div>
+);
+
+const RoadStep = ({ label, amount, active, tone }) => {
+  const toneMap = {
+    rose:    active ? "bg-rose-100 text-rose-800 ring-rose-300"          : "bg-surface-50 text-slate-500 ring-surface-200",
+    sky:     active ? "bg-sky-100 text-sky-800 ring-sky-300"             : "bg-surface-50 text-slate-500 ring-surface-200",
+    emerald: active ? "bg-emerald-100 text-emerald-800 ring-emerald-300" : "bg-surface-50 text-slate-500 ring-surface-200",
+  };
+  return (
+    <div className={`rounded-lg px-2.5 py-2 text-center ring-1 ${toneMap[tone]} ${active ? "ring-2 font-semibold" : ""}`}>
+      <div className="text-[10px] uppercase tracking-wide">{label}</div>
+      <div className={`text-[13px] tabular ${active ? "font-bold" : "font-semibold"} mt-0.5`}>{amount}</div>
+      {active && <div className="text-[9px] mt-0.5">⬤ Bạn ở đây</div>}
+    </div>
+  );
+};
+
+// ─── TIER LADDER — so sánh 4 tier để farmer biết phấn đấu lên ───────────────
+const TierLadderSection = ({ currentTierCode, formatVND, farmer }) => {
+  const dienTich = farmer.dienTich ?? 0;
+  const estYieldKg = Math.round(dienTich * YIELD_PER_HA);
+  return (
+    <section className="bg-white rounded-2xl border border-surface-200 px-4 sm:px-6 py-4 sm:py-5">
+      <div className="mb-3">
+        <h3 className="text-[17px] font-display font-semibold text-slate-900 tracking-tight">🏆 So sánh 4 Tier — lộ trình thăng hạng</h3>
+        <p className="text-[12px] text-slate-500 mt-0.5">Càng làm SRP tốt + giao dịch uy tín → tier càng cao → quyền lợi càng lớn.</p>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+        {[...TIER_ORDER].reverse().map(code => {
+          const t = TIERS[code];
+          const tone = TIER_TONES[code];
+          const isMine = code === currentTierCode;
+          // Bonus thu nhập ước tính nếu đạt tier này (giả định FS đủ để có premium tương ứng)
+          const premiumPerKg = code === "A" ? 500 : code === "B" ? 200 : 0;
+          const bonusVnd = estYieldKg * premiumPerKg;
+          return (
+            <div
+              key={code}
+              className={`rounded-xl p-3.5 transition-all ${
+                isMine
+                  ? `border-2 ${tone.card} shadow-md ring-2 ring-offset-1 ${tone.accent.replace("text", "ring")}`
+                  : "border border-surface-200 bg-white hover:border-surface-300"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${tone.chip}`}>Tier {code}</span>
+                <span className="text-[10px] text-slate-400 font-mono">{t.range[0]}-{t.range[1]}</span>
+              </div>
+              <div className={`text-[13px] font-bold ${tone.text} mb-2`}>{t.label.split("—")[1]?.trim() ?? t.label}</div>
+              <ul className="space-y-1 mb-3">
+                {t.perks.slice(0, 3).map((p, i) => (
+                  <li key={i} className="text-[11px] text-slate-600 leading-snug flex gap-1">
+                    <span className={tone.accent}>•</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="bg-surface-50 rounded-lg p-2 ring-1 ring-surface-200">
+                <div className="text-[10px] text-slate-500 uppercase font-semibold">Thưởng Premium ước tính</div>
+                <div className={`text-[14px] font-bold tabular mt-0.5 ${premiumPerKg > 0 ? tone.accent : "text-slate-400"}`}>
+                  {premiumPerKg > 0 ? `+${formatVND(bonusVnd)}/vụ` : "Không có"}
+                </div>
+                <div className="text-[10px] text-slate-400">{dienTich} ha × {premiumPerKg}đ/kg</div>
+              </div>
+              {isMine && (
+                <div className="mt-2 text-center text-[10px] font-bold uppercase tracking-wide text-slate-700">
+                  ✓ Tier hiện tại của bạn
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
 
 export default FarmerPortalTab;

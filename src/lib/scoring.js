@@ -5,7 +5,8 @@ export const MAX_CREDIT = 400;
 export const MAX_FARMING = 600;
 export const MAX_OVERALL = 1000;
 
-// 4 Tier với quyền lợi tài chính khác biệt
+// 4 Tier với quyền lợi tài chính khác biệt (V3: bỏ lãi suất bank — farmer không vay bank)
+// Quyền lợi theo file đề bài cuối kỳ FinTech: PDF "PHẦN 2 - CHI TIẾT CÁCH TÍNH ĐIỂM"
 export const TIERS = {
   A: {
     code: "A",
@@ -13,17 +14,16 @@ export const TIERS = {
     range: [700, 1000],
     color: "from-emerald-600 to-green-700",
     badge: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    payment: "Trả sau 100% cuối vụ",
+    payment: "Trả sau 100% cuối vụ (lãi 0%)",
     deposit: 0,            // % cọc trước
     creditPct: 100,        // % được ghi nợ (trả sau)
     bonusBaoTieu: true,    // bao tiêu lúa
-    rateLabel: "5.5%/năm",
-    rate: 0.055,
+    premiumLabel: "+500đ/kg",
     perks: [
-      "Vật tư trả sau 100%",
-      "Bao tiêu giá cao + Premium SRP",
+      "Vật tư trả sau 100%, lãi 0%",
+      "Bao tiêu giá cao (+500đ/kg)",
+      "Hưởng Premium SRP cao nhất",
       "Drone phun thuốc miễn phí",
-      "Lãi suất ưu đãi 5.5%",
     ],
   },
   B: {
@@ -32,17 +32,16 @@ export const TIERS = {
     range: [500, 699],
     color: "from-cyan-600 to-blue-600",
     badge: "bg-cyan-100 text-cyan-800 border-cyan-200",
-    payment: "Trả sau 50% + tiền mặt 50%",
+    payment: "Trả sau 50% (lãi 0%) + tiền mặt 50%",
     deposit: 50,
     creditPct: 50,
     bonusBaoTieu: true,
-    rateLabel: "7%/năm",
-    rate: 0.07,
+    premiumLabel: "+200đ/kg",
     perks: [
-      "Trả sau 50% giá trị vật tư",
-      "Bao tiêu giá chuẩn",
-      "Ưu tiên dịch vụ kỹ thuật",
-      "Lãi 0% cho phần trả sau",
+      "Trả sau 50% vật tư, lãi 0%",
+      "Bao tiêu giá chuẩn (+200đ/kg)",
+      "Ưu tiên dịch vụ kỹ thuật 3 Cùng",
+      "Tư vấn quy trình SRP đầy đủ",
     ],
   },
   C: {
@@ -51,45 +50,71 @@ export const TIERS = {
     range: [300, 499],
     color: "from-amber-500 to-orange-500",
     badge: "bg-amber-100 text-amber-800 border-amber-200",
-    payment: "Trả tiền mặt 100%",
+    payment: "Thanh toán 100% khi nhận hàng",
     deposit: 100,
     creditPct: 0,
     bonusBaoTieu: false,
-    rateLabel: "—",
-    rate: 0,
+    premiumLabel: "Giá thị trường",
     perks: [
-      "Mua vật tư thông thường",
-      "Tư vấn 3 Cùng đầy đủ",
-      "Có thể nâng tier sau 1-2 vụ",
+      "Mua vật tư không cần cọc trước",
+      "Tư vấn 3 Cùng cơ bản",
+      "Bao tiêu bằng giá thị trường",
+      "Có thể lên Tier B sau 1-2 vụ tốt",
     ],
   },
   D: {
     code: "D",
-    label: "Tier D — Cảnh báo / Mới",
+    label: "Tier D — Mới / Cảnh báo",
     range: [0, 299],
     color: "from-rose-500 to-red-600",
     badge: "bg-rose-100 text-rose-800 border-rose-200",
-    payment: "Cọc 30% trước, không bao tiêu",
+    payment: "Cọc 30% trước, 70% khi nhận hàng",
     deposit: 30,
     creditPct: 70,
     bonusBaoTieu: false,
-    rateLabel: "9%/năm",
-    rate: 0.09,
+    premiumLabel: "Không có",
     perks: [
-      "Bắt buộc cọc 30% trước",
-      "Không bao tiêu đầu ra",
-      "Cần cải thiện điểm để lên Tier C",
+      "Cọc 30% trước khi xác nhận đơn",
+      "Trả nốt 70% khi nhận vật tư",
+      "Chưa được bao tiêu đầu ra",
+      "Hộ mới hoặc đã vi phạm cam kết",
     ],
   },
 };
 
 export const TIER_ORDER = ["D", "C", "B", "A"];
 
+// ─── OVERALL SCORE — công thức theo PDF đề bài cuối kỳ FinTech ──────────────
+// PDF: OVERALL = Farming × 0.6 + Credit × 0.4 (Farming chiếm 60%, Credit 40%)
+// Cài đặt thực tế dùng raw sum vì weights đã được embed sẵn vào MAX_SCORE:
+//   • Credit  max 400 / 1000 = 40%  → đã chính là trọng số 0.4
+//   • Farming max 600 / 1000 = 60%  → đã chính là trọng số 0.6
+// Nên cộng raw (c + f) ≡ áp dụng weights — kết quả max = 1000.
 export const getOverallScore = (farmer) => {
   const c = farmer.creditScore ?? 0;
   const f = farmer.farmingScore ?? 0;
   return Math.min(MAX_OVERALL, c + f);
 };
+
+// ─── CREDIT EVENTS — theo PDF đề bài cuối kỳ FinTech ────────────────────────
+// Constants để code App.jsx + UI tham chiếu một chỗ duy nhất, dễ audit so với PDF.
+export const CREDIT_EVENTS = {
+  REGISTER_SUPPLY:     { delta:  +5,  label: "Đăng ký mua vật tư qua app" },
+  RECEIVE_SUPPLY:      { delta: +10,  label: "Nhận vật tư + ký số 2 bên" },
+  REPAY_ON_TIME:       { delta: +100, label: "Trả nợ vật tư đúng hạn" },
+  REPAY_EARLY:         { delta: +150, label: "Trả nợ trước hạn (n/a trong V3 — auto cấn trừ)" },
+  SELL_FULL_QUOTA:     { delta: +200, label: "Bán lúa đủ sản lượng cam kết" },
+  STABLE_1_YEAR:       { delta:  +50, label: "Giao dịch ổn định 1 năm liên tục (3 vụ)" },
+  LATE_UNDER_30D:      { delta:  -50, label: "Trễ hạn trả nợ < 30 ngày (n/a trong V3)" },
+  LATE_OVER_30D:       { delta: -200, label: "Trễ hạn trả nợ > 30 ngày (n/a trong V3)" },
+  VIOLATE_OFFTAKE:     { delta: -500, label: "Bán lúa ra ngoài — vi phạm bao tiêu" },
+};
+
+// Mốc số vụ trao bonus "Giao dịch ổn định" (theo PDF: 1 năm liên tục = ~3 vụ ĐBSCL)
+export const STABILITY_BONUS_INTERVAL = 3;
+
+// Trợ giúp: clamp credit score trong [0, MAX_CREDIT]
+export const clampCredit = (val) => Math.max(0, Math.min(MAX_CREDIT, val));
 
 export const getTier = (farmer) => {
   const score = getOverallScore(farmer);

@@ -7,7 +7,7 @@ import { getTier, MAX_FARMING, calcHarvestRevenue, getPremiumPerKg } from "../li
 //   2. Đã có ít nhất 1 lần kiểm tra SRP trên blockchain
 // Khi cả 2 điều kiện thoả → cho phép thu hoạch.
 // Tính: Sản lượng (kg) = diện tích × YIELD_PER_HA. Tiền lúa = SL × (giá + premium SRP). Trừ công nợ vật tư → ròng.
-const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onSettleHarvest, formatVND, basePrice }) => {
+const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onSettleHarvest, onViolateOfftake, formatVND, basePrice }) => {
   const [selectedFarmer, setSelectedFarmer] = useState(null);
   const [moisture, setMoisture] = useState(14); // %
   const [impurity, setImpurity] = useState(2);  // %
@@ -144,6 +144,24 @@ const HarvestTab = ({ staff, farmers, transactions, invoices, blockchainLog, onS
                 >
                   {alreadyHarvested ? "Đã tất toán" : eligible ? "Thu hoạch và tất toán" : "Chưa đủ điều kiện"}
                 </div>
+
+                {/* PDF: Vi phạm bao tiêu (bán lúa ngoài) → −500 Credit. Chỉ hiện khi
+                    farmer đủ điều kiện nhưng Manager phát hiện vi phạm thay vì cân lúa. */}
+                {eligible && step === "idle" && onViolateOfftake && (
+                  <div
+                    onClick={() => {
+                      const reason = window.prompt(
+                        `Xác nhận: ${f.hoTen} đã bán lúa ra ngoài (vi phạm bao tiêu)?\n\nNhập mô tả bằng chứng (vd: "Camera ghi xe thương lái Hồng Phát vào ruộng ngày 14/05"). Hành động này sẽ −500 Credit Score, KHÔNG hoàn tác.`,
+                        ""
+                      );
+                      if (reason !== null) onViolateOfftake(f, staff, reason);
+                    }}
+                    className="mt-1.5 text-[11px] font-semibold text-rose-700 hover:text-rose-900 hover:bg-rose-50 rounded-md py-1 text-center cursor-pointer border border-rose-200 select-none"
+                    title="PDF: Bán lúa ra ngoài = −500 Credit Score"
+                  >
+                    ⚠ Báo vi phạm bao tiêu (−500 Credit)
+                  </div>
+                )}
               </div>
             );
           })}

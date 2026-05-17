@@ -224,7 +224,7 @@ const SupplyModal = ({ modal, setModal, supplies, onConfirm, formatVND }) => {
                           {!allowed && <span className="text-[11px] text-rose-700 font-semibold">cần Score &gt; {t.range[0]}</span>}
                         </div>
                         <p className="text-[14px] font-semibold text-slate-900 mt-1.5">{t.payment}</p>
-                        <p className="text-[12px] text-slate-500 mt-0.5">Lãi: {t.rateLabel}</p>
+                        <p className="text-[12px] text-emerald-700 mt-0.5">Bao tiêu: {t.premiumLabel}</p>
                       </div>
                       <div className="text-right">
                         <div className="text-[11px] text-slate-400 font-mono">{t.range[0]}–{t.range[1]}</div>
@@ -262,7 +262,7 @@ const SupplyModal = ({ modal, setModal, supplies, onConfirm, formatVND }) => {
                 </div>
               )}
               <div className="text-[12px] text-slate-500 pt-2 border-t border-surface-200">
-                {tierToUse.payment} · Lãi {tierToUse.rateLabel}
+                {tierToUse.payment} · LT cấp vốn trực tiếp · trừ vào tiền lúa cuối vụ
               </div>
             </div>
           )}
