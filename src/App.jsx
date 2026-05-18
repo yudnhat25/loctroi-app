@@ -32,7 +32,7 @@ export const generateId = (prefix) => prefix + Math.random().toString(36).substr
 export const formatVND = (n) => (n || 0).toLocaleString("vi-VN") + " VNĐ";
 
 export const initialFarmers = [
-  { id: "LT001", digitalId: "LT001", htx: "HTX Thoại Sơn", hoTen: "Nguyễn Văn An", diaChi: "Thoại Sơn, An Giang", dienTich: 12.5, creditScore: 280, farmingScore: 480, hanMucTinDung: 120000000, vuMuaHoanThanh: 4, trangThai: "Đang canh tác" },
+  { id: "LT001", digitalId: "LT001", htx: "HTX Thoại Sơn", hoTen: "Nguyễn Hoàng Nam", diaChi: "Thoại Sơn, An Giang", dienTich: 12.5, creditScore: 280, farmingScore: 480, hanMucTinDung: 120000000, vuMuaHoanThanh: 4, trangThai: "Đang canh tác" },
   { id: "LT002", digitalId: "LT002", htx: "HTX Châu Phú", hoTen: "Trần Thị Bích", diaChi: "Châu Phú, An Giang", dienTich: 6.2, creditScore: 320, farmingScore: 520, hanMucTinDung: 80000000, vuMuaHoanThanh: 3, trangThai: "Đang canh tác" },
   { id: "LT003", digitalId: "LT003", htx: "HTX Tri Tôn", hoTen: "Lê Văn Cường", diaChi: "Tri Tôn, An Giang", dienTich: 15.0, creditScore: 200, farmingScore: 280, hanMucTinDung: 150000000, vuMuaHoanThanh: 2, trangThai: "Đang canh tác" },
   { id: "LT004", digitalId: "LT004", htx: "HTX Vĩnh Thạnh", hoTen: "Phạm Văn Dũng", diaChi: "Vĩnh Thạnh, Cần Thơ", dienTich: 2.5, creditScore: 80, farmingScore: 160, hanMucTinDung: 40000000, vuMuaHoanThanh: 1, trangThai: "Cảnh báo" },

@@ -44,7 +44,7 @@ export const initialStaff = [
   {
     id: "LT-MGR-001",
     subrole: "manager",
-    hoTen: "Nguyễn Quốc Tuấn",
+    hoTen: "Lê Thị Thảo Nhi",
     chucDanh: "Giám đốc Vùng ĐBSCL",
     khuVuc: "Toàn vùng — An Giang, Cần Thơ, Kiên Giang, Đồng Tháp",
     ngayVaoLam: "2018-03-15",
@@ -53,7 +53,7 @@ export const initialStaff = [
   {
     id: "LT-FO-002",
     subrole: "fieldOfficer",
-    hoTen: "Trần Minh Đức",
+    hoTen: "Nguyễn Hoàng Nhi",
     chucDanh: "Cán bộ Đồng ruộng — Khu Thoại Sơn (Drone + 3 Cùng)",
     khuVuc: "Thoại Sơn, Châu Phú — An Giang",
     ngayVaoLam: "2021-06-01",
@@ -71,7 +71,7 @@ export const initialStaff = [
   {
     id: "LT-DR-005",
     subrole: "driver",
-    hoTen: "Hoàng Văn Sang",
+    hoTen: "Đoàn Gia Phong",
     chucDanh: "Tài xế giao vật tư",
     khuVuc: "Đội xe Long Xuyên",
     ngayVaoLam: "2020-04-20",
