@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   getTier,
   getOverallScore,
@@ -9,6 +9,12 @@ import {
   TIERS,
   TIER_ORDER,
   YIELD_PER_HA,
+  getSeasonDay,
+  isSeasonClosed,
+  getSeasonStartTimestamp,
+  SEASON_TOTAL_DAYS,
+  INSPECTION_UNLOCK_DAY,
+  HARVEST_UNLOCK_DAY,
 } from "../lib/scoring";
 
 // ─── Tokens cho mỗi Tier (hero solid + chip) ──────────────────────────────────
@@ -27,22 +33,49 @@ const STATUS_STYLE = {
 };
 
 // ─── Tính 5 bước tiến độ vụ mùa từ on-chain events ──────────────────────────
+// V3: Reset về 0 khi vụ trước đã HARVEST_SETTLED và CHƯA có SUPPLY mới
+// → mỗi vụ mới bắt đầu với checklist trắng. Chỉ tính log của vụ HIỆN TẠI
+// (sau SUPPLY_REQUESTED mới nhất) thay vì lấy log cũ nhất như cũ.
 function computeProgress(farmer, blockchainLog, supplyRequests, transactions, invoices) {
   const isMine = (l) => l?.data?.includes(farmer.hoTen) || l?.data?.includes(farmer.id);
-  const firstLog = (action) => blockchainLog.slice().reverse().find(l => l.action === action && isMine(l));
+  // blockchainLog newest-first → .find() trả về log MỚI NHẤT cho mỗi action
+  const latestLog = (action) => blockchainLog.find(l => l.action === action && isMine(l));
 
   const pendingReq = supplyRequests.find(r => r.farmer.id === farmer.id);
-  const supplyRequestedLog = firstLog("SUPPLY_REQUESTED");
-  const supplyApprovedLog = firstLog("SUPPLY_APPROVED");
-  const deliveryLog = firstLog("DELIVERY_CONFIRMED");
-  const inspectionLog = firstLog("FIELD_INSPECTION");
-  const harvestLog = firstLog("HARVEST_SETTLED");
+  const supplyRequestedLog = latestLog("SUPPLY_REQUESTED");
+  const harvestLog = latestLog("HARVEST_SETTLED");
+
+  // Vụ đã đóng = HARVEST mới hơn SUPPLY → reset toàn bộ chờ vụ mới
+  const seasonClosed = harvestLog && (!supplyRequestedLog ||
+    new Date(harvestLog.timestamp) > new Date(supplyRequestedLog.timestamp));
+  if (seasonClosed && !pendingReq) {
+    return [
+      { key: "supply", label: "Đăng ký vật tư", done: false, date: null },
+      { key: "contract", label: "HĐ smart contract duyệt", done: false, date: null },
+      { key: "delivery", label: "Giao vật tư và ký số", done: false, date: null },
+      { key: "inspection", label: "Kiểm tra SRP thực địa", done: false, date: null },
+      { key: "harvest", label: "Thu hoạch và tất toán", done: false, date: null },
+    ];
+  }
+
+  // Lấy log của VỤ HIỆN TẠI = log có timestamp >= SUPPLY_REQUESTED mới nhất
+  const seasonStartMs = supplyRequestedLog ? new Date(supplyRequestedLog.timestamp).getTime() : 0;
+  const inSeason = (l) => new Date(l.timestamp).getTime() >= seasonStartMs;
+  const seasonLog = (action) => {
+    const log = latestLog(action);
+    return log && inSeason(log) ? log : null;
+  };
+
+  const supplyApprovedLog = seasonLog("SUPPLY_APPROVED");
+  const deliveryLog = seasonLog("DELIVERY_CONFIRMED");
+  const inspectionLog = seasonLog("FIELD_INSPECTION");
+  const currentHarvest = seasonLog("HARVEST_SETTLED");
 
   const step1Date = pendingReq?.date ?? supplyRequestedLog?.timestamp;
   const step2Date = supplyApprovedLog?.timestamp;
-  const step3Date = deliveryLog?.timestamp ?? transactions.find(t => t.nongHoId === farmer.id)?.ngay;
+  const step3Date = deliveryLog?.timestamp;
   const step4Date = inspectionLog?.timestamp;
-  const step5Date = harvestLog?.timestamp;
+  const step5Date = currentHarvest?.timestamp;
 
   return [
     { key: "supply", label: "Đăng ký vật tư", done: !!step1Date, date: step1Date },
@@ -54,7 +87,9 @@ function computeProgress(farmer, blockchainLog, supplyRequests, transactions, in
 }
 
 // Xác định vụ mùa hiện tại + giống lúa + ngày thứ X/110 từ activity
-function deriveCurrentSeason(farmer, supplyRequests, invoices, blockchainLog) {
+// V3: Đếm ngày từ thời điểm tài xế giao xong vật tư (DELIVERY_CONFIRMED), với
+// tỷ lệ 1 giây thực = 1 ngày canh tác. Helper getSeasonDay đã handle vụ đóng.
+function deriveCurrentSeason(farmer, supplyRequests, invoices, blockchainLog, nowMs) {
   const mySupplyReq = supplyRequests.find(r => r.farmer.id === farmer.id);
   const myInvoice = invoices.find(i => i.nongHoId === farmer.id && i.trangThai !== "Đã tất toán");
   const season = mySupplyReq?.season ?? myInvoice?.vuMua ?? "Vụ Đông Xuân 2026-2027";
@@ -67,16 +102,10 @@ function deriveCurrentSeason(farmer, supplyRequests, invoices, blockchainLog) {
   }
   giong = giong ?? "OM 5451";
 
-  // Ngày thứ X/110: tính từ ngày Đăng ký vật tư (step 1)
-  const startLog = blockchainLog.slice().reverse().find(l =>
-    l.action === "SUPPLY_REQUESTED" && (l.data?.includes(farmer.hoTen) || l.data?.includes(farmer.id))
-  );
-  const startISO = mySupplyReq?.date ?? startLog?.timestamp;
-  const day = startISO
-    ? Math.min(110, Math.max(0, Math.floor((Date.now() - new Date(startISO).getTime()) / 86_400_000)))
-    : 0;
+  const day = getSeasonDay(farmer, blockchainLog, nowMs);
+  const hasStarted = !!getSeasonStartTimestamp(farmer, blockchainLog);
 
-  return { season: season.replace(/^Vụ\s+/i, ""), giong, day, totalDays: 110 };
+  return { season: season.replace(/^Vụ\s+/i, ""), giong, day, totalDays: SEASON_TOTAL_DAYS, hasStarted };
 }
 
 // Status badge cho vụ hiện tại (theo trạng thái farmer + tiến độ)
@@ -100,6 +129,13 @@ const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("vi-VN", { day: 
 const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, droneReports, blockchainLog, formatVND, onSubmitSCF, onRequestSupply, onReportHarvest }) => {
   const [showPassport, setShowPassport] = useState(false);
 
+  // V3: Tick mỗi giây để counter "ngày X/110" tăng real-time (1s = 1 ngày demo)
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const myInvoices = invoices.filter(i => i.nongHoId === farmer.id);
   const myLogs = blockchainLog.filter(l => l.data?.includes(farmer.hoTen) || l.data?.includes(farmer.id));
 
@@ -118,11 +154,13 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
     [farmer, blockchainLog, supplyRequests, transactions, invoices]
   );
   const doneCount = progress.filter(s => s.done).length;
-  const harvestEligible = progress[2].done && progress[3].done && !progress[4].done;
+  // V3: Báo thu hoạch chỉ khi đủ ngày 95 (lúa chín) + đã giao vật tư + đã kiểm SRP + chưa tất toán
+  const seasonDayNow = getSeasonDay(farmer, blockchainLog, nowMs);
+  const harvestEligible = progress[2].done && progress[3].done && !progress[4].done && seasonDayNow >= HARVEST_UNLOCK_DAY;
 
   const season = useMemo(
-    () => deriveCurrentSeason(farmer, supplyRequests, invoices, blockchainLog),
-    [farmer, supplyRequests, invoices, blockchainLog]
+    () => deriveCurrentSeason(farmer, supplyRequests, invoices, blockchainLog, nowMs),
+    [farmer, supplyRequests, invoices, blockchainLog, nowMs]
   );
   const seasonStatus = useMemo(() => deriveSeasonStatus(farmer, progress), [farmer, progress]);
 
@@ -242,6 +280,29 @@ const FarmerPortalTab = ({ farmer, supplyRequests = [], invoices, transactions, 
             {seasonStatus.label}
           </span>
         </div>
+
+        {/* Banner trạng thái giai đoạn lúa — giúp farmer biết "đang ở đâu" */}
+        {season.hasStarted && (
+          <div className="mt-4 p-3 rounded-lg bg-emerald-50/60 ring-1 ring-emerald-200 text-[12px] text-emerald-900 leading-relaxed">
+            {season.day < INSPECTION_UNLOCK_DAY && (
+              <>🌱 <b>Lúa còn nhỏ</b> · Ngày {season.day}/{season.totalDays} — cán bộ Lộc Trời sẽ xuống đồng kiểm tra SRP từ ngày {INSPECTION_UNLOCK_DAY} (lúa đẻ nhánh xong).</>
+            )}
+            {season.day >= INSPECTION_UNLOCK_DAY && season.day < HARVEST_UNLOCK_DAY && (
+              <>🌾 <b>Đang canh tác</b> · Ngày {season.day}/{season.totalDays} — lúa đang làm đòng/trổ bông. Cán bộ Lộc Trời đã có thể kiểm tra ruộng.</>
+            )}
+            {season.day >= HARVEST_UNLOCK_DAY && season.day < season.totalDays && (
+              <>🌟 <b>Lúa chín, sẵn sàng thu hoạch</b> · Ngày {season.day}/{season.totalDays} — bấm "Báo thu hoạch" để Lộc Trời cử người xuống cân.</>
+            )}
+            {season.day >= season.totalDays && (
+              <>⚠ <b>Lúa quá ngày</b> · Ngày {season.day}/{season.totalDays} — cần thu hoạch gấp tránh thất thoát.</>
+            )}
+          </div>
+        )}
+        {!season.hasStarted && progress[0].done && !progress[2].done && (
+          <div className="mt-4 p-3 rounded-lg bg-amber-50/60 ring-1 ring-amber-200 text-[12px] text-amber-900 leading-relaxed">
+            ⏳ <b>Chờ tài xế giao vật tư</b> — Ngày canh tác sẽ bắt đầu đếm ngay khi bạn ký nhận đủ vật tư.
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-px bg-surface-200 rounded-xl overflow-hidden mt-5">
           <SeasonStat label="Diện tích" value={`${farmer.dienTich} ha`} />

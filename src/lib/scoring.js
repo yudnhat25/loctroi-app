@@ -327,6 +327,74 @@ export const generateMockDocs = (buyer, issueDate, totalKg) => {
   };
 };
 
+// ─── VỤ MÙA · TIMING & GATING ──────────────────────────────────────────────
+// Logic thực tế canh tác lúa ĐBSCL áp dụng cho demo:
+//   • Vụ chỉ "bắt đầu" sau khi tài xế giao đủ vật tư (DELIVERY_CONFIRMED) — vì
+//     trước đó nông dân chưa thể sạ/gieo.
+//   • 1 vụ kéo dài ~110 ngày (Đông Xuân chuẩn): mầm 0-7, đẻ nhánh 7-35, làm
+//     đòng 35-65, trổ bông 65-95, chín 95-110.
+//   • Drone scan + checklist SRP chỉ có ý nghĩa từ ngày ~35 (lúa đẻ nhánh xong,
+//     đã hình thành tán lá để chấm NDVI/phủ xanh được). Trước đó là mầm non,
+//     drone không phân biệt được tốt/xấu.
+//   • Để demo gọn, ta NÉN thời gian: 1 GIÂY THỰC = 1 NGÀY CANH TÁC.
+//     → 1 vụ 110 ngày ≈ 1 phút 50 giây demo time.
+//   • Sau khi HARVEST_SETTLED, vụ đó "đóng" — progress reset về 0 chờ vụ mới
+//     (khi farmer đăng ký vật tư lần tiếp theo).
+export const SEASON_TOTAL_DAYS    = 110;
+export const INSPECTION_UNLOCK_DAY = 35;  // ngày mới đủ để drone scan có nghĩa
+export const HARVEST_UNLOCK_DAY    = 95;  // ngày lúa bắt đầu chín, đủ thu hoạch
+export const REAL_MS_PER_FARM_DAY  = 1000; // 1s thực = 1 ngày demo
+
+// Lấy timestamp của log mới nhất của 1 farmer cho 1 action cụ thể
+// (blockchainLog được insert đầu mảng → index 0 = mới nhất)
+const latestLogFor = (farmer, blockchainLog, action) => {
+  const isMine = (l) => l?.data?.includes(farmer.hoTen) || l?.data?.includes(farmer.id);
+  return blockchainLog.find(l => l.action === action && isMine(l));
+};
+
+// Vụ đã đóng nếu HARVEST_SETTLED mới hơn (hoặc tồn tại khi không có SUPPLY mới)
+export const isSeasonClosed = (farmer, blockchainLog) => {
+  const harvest = latestLogFor(farmer, blockchainLog, "HARVEST_SETTLED");
+  if (!harvest) return false;
+  const supply = latestLogFor(farmer, blockchainLog, "SUPPLY_REQUESTED");
+  if (!supply) return true; // có harvest nhưng không có supply → đã đóng
+  return new Date(harvest.timestamp) > new Date(supply.timestamp);
+};
+
+// Timestamp khi vụ HIỆN TẠI bắt đầu đếm ngày = DELIVERY_CONFIRMED gần nhất,
+// VỚI ĐIỀU KIỆN vụ chưa đóng. Trả null nếu vụ đã đóng hoặc chưa giao vật tư.
+export const getSeasonStartTimestamp = (farmer, blockchainLog) => {
+  if (isSeasonClosed(farmer, blockchainLog)) return null;
+  const supply = latestLogFor(farmer, blockchainLog, "SUPPLY_REQUESTED");
+  if (!supply) return null;
+  // Tìm DELIVERY_CONFIRMED CỦA VỤ HIỆN TẠI = sau SUPPLY mới nhất
+  const supplyTime = new Date(supply.timestamp).getTime();
+  const isMine = (l) => l?.data?.includes(farmer.hoTen) || l?.data?.includes(farmer.id);
+  const delivery = blockchainLog.find(l =>
+    l.action === "DELIVERY_CONFIRMED" &&
+    isMine(l) &&
+    new Date(l.timestamp).getTime() >= supplyTime
+  );
+  return delivery?.timestamp ?? null;
+};
+
+// Số ngày canh tác hiện tại của 1 farmer (0..110)
+// nowMs cho phép inject (để dùng với React tick effect, dễ test)
+export const getSeasonDay = (farmer, blockchainLog, nowMs = Date.now()) => {
+  const startISO = getSeasonStartTimestamp(farmer, blockchainLog);
+  if (!startISO) return 0;
+  const elapsedMs = nowMs - new Date(startISO).getTime();
+  return Math.min(SEASON_TOTAL_DAYS, Math.max(0, Math.floor(elapsedMs / REAL_MS_PER_FARM_DAY)));
+};
+
+// Có cho phép cán bộ kiểm tra SRP không? — chỉ khi day >= INSPECTION_UNLOCK_DAY
+export const canInspect = (farmer, blockchainLog, nowMs = Date.now()) =>
+  getSeasonDay(farmer, blockchainLog, nowMs) >= INSPECTION_UNLOCK_DAY;
+
+// Có cho phép thu hoạch không? — day >= HARVEST_UNLOCK_DAY
+export const canHarvest = (farmer, blockchainLog, nowMs = Date.now()) =>
+  getSeasonDay(farmer, blockchainLog, nowMs) >= HARVEST_UNLOCK_DAY;
+
 // Đếm số doc đã có trong BuyerInvoice (luôn 9 khi mock đủ, dùng helper này
 // để code SCFTab/BuyerSalesTab kiểm tra completeness mà không phải hard-code)
 export const countDocsComplete = (invoice) => {

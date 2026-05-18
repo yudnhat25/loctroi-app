@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import {
   SRP_CRITERIA, SRP_MAX, MAX_FARMING,
   getTier, getOverallScore,
+  getSeasonDay, canInspect, INSPECTION_UNLOCK_DAY,
 } from "../lib/scoring";
 import { analyzeDroneImage, aiSuggestChecklist } from "../lib/imageAnalysis";
 import { isGeminiConfigured } from "../lib/geminiClient";
@@ -34,6 +35,14 @@ const InspectionTab = ({ staff, farmers, droneReports, blockchainLog, onInspect,
   const fileInputRef = useRef(null);
   const [selectedFarmer, setSelectedFarmer] = useState(null);
   const [phase, setPhase] = useState("idle"); // idle | review | analyzing | checklist | done
+
+  // V3: Tick mỗi giây để recompute "ngày X" của farmer real-time
+  // → nút kiểm tra tự enable đúng khoảnh khắc đạt ngày 35.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Khi switch sang mode "inspection" mà không có modal đang mở, đảm bảo phase = idle
   // → tránh trường hợp state phase còn dính từ session trước làm khóa toàn bộ nút.
@@ -248,18 +257,40 @@ const InspectionTab = ({ staff, farmers, droneReports, blockchainLog, onInspect,
                   </div>
                 </div>
 
-                <div
-                  onClick={() => phase === "idle" && startInspection(f)}
-                  className={`text-[12px] font-bold rounded-lg py-2 text-center transition-colors select-none ${
-                    phase !== "idle"
-                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                      : isInspected
-                        ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 cursor-pointer"
-                        : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm cursor-pointer"
-                  }`}
-                >
-                  {isInspected ? "🔄 Xem lại + kiểm tra bổ sung" : "✅ Kiểm tra SRP thực địa"}
-                </div>
+                {(() => {
+                  // V3: Lock kiểm tra nếu lúa chưa đủ ngày (< 35)
+                  const seasonDay = getSeasonDay(f, blockchainLog, nowMs);
+                  const dayOk = seasonDay >= INSPECTION_UNLOCK_DAY;
+                  const clickable = phase === "idle" && dayOk;
+                  return (
+                    <>
+                      <div
+                        onClick={() => clickable && startInspection(f)}
+                        className={`text-[12px] font-bold rounded-lg py-2 text-center transition-colors select-none ${
+                          phase !== "idle"
+                            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                            : !dayOk
+                              ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200 cursor-not-allowed"
+                              : isInspected
+                                ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 cursor-pointer"
+                                : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm cursor-pointer"
+                        }`}
+                        title={!dayOk ? `Lúa mới ngày ${seasonDay} — chờ đến ngày ${INSPECTION_UNLOCK_DAY} mới kiểm tra được` : ""}
+                      >
+                        {!dayOk
+                          ? `🌱 Lúa ngày ${seasonDay}/${INSPECTION_UNLOCK_DAY} · chưa đủ tuổi`
+                          : isInspected
+                            ? "🔄 Xem lại + kiểm tra bổ sung"
+                            : "✅ Kiểm tra SRP thực địa"}
+                      </div>
+                      {!dayOk && seasonDay > 0 && (
+                        <div className="mt-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-amber-400" style={{ width: `${Math.min(100, (seasonDay/INSPECTION_UNLOCK_DAY)*100)}%` }} />
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
                     </>
                   );
                 })()}
